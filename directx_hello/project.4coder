@@ -9,6 +9,7 @@ patterns =
     "*.odin",
     "*.zig",
     "*.h",
+    "*.hlsl",
     "*.inc",
     "*.bat",
     "*.cmd",
