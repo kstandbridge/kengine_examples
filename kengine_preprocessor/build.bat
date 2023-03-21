@@ -11,10 +11,13 @@ set CommonLinkerFlags=-incremental:no -opt:ref
 IF NOT EXIST ..\bin mkdir ..\bin
 pushd ..\bin
 
-cl %CommonCompilerFlags% -MTd -Od -Z7 %IncludeDirectories% ..\kengine_tests\kengine_tests.c /Fe:kengine_tests.exe /link %CommonLinkerFlags%
+cl %CommonCompilerFlags% -MTd -Od -Z7 %IncludeDirectories% ..\kengine_preprocessor\kengine_preprocessor.c /Fe:kengine_preprocessor.exe /link %CommonLinkerFlags%
 
 del *.obj
 
-kengine_tests.exe
+pushd ..\kengine\
+..\bin\kengine_preprocessor.exe kengine_math.h
+REM ..\bin\kengine_preprocessor.exe kengine_math.h > kengine_generated.h
+popd
 
 popd

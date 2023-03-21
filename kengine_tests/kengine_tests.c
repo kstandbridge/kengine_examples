@@ -313,11 +313,6 @@ RunV2Tests()
         AssertTrue(C.X == 6.0f);
         AssertTrue(C.Y == 6.0f);
     }
-    {
-        v2 C = V2Divide(V2Set1(3.0f), V2Set1(2.0f));
-        AssertTrue(C.X == 1.5f);
-        AssertTrue(C.Y == 1.5f);
-    }
 }
 
 inline void

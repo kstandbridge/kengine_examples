@@ -1,6 +1,6 @@
 #ifndef HELLO_TYPES_H
 
-introspect(foo, bar, bas)
+introspect(foo, ToJson, bar)
 typedef struct hello_struct
 {
     u32 IntValue;

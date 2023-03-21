@@ -4,47 +4,62 @@
 #include "kengine.h"
 
 void
-GenerateCodeFor(c_struct Struct)
+GenerateCodeFor(c_struct Struct, string_list *Options)
 {
-    PlatformConsoleOut("\ninline string\n");
-    PlatformConsoleOut("%SToJson(memory_arena *Arena, %S A)\n", Struct.Name, Struct.Type);
-    PlatformConsoleOut("{\n");
-    PlatformConsoleOut("\tformat_string_state StringState = BeginFormatString();\n\n");
-    PlatformConsoleOut("\tAppendFormatString(&StringState, \"{\\n\");\n");
-    b32 First = true;
-    for(c_member *Member = Struct.Members;
-        Member;
-        Member = Member->Next)
+    for(string_list *Option = Options;
+        Option;
+        Option = Option->Next)
     {
-        if(!First)
+        if(StringsAreEqual(String("ToJson"), Option->Entry))
         {
-            PlatformConsoleOut("\tAppendFormatString(&StringState, \",\\n\");\n");
+            PlatformConsoleOut("\ninline string\n");
+            PlatformConsoleOut("%SToJson(memory_arena *Arena, %S A)\n", Struct.Name, Struct.Type);
+            PlatformConsoleOut("{\n");
+            PlatformConsoleOut("\tformat_string_state StringState = BeginFormatString();\n\n");
+            PlatformConsoleOut("\tAppendFormatString(&StringState, \"{\\n\");\n");
+            b32 First = true;
+            for(c_member *Member = Struct.Members;
+                Member;
+                Member = Member->Next)
+            {
+                if(!First)
+                {
+                    PlatformConsoleOut("\tAppendFormatString(&StringState, \",\\n\");\n");
+                }
+                PlatformConsoleOut("\tAppendFormatString(&StringState, \"\\t%S\": ", Member->Name);
+                
+                switch(Member->Type)
+                {
+                    case C_U32:
+                    {
+                        PlatformConsoleOut("\"%%u\", A.%S%S);\n", Member->Name);
+                    } break;
+                    
+                    case C_String:
+                    {
+                        PlatformConsoleOut("\"%%S\", A.%S%S);\n", Member->Name);
+                    } break;
+                    
+                    default:
+                    {
+                        PlatformConsoleOut("\n#error Unsupported type \"%S\" for member \"%S\"\n", GetCTypeName(Member->Type), Member->Name);
+                    } break;
+                }
+                
+                First = false;
+            }
+            PlatformConsoleOut("\tAppendFormatString(&StringState, \"\\n}\");\n\n");
+            PlatformConsoleOut("\tstring Result = EndFormatString(&StringState, Arena);\n");
+            PlatformConsoleOut("\treturn Result;\n");
+            
+            PlatformConsoleOut("}\n");
+            
         }
-        PlatformConsoleOut("\tAppendFormatString(&StringState, \"\\t%S\": ", Member->Name);
-        
-        switch(Member->Type)
+        else
         {
-            case C_U32:
-            {
-                PlatformConsoleOut("\"%%u\", A.%S%S);\n", Member->Name);
-            } break;
-            
-            case C_String:
-            {
-                PlatformConsoleOut("\"%%u\", A.%S%S);\n", Member->Name);
-            } break;
-            
-            default:
-            {
-                PlatformConsoleOut("\n#error Unsupported type \"%S\" for member \"%S\"\n", GetCTypeName(Member->Type), Member->Name);
-            } break;
+            PlatformConsoleOut("\n// Skipping unsupported option \"%S\" for type \"%S\"", Option->Entry, Struct.Type);
         }
-        
-        First = false;
     }
-    PlatformConsoleOut("\tAppendFormatString(&StringState, \"\\n}\");\n\n");
-    PlatformConsoleOut("\tstring Result = EndFormatString(&StringState, Arena);\n");
-    PlatformConsoleOut("\treturn Result;\n");
     
-    PlatformConsoleOut("}\n");
+    PlatformConsoleOut("\n");
 }
