@@ -278,7 +278,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup)
     RenderGroup;
     
 #if 0
-    // TODO(kstandbridge): Rect test
+    // NOTE(kstandbridge): Rect test
 #define BOX_WIDTH 15
 #define BOX_HEIGHT 15
 #define BOX_PADDING 3

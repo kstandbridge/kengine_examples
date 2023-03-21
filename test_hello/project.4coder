@@ -1,0 +1,30 @@
+version(2);
+project_name = "test_hello";
+
+patterns =
+{
+    "*.c",
+    "*.cpp",
+    "*.jai",
+    "*.odin",
+    "*.zig",
+    "*.h",
+    "*.inc",
+    "*.bat",
+    "*.cmd",
+    "*.sh",
+    "*.4coder",
+    "*.txt",
+    "*.md",
+};
+blacklist_patterns =
+{
+    ".*",
+};
+
+load_paths =
+{
+    .win = {
+        { .path = "..\kengine", .recursive = true, .relative = true }
+    },
+};
