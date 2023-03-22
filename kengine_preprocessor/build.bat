@@ -17,7 +17,7 @@ del *.obj
 
 pushd ..\kengine\
 ..\bin\kengine_preprocessor.exe kengine_math.h
-REM ..\bin\kengine_preprocessor.exe kengine_math.h > kengine_generated.h
+..\bin\kengine_preprocessor.exe kengine_math.h > kengine_generated.h
 popd
 
 popd
