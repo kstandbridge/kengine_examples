@@ -4,8 +4,10 @@
 #include "kengine.h"
 
 void
-GenerateCodeFor(c_struct Struct, string_list *Options)
+GenerateCodeFor(memory_arena *Arena, c_struct Struct, string_list *Options)
 {
+    Arena;
+    
     for(string_list *Option = Options;
         Option;
         Option = Option->Next)
