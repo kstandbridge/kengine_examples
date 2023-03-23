@@ -26,7 +26,7 @@ GenerateCodeFor(c_struct Struct, string_list *Options)
                 {
                     PlatformConsoleOut("\tAppendFormatString(&StringState, \",\\n\");\n");
                 }
-                PlatformConsoleOut("\tAppendFormatString(&StringState, \"\\t%S\": ", Member->Name);
+                PlatformConsoleOut("\tAppendFormatString(&StringState, \t\"%S\": ", Member->Name);
                 
                 switch(Member->Type)
                 {

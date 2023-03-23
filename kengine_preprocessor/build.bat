@@ -15,9 +15,9 @@ cl %CommonCompilerFlags% -MTd -Od -Z7 %IncludeDirectories% ..\kengine_preprocess
 
 del *.obj
 
-pushd ..\kengine\
-..\bin\kengine_preprocessor.exe kengine_math.h
-..\bin\kengine_preprocessor.exe kengine_math.h > kengine_generated.h
+pushd ..\kengine\kengine
+REM ..\..\bin\kengine_preprocessor.exe kengine_types.h
+..\..\bin\kengine_preprocessor.exe kengine_math.h kengine_types.h > kengine_generated.h
 popd
 
 popd
