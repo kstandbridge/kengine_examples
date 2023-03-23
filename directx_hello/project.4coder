@@ -1,4 +1,5 @@
-version(2);
+version(1);
+
 project_name = "directx_hello";
 
 patterns =
@@ -22,10 +23,27 @@ blacklist_patterns =
 {
     ".*",
 };
-
-load_paths =
-{
-    .win = {
-        { .path = "..\kengine", .recursive = true, .relative = true }
-    },
+load_paths = {
+    {
+		{
+            {"../kengine", .relative = true, .recursive = true, }
+		}, .os = "win"
+	}
 };
+
+command_list = {
+    { .name = "shaders",
+        .out = "*compilation*", .footer_panel = true, .save_dirty_files = true, .cursor_at_end = false,
+        .cmd = {
+            { ".\build shaders", .os = "win" }
+        }
+    },
+    { .name = "release",
+        .out = "*compilation*", .footer_panel = true, .save_dirty_files = true, .cursor_at_end = false,
+        .cmd = {
+            { ".\build release", .os = "win" }
+        }
+    }
+};
+fkey_command[6] = "shaders";
+fkey_command[7] = "release";

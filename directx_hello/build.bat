@@ -9,17 +9,25 @@ set InternalCompilerFlags=-DKENGINE_INTERNAL=1 -DKENGINE_SLOW=1
 set IncludeDirectories=-I..\kengine
 set CommonLinkerFlags=-incremental:no -opt:ref
 
-IF NOT EXIST ..\bin mkdir ..\bin
-pushd ..\bin
 
-fxc.exe /nologo /T vs_4_0_level_9_0 /E vs_main /O3 /WX /Zpc /Ges /Fh ..\kengine\kengine_vertex_shader_generated.h /Vn VertexShaderData /Qstrip_reflect /Qstrip_debug /Qstrip_priv ..\kengine\kengine_shaders.hlsl
-fxc.exe /nologo /T ps_4_0_level_9_0 /E ps_glyph_main /O3 /WX /Zpc /Ges /Fh ..\kengine\kengine_glyph_pixel_shader_generated.h /Vn GlyphPixelShaderData /Qstrip_reflect /Qstrip_debug /Qstrip_priv ..\kengine\kengine_shaders.hlsl
-fxc.exe /nologo /T ps_4_0_level_9_0 /E ps_sprite_main /O3 /WX /Zpc /Ges /Fh ..\kengine\kengine_sprite_pixel_shader_generated.h /Vn SpritePixelShaderData /Qstrip_reflect /Qstrip_debug /Qstrip_priv ..\kengine\kengine_shaders.hlsl
-fxc.exe /nologo /T ps_4_0_level_9_0 /E ps_rect_main /O3 /WX /Zpc /Ges /Fh ..\kengine\kengine_rect_pixel_shader_generated.h /Vn RectPixelShaderData /Qstrip_reflect /Qstrip_debug /Qstrip_priv ..\kengine\kengine_shaders.hlsl
+if "%~1"=="shaders" (
 
+	pushd ..\kengine\kengine
+	fxc.exe /nologo /T vs_4_0_level_9_0 /E vs_main /O3 /WX /Zpc /Ges /Fh kengine_vertex_shader_generated.h /Vn VertexShaderData /Qstrip_reflect /Qstrip_debug /Qstrip_priv kengine_shaders.hlsl
+	fxc.exe /nologo /T ps_4_0_level_9_0 /E ps_glyph_main /O3 /WX /Zpc /Ges /Fh kengine_glyph_pixel_shader_generated.h /Vn GlyphPixelShaderData /Qstrip_reflect /Qstrip_debug /Qstrip_priv kengine_shaders.hlsl
+	fxc.exe /nologo /T ps_4_0_level_9_0 /E ps_sprite_main /O3 /WX /Zpc /Ges /Fh kengine_sprite_pixel_shader_generated.h /Vn SpritePixelShaderData /Qstrip_reflect /Qstrip_debug /Qstrip_priv kengine_shaders.hlsl
+	fxc.exe /nologo /T ps_4_0_level_9_0 /E ps_rect_main /O3 /WX /Zpc /Ges /Fh kengine_rect_pixel_shader_generated.h /Vn RectPixelShaderData /Qstrip_reflect /Qstrip_debug /Qstrip_priv kengine_shaders.hlsl
+	popd
 
-cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -Z7 %IncludeDirectories% ..\directx_hello\directx_hello.c /Fe:directx_hello.exe /link %CommonLinkerFlags%
+) else (
 
-del *.obj
+	IF NOT EXIST ..\bin mkdir ..\bin
+	pushd ..\bin
 
-popd
+	cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -Z7 %IncludeDirectories% ..\directx_hello\directx_hello.c /Fe:directx_hello.exe /link %CommonLinkerFlags%
+
+	del *.obj
+
+	popd
+
+)

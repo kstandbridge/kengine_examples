@@ -149,7 +149,7 @@ InitApp(app_memory *AppMemory)
         string FontData = PlatformReadEntireFile(Arena, String("C:\\Windows\\Fonts\\segoeui.ttf"));
         stbtt_InitFont(&AppState->FontInfo, FontData.Data, 0);
         
-        f32 MaxFontHeightInPixels = 30.0f;
+        f32 MaxFontHeightInPixels = 64.0f;
         AppState->FontScale = stbtt_ScaleForPixelHeight(&AppState->FontInfo, MaxFontHeightInPixels);
         stbtt_GetFontVMetrics(&AppState->FontInfo, &AppState->FontAscent, &AppState->FontDescent, &AppState->FontLineGap);
         
@@ -271,13 +271,20 @@ InitApp(app_memory *AppMemory)
 }
 
 void
-AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup)
+AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, f32 DeltaTime)
 {
     app_state *AppState = AppMemory->AppState;
-    AppState;
-    RenderGroup;
     
-#if 0
+    {    
+        u8 Buffer[4096];
+        f32 FramesPerSecond = 1.0f / DeltaTime;
+        string Thing = FormatStringToBuffer(Buffer, sizeof(Buffer), "%.3fms %.2ffps", DeltaTime, FramesPerSecond);
+        rectangle2 Bounds = Rectangle2(V2(0, 0), V2(RenderGroup->Width, RenderGroup->Height));
+        
+        DrawTextAt(AppState, RenderGroup, Bounds, 10.0f, 0.5f, V4(1, 1, 1, 1), Thing);
+    }
+    
+#if 1
     // NOTE(kstandbridge): Rect test
 #define BOX_WIDTH 15
 #define BOX_HEIGHT 15
@@ -312,11 +319,11 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup)
     {
         string LoremIpsum = String("Lorem Ipsum is simply dummy text of the printing and typesetting\nindustry. Lorem Ipsum has been the industry's standard dummy\ntext ever since the 1500s, when an unknown printer took a galley\nof type and scrambled it to make a type specimen book. It has\nsurvived not only five centuries, but also the leap into electronic\ntypesetting, remaining essentially unchanged. It was popularised in\nthe 1960s with the release of Letraset sheets containing Lorem\nIpsum passages, and more recently with desktop publishing\nsoftware like Aldus PageMaker including versions of Lorem Ipsum.");
         
-        rectangle2 Bounds = Rectangle2(V2(0, 0), V2(RenderGroup->Width, RenderGroup->Height));
+        rectangle2 Bounds = Rectangle2(V2(100, 100), V2(RenderGroup->Width, RenderGroup->Height));
         
-        DrawTextAt(AppState, RenderGroup, Bounds, 3.0f, 1.0f, V4(1, 1, 1, 1), LoremIpsum);
-        Bounds.Min = V2Add(Bounds.Min, V2(2, 2));
-        DrawTextAt(AppState, RenderGroup, Bounds, 2.0f, 1.0f, V4(0, 0, 0, 1), LoremIpsum);
+        DrawTextAt(AppState, RenderGroup, Bounds, 3.0f, 0.5f, V4(1, 1, 1, 1), LoremIpsum);
+        //Bounds.Min = V2Add(Bounds.Min, V2(2, 2));
+        //DrawTextAt(AppState, RenderGroup, Bounds, 2.0f, 1.0f, V4(0, 0, 0, 1), LoremIpsum);
     }
 #endif
     
