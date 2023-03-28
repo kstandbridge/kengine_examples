@@ -220,7 +220,7 @@ TextOp_(app_state *AppState, render_group *RenderGroup, rectangle2 Bounds, f32 D
                 
                 v2 Size = V2(Scale*Info->Width, Scale*Info->Height);
                 
-                v2 GlyphOffset = V2(AtX, AtY + Info->YOffset*Scale);
+                v2 GlyphOffset = V2((s32)AtX, (s32)(AtY + Info->YOffset*Scale));
                 if(Op == TextOp_Draw)
                 {
                     PushRenderCommandGlyph(RenderGroup, GlyphOffset, Depth, Size, Color, Info->UV);
@@ -590,8 +590,7 @@ Button_(app_state *AppState, u32 Column, u32 Row, b32 Enabled, string Text, ui_i
                           V2Subtract(V2Multiply(Dim, V2Set1(0.5f)),
                                      V2Multiply(TextDim, V2Set1(0.5f))));
     
-    DrawTextAt(AppState, RenderGroup, Rectangle2(TextOffset, V2Add(TextOffset, TextDim))
-               , 2.0f, 1.0f, TextColor, Text);
+    DrawTextAt(AppState, RenderGroup, Rectangle2(TextOffset, V2Add(TextOffset, TextDim)), 2.0f, 1.0f, TextColor, Text);
     
     return Result;
 }
@@ -781,7 +780,7 @@ InitApp(app_memory *AppMemory)
         string FontData = PlatformReadEntireFile(Arena, String("C:\\Windows\\Fonts\\segoeui.ttf"));
         stbtt_InitFont(&AppState->FontInfo, FontData.Data, 0);
         
-        f32 MaxFontHeightInPixels = 30.0f;
+        f32 MaxFontHeightInPixels = 64.0f;
         AppState->FontScale = stbtt_ScaleForPixelHeight(&AppState->FontInfo, MaxFontHeightInPixels);
         stbtt_GetFontVMetrics(&AppState->FontInfo, &AppState->FontAscent, &AppState->FontDescent, &AppState->FontLineGap);
         
@@ -906,8 +905,8 @@ void
 AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Input, f32 DeltaTime)
 {
     app_state *AppState = AppMemory->AppState;
-    
-#if 1
+    DeltaTime;
+#if 0
     {    
         u8 Buffer[4096];
         f32 FramesPerSecond = 1.0f / DeltaTime;
@@ -915,6 +914,13 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
         rectangle2 Bounds = Rectangle2(V2(0, 0), V2(RenderGroup->Width, RenderGroup->Height));
         
         DrawTextAt(AppState, RenderGroup, Bounds, 10.0f, 1.0f, V4(1, 1, 1, 1), Thing);
+    }
+#endif
+    
+#if 0
+    // NOTE(kstandbridge): Single rect
+    {
+        PushRenderCommandRect(RenderGroup, Rectangle2(V2(10, 10), V2(100, 100)), 3.0f, V4(1, 0, 0, 1));
     }
 #endif
     
@@ -940,7 +946,6 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
             v2 Size = V2(BOX_WIDTH, BOX_HEIGHT);
             v4 Color = V4(0.3f, 0.5f, 0.2f, 1.0f);
             PushRenderCommandRect(RenderGroup, Rectangle2(P, V2Add(P, Size)), 1.0f, Color);
-            
             AtX += BOX_WIDTH + BOX_PADDING;
         }
         AtX = BOX_PADDING;
@@ -948,29 +953,26 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     }
 #endif
     
-#if 1
+#if 0
     // NOTE(kstandbridge): Text test
     {
         string LoremIpsum = String("Lorem Ipsum is simply dummy text of the printing and typesetting\nindustry. Lorem Ipsum has been the industry's standard dummy\ntext ever since the 1500s, when an unknown printer took a galley\nof type and scrambled it to make a type specimen book. It has\nsurvived not only five centuries, but also the leap into electronic\ntypesetting, remaining essentially unchanged. It was popularised in\nthe 1960s with the release of Letraset sheets containing Lorem\nIpsum passages, and more recently with desktop publishing\nsoftware like Aldus PageMaker including versions of Lorem Ipsum.");
         
         rectangle2 Bounds = Rectangle2(V2(100, 100), V2(RenderGroup->Width, RenderGroup->Height));
         
-        DrawTextAt(AppState, RenderGroup, Bounds, 3.0f, 1.0f, V4(1, 1, 1, 1), LoremIpsum);
+        DrawTextAt(AppState, RenderGroup, Bounds, 2.0f, 1.0f, V4(1, 1, 1, 1), LoremIpsum);
         //Bounds.Min = V2Add(Bounds.Min, V2(2, 2));
         //DrawTextAt(AppState, RenderGroup, Bounds, 2.0f, 1.0f, V4(0, 0, 0, 1), LoremIpsum);
     }
 #endif
     
-#if 1
+#if 0
     // NOTE(kstandbridge): Texture test
     
     {    
         v2 P = V2(500, 400);
         v2 Size = V2(81, 115);
-        rectangle2 Bounds = Rectangle2(P, V2Add(P, Size));
-        render_command *Command = PushRenderCommandRect(RenderGroup, Bounds, 3.0f, V4(1, 1, 1, 1));
-        Command->Type = RenderCommand_Sprite;
-        Command->UV = V4(0, 0, 1, 1);
+        PushRenderCommandSprite(RenderGroup, P, 3.0f, Size, V4(1, 1, 1, 1), V4(0, 0, 1, 1));
     }
     
 #endif
@@ -993,7 +995,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     rectangle2 ScreenBounds = Rectangle2(V2Set1(0.0f), V2(RenderGroup->Width, RenderGroup->Height));
     ScreenBounds.Min = V2Add(ScreenBounds.Min, V2Set1(GlobalMargin));
     
-#if 0    
+#if 1
     BeginGrid(AppState, ScreenBounds, 1, 2);
     {
         GridSetRowHeight(AppState, 1, 30.0f);
