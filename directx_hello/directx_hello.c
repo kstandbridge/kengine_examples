@@ -130,6 +130,7 @@ typedef struct app_state
     s32 FontLineGap;
     stbtt_fontinfo FontInfo;
     glyph_info GlyphInfos[256];
+    v2 SpriteSheetSize;
     
     v2 MouseP;
     v2 dMouseP;
@@ -220,7 +221,7 @@ TextOp_(app_state *AppState, render_group *RenderGroup, rectangle2 Bounds, f32 D
                 
                 v2 Size = V2(Scale*Info->Width, Scale*Info->Height);
                 
-                v2 GlyphOffset = V2((s32)AtX, (s32)(AtY + Info->YOffset*Scale));
+                v2 GlyphOffset = V2(AtX, AtY + Info->YOffset*Scale);
                 if(Op == TextOp_Draw)
                 {
                     PushRenderCommandGlyph(RenderGroup, GlyphOffset, Depth, Size, Color, Info->UV);
@@ -780,19 +781,9 @@ InitApp(app_memory *AppMemory)
         string FontData = PlatformReadEntireFile(Arena, String("C:\\Windows\\Fonts\\segoeui.ttf"));
         stbtt_InitFont(&AppState->FontInfo, FontData.Data, 0);
         
-        f32 MaxFontHeightInPixels = 64.0f;
+        f32 MaxFontHeightInPixels = 16.0f;
         AppState->FontScale = stbtt_ScaleForPixelHeight(&AppState->FontInfo, MaxFontHeightInPixels);
         stbtt_GetFontVMetrics(&AppState->FontInfo, &AppState->FontAscent, &AppState->FontDescent, &AppState->FontLineGap);
-        
-#if 0
-        s32 Padding = (s32)(MaxFontHeightInPixels / 3.0f);
-        u8 OnEdgeValue = (u8)(0.8f*255.0f);
-        f32 PixelDistanceScale = (f32)OnEdgeValue/(f32)Padding;
-#else
-        s32 Padding = 4;
-        u8 OnEdgeValue = 128;
-        f32 PixelDistanceScale = 100.0f;
-#endif
         
 #if 1
         u32 FirstChar = 0;
@@ -815,9 +806,18 @@ InitApp(app_memory *AppMemory)
             CodePoint < LastChar;
             ++CodePoint)
         {                
+#if 0
+            GlyphInfo->Data = stbtt_GetCodepointBitmap(&AppState->FontInfo, AppState->FontScale, AppState->FontScale, CodePoint, &GlyphInfo->Width, &GlyphInfo->Height, 
+                                                       &GlyphInfo->XOffset, &GlyphInfo->YOffset);
+#else
+            s32 Padding = (s32)(MaxFontHeightInPixels / 3.0f);
+            u8 OnEdgeValue = (u8)(0.8f*255.0f);
+            f32 PixelDistanceScale = (f32)OnEdgeValue/(f32)Padding;
             GlyphInfo->Data = stbtt_GetCodepointSDF(&AppState->FontInfo, AppState->FontScale, CodePoint, Padding, OnEdgeValue, PixelDistanceScale, 
                                                     &GlyphInfo->Width, &GlyphInfo->Height, 
                                                     &GlyphInfo->XOffset, &GlyphInfo->YOffset);
+#endif
+            
             stbtt_GetCodepointHMetrics(&AppState->FontInfo, CodePoint, &GlyphInfo->AdvanceWidth, &GlyphInfo->LeftSideBearing);
             
             GlyphInfo->CodePoint = CodePoint;
@@ -877,8 +877,16 @@ InitApp(app_memory *AppMemory)
                     X < GlyphInfo->Width;
                     ++X)
                 {
+                    
+#if 1         
                     u32 Alpha = (u32)GlyphInfo->Data[(Y*GlyphInfo->Width) + X];
                     TextureBytes[(Y + AtY)*TotalWidth + (X + AtX)] = 0x00FFFFFF | (u32)((Alpha) << 24);
+#else
+                    u32 Color = (u32)GlyphInfo->Data[(Y*GlyphInfo->Width) + X];
+                    
+                    TextureBytes[(Y + AtY)*TotalWidth + (X + AtX)] = Color;
+#endif
+                    
                 }
             }
             
@@ -895,6 +903,8 @@ InitApp(app_memory *AppMemory)
             stbtt_FreeSDF(GlyphInfo->Data, 0);
         }
         
+        AppState->SpriteSheetSize = V2(TotalWidth, TotalHeight);
+        
         DirectXLoadTexture(TotalWidth, TotalHeight, TextureBytes);
         
     }
@@ -905,6 +915,7 @@ void
 AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Input, f32 DeltaTime)
 {
     app_state *AppState = AppMemory->AppState;
+    RenderGroup->ClearColor = GlobalBackColor;
     DeltaTime;
 #if 0
     {    
@@ -913,14 +924,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
         string Thing = FormatStringToBuffer(Buffer, sizeof(Buffer), "%.3fms %.2ffps", DeltaTime, FramesPerSecond);
         rectangle2 Bounds = Rectangle2(V2(0, 0), V2(RenderGroup->Width, RenderGroup->Height));
         
-        DrawTextAt(AppState, RenderGroup, Bounds, 10.0f, 1.0f, V4(1, 1, 1, 1), Thing);
-    }
-#endif
-    
-#if 0
-    // NOTE(kstandbridge): Single rect
-    {
-        PushRenderCommandRect(RenderGroup, Rectangle2(V2(10, 10), V2(100, 100)), 3.0f, V4(1, 0, 0, 1));
+        DrawTextAt(AppState, RenderGroup, Bounds, 2.0f, 1.0f, V4(1, 1, 1, 1), Thing);
     }
 #endif
     
@@ -956,14 +960,20 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
 #if 0
     // NOTE(kstandbridge): Text test
     {
+        
+#if 0
         string LoremIpsum = String("Lorem Ipsum is simply dummy text of the printing and typesetting\nindustry. Lorem Ipsum has been the industry's standard dummy\ntext ever since the 1500s, when an unknown printer took a galley\nof type and scrambled it to make a type specimen book. It has\nsurvived not only five centuries, but also the leap into electronic\ntypesetting, remaining essentially unchanged. It was popularised in\nthe 1960s with the release of Letraset sheets containing Lorem\nIpsum passages, and more recently with desktop publishing\nsoftware like Aldus PageMaker including versions of Lorem Ipsum.");
+#else
+        string LoremIpsum = String("Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.");
+#endif
         
-        rectangle2 Bounds = Rectangle2(V2(100, 100), V2(RenderGroup->Width, RenderGroup->Height));
+        rectangle2 Bounds = Rectangle2(AppState->MouseP, V2(RenderGroup->Width, RenderGroup->Height));
         
-        DrawTextAt(AppState, RenderGroup, Bounds, 2.0f, 1.0f, V4(1, 1, 1, 1), LoremIpsum);
+        DrawTextAt(AppState, RenderGroup, Bounds, 4.0f, 1.0f, V4(0.3f, 0, 0.3f, 1), LoremIpsum);
         //Bounds.Min = V2Add(Bounds.Min, V2(2, 2));
         //DrawTextAt(AppState, RenderGroup, Bounds, 2.0f, 1.0f, V4(0, 0, 0, 1), LoremIpsum);
     }
+    
 #endif
     
 #if 0
@@ -972,6 +982,23 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     {    
         v2 P = V2(500, 400);
         v2 Size = V2(81, 115);
+        PushRenderCommandSprite(RenderGroup, P, 3.0f, Size, V4(1, 1, 1, 1), V4(0, 0, 1, 1));
+    }
+    
+#endif
+    
+#if 0
+    // NOTE(kstandbridge): Sprite sheet test
+    
+    {    
+        v2 P = V2(0, 0);
+        v2 Size = AppState->SpriteSheetSize;
+        PushRenderCommandGlyph(RenderGroup, P, 3.0f, Size, V4(1, 1, 1, 1), V4(0, 0, 1, 1));
+    }
+    
+    {    
+        v2 P = V2(10 + AppState->SpriteSheetSize.X, 0);
+        v2 Size = AppState->SpriteSheetSize;
         PushRenderCommandSprite(RenderGroup, P, 3.0f, Size, V4(1, 1, 1, 1), V4(0, 0, 1, 1));
     }
     
