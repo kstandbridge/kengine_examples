@@ -333,21 +333,6 @@ typedef struct debug_clock_entry
 
 // TODO(kstandbridge): Preprocessor code generation?
 
-inline u32
-F32ToRadixValue(f32 Value)
-{
-    u32 Result = *(u32 *)&Value;
-    if(Result & 0x80000000)
-    {
-        Result = ~Result;
-    }
-    else
-    {
-        Result |= 0x80000000;
-    }
-    return(Result);
-}
-
 internal void
 DebugClockEntryRadixSort(u32 Count, debug_clock_entry *First, debug_clock_entry *Temp, sort_type SortType)
 {
