@@ -263,6 +263,26 @@ RunFormatStringDateTests(memory_arena *Arena)
 }
 
 inline void
+RunFormatStringBinaryTests(memory_arena *Arena)
+{
+    {
+        string A = String("before 0b10001001 after");
+        string B = FormatString(Arena, "before %b after", 0b10001001);
+        AssertEqualString(A, B);
+    }
+    {
+        string A = String("before 0b11110000 after");
+        string B = FormatString(Arena, "before %b after", 0b11110000);
+        AssertEqualString(A, B);
+    }
+    {
+        string A = String("before 0b00001111 after");
+        string B = FormatString(Arena, "before %b after", 0b00001111);
+        AssertEqualString(A, B);
+    }
+}
+
+inline void
 RunFormatStringWithoutArenaTests()
 {
     {
@@ -1235,6 +1255,7 @@ RunAllTests(memory_arena *Arena)
     RunFormatStringStringTypeTests(Arena);
     RunFormatStringPercentTests(Arena);
     RunFormatStringDateTests(Arena);
+    RunFormatStringBinaryTests(Arena);
     RunFormatStringWithoutArenaTests();
     
     RunV2Tests();
