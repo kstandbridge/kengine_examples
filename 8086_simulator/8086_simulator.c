@@ -30,44 +30,48 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
         b32 ImmediateToRegister = ((Op0 >> 4) == 0b1011);
         b32 MemoryToAccumulator = ((Op0 >> 1) == 0b1010000);
         b32 AccumlatorToMemory = ((Op0 >> 1) == 0b1010001);
-        if(MemoryToAccumulator)
+        
+        if((MemoryToAccumulator) ||
+           (AccumlatorToMemory))
         {
-            // NOTE(kstandbridge): MOV Memory to accumulator
-            
             u8 ValueLow = Op1;
             u8 ValueHigh = At[Index++];
             u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
             
-            AppendFormatString(&State, "mov ax, [%u]", ValueWide);
-            
-        }
-        else if(AccumlatorToMemory)
-        {
-            // NOTE(kstandbridge): MOV Accumulator to Memory
-            
-            u8 ValueLow = Op1;
-            u8 ValueHigh = At[Index++];
-            u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-            
-            AppendFormatString(&State, "mov [%u], ax", ValueWide);
+            if(MemoryToAccumulator)
+            {
+                AppendFormatString(&State, "mov ax, [%u]", ValueWide);
+            }
+            else
+            {
+                Assert(AccumlatorToMemory);
+                AppendFormatString(&State, "mov [%u], ax", ValueWide);
+            }
             
         }
         else if(RegisterMemoryToFromRegister || 
                 ImmediateToRegisterMemory)
         {
-            // NOTE(kstandbridge): MOV Register/memory to/from register
-            
-            
             b32 IsWord = (Op0 & 1);
             
             // NOTE(kstandbridge): 
             b32 Direction = RegisterMemoryToFromRegister ? ((Op0 >> 1) & 1) : 0;
             
             u8 Mod = Op1 >> 6;
-            if(Mod == 0b00)
+            
+            b32 NoDisplacement = (Mod == 0b00);
+            b32 Displace8Bit = (Mod == 0b01);
+            b32 Displace16Bit = (Mod == 0b10);
+            b32 RegisterMode = (Mod == 0b11);
+            
+            if(RegisterMode)
             {
-                // NOTE(kstandbridge): No displacement follows*
-                
+                u8 Dest = (Op1 >> 0) & ((1<<3)-1);
+                u8 Src =  (Op1 >> 3) & ((1<<3)-1);
+                AppendFormatString(&State, "mov %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
+            }
+            else if(NoDisplacement)
+            {
                 string Bytes[] = 
                 { 
                     String("[bx + si]"), String("[bx + di]"), String("[bp + si]"), String("[bp + di]"), String("[si]"), String("[di]"), String("DIRECT ADDRESS"), String("[bx]") 
@@ -75,10 +79,9 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                 
                 u8 Dest = (Op1 >> 0) & ((1<<3)-1);
                 u8 Src  = (Op1 >> 3) & ((1<<3)-1);
-                
-                if(Dest == 0b110)
+                b32 DirectAccess = (Dest == 0b110);
+                if(DirectAccess)
                 {
-                    // NOTE(kstandbridge): DIRECT ADDRESS
                     if(IsWord)
                     {
                         u8 ValueLow = At[Index++];
@@ -96,8 +99,6 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                         
                         AppendFormatString(&State, "mov %S, [%d]", GetRegisterName(Src, IsWord), Value);
                     }
-                    
-                    
                 }
                 else if(RegisterMemoryToFromRegister)
                 {                
@@ -133,68 +134,28 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                 }
                 
             }
-            else if(Mod == 0b01)
+            else if((Displace8Bit) ||
+                    (Displace16Bit))
             {
-                // NOTE(kstandbridge): 8-bit displacement
                 u8 Dest = (Op1 >> 0) & ((1<<3)-1);
                 u8 Src =  (Op1 >> 3) & ((1<<3)-1);
-                u8 Op2 = At[Index++];
                 
-                s8 Value = *(u8 *)&Op2;
-                
-                string Bytes[] = 
-                { 
-                    String("bx + si"), String("bx + di"), String("bp + si"), String("bp + di"), String("si"), String("di"), String("bp"), String("bx") 
-                };
-                
-                if(Direction)
+                s16 Value;
+                if(Displace8Bit)
                 {
-                    AppendFormatString(&State, "mov %S, [%S", GetRegisterName(Src, IsWord), Bytes[Dest]);
-                    
-                    if(Value > 0)
-                    {
-                        AppendFormatString(&State, " + %d]", Value);
-                    }
-                    else if(Value < 0)
-                    {
-                        Value *= -1;
-                        AppendFormatString(&State, " - %d]", Value);
-                    }
-                    else
-                    {
-                        AppendFormatString(&State, "]");
-                    }
+                    u8 Op2 = At[Index++];
+                    s8 Value_ = *(u8 *)&Op2;
+                    Value = Value_;
                 }
                 else
                 {
-                    AppendFormatString(&State, "mov [%S", Bytes[Dest]);
+                    Assert(Displace16Bit);
+                    u8 ValueLow = At[Index++];
+                    u8 ValueHigh = At[Index++];
+                    u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
                     
-                    if(Value > 0)
-                    {
-                        AppendFormatString(&State, " + %d]", Value);
-                    }
-                    else if(Value < 0)
-                    {
-                        Value *= -1;
-                        AppendFormatString(&State, " - %d]", Value);
-                    }
-                    else
-                    {
-                        AppendFormatString(&State, "]");
-                    }
-                    AppendFormatString(&State, ", %S", GetRegisterName(Src, IsWord), Bytes[Dest]);
+                    Value = *(u16 *)&ValueWide;
                 }
-            }
-            else if(Mod == 0b10)
-            {
-                // NOTE(kstandbridge): 16-bit displacement
-                u8 Dest = (Op1 >> 0) & ((1<<3)-1);
-                u8 Src =  (Op1 >> 3) & ((1<<3)-1);
-                u8 ValueLow = At[Index++];
-                u8 ValueHigh = At[Index++];
-                u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-                
-                s16 Value = *(u16 *)&ValueWide;
                 
                 string Bytes[] = 
                 { 
@@ -244,9 +205,9 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                     {
                         if(IsWord)
                         {
-                            ValueLow = At[Index++];
-                            ValueHigh = At[Index++];
-                            ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                            u8 ValueLow = At[Index++];
+                            u8 ValueHigh = At[Index++];
+                            u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
                             
                             Value = *(u16 *)&ValueWide;
                             
@@ -258,14 +219,6 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                         }
                     }
                 }
-            }
-            else if(Mod == 0b11)
-            {
-                // NOTE(kstandbridge): Register mode (no displacement)
-                u8 Dest = (Op1 >> 0) & ((1<<3)-1);
-                
-                u8 Src =  (Op1 >> 3) & ((1<<3)-1);
-                AppendFormatString(&State, "mov %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
             }
             else
             {
@@ -280,9 +233,7 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
             u8 Reg = (Op0 & 0b111);
             u8 Op2 = At[Index++];
             u16 Value = ((Op2 & 0xFF) << 8) | (Op1 & 0xFF);
-            
             AppendFormatString(&State, "mov %S, %u", GetRegisterName(Reg, Wide), Value);
-            
         }
         else
         {
@@ -516,7 +467,6 @@ RunListing40Tests(memory_arena *Arena)
         string Actual = Parse(Arena, Op, sizeof(Op));
         AssertEqualString(String("mov [15], ax\n"), Actual);
     }
-    
 }
 
 void
