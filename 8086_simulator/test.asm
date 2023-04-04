@@ -1,3 +1,3 @@
 bits 16
 
-mov [bp], ch
+mov [15], ax
