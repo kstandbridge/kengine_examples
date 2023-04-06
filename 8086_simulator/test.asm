@@ -1,3 +1,3 @@
 bits 16
 
-mov [15], ax
+.add ax, 1000

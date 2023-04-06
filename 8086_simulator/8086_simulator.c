@@ -25,37 +25,41 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
         u8 Op0 = At[Index++];
         u8 Op1 = At[Index++];
         
-        b32 RegisterMemoryToFromRegister = ((Op0 >> 2) == 0b100010);
-        b32 ImmediateToRegisterMemory = ((Op0 >> 1) == 0b1100011);
-        b32 ImmediateToRegister = ((Op0 >> 4) == 0b1011);
-        b32 MemoryToAccumulator = ((Op0 >> 1) == 0b1010000);
-        b32 AccumlatorToMemory = ((Op0 >> 1) == 0b1010001);
+        b32 MovRegisterMemoryToFromRegister = ((Op0 >> 2) == 0b100010);
+        b32 AddRegisterMemoryToFromRegister = ((Op0 >> 2) == 0b000000);
+        b32 MovImmediateToRegisterMemory =    ((Op0 >> 1) == 0b1100011);
+        b32 AddImmediateToRegisterMemory =    ((Op0 >> 2) == 0b100000);
+        b32 MovImmediateToRegister =          ((Op0 >> 4) == 0b1011);
+        b32 MovMemoryToAccumulator =          ((Op0 >> 1) == 0b1010000);
+        b32 MovAccumlatorToMemory =           ((Op0 >> 1) == 0b1010001);
         
-        if((MemoryToAccumulator) ||
-           (AccumlatorToMemory))
+        if((MovMemoryToAccumulator) ||
+           (MovAccumlatorToMemory))
         {
             u8 ValueLow = Op1;
             u8 ValueHigh = At[Index++];
             u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
             
-            if(MemoryToAccumulator)
+            if(MovMemoryToAccumulator)
             {
                 AppendFormatString(&State, "mov ax, [%u]", ValueWide);
             }
             else
             {
-                Assert(AccumlatorToMemory);
+                Assert(MovAccumlatorToMemory);
                 AppendFormatString(&State, "mov [%u], ax", ValueWide);
             }
             
         }
-        else if(RegisterMemoryToFromRegister || 
-                ImmediateToRegisterMemory)
+        else if(MovRegisterMemoryToFromRegister || 
+                AddRegisterMemoryToFromRegister ||
+                MovImmediateToRegisterMemory ||
+                AddImmediateToRegisterMemory)
         {
             b32 IsWord = (Op0 & 1);
             
             // NOTE(kstandbridge): 
-            b32 Direction = RegisterMemoryToFromRegister ? ((Op0 >> 1) & 1) : 0;
+            b32 Direction = (AddRegisterMemoryToFromRegister || MovRegisterMemoryToFromRegister) ? ((Op0 >> 1) & 1) : 0;
             
             u8 Mod = Op1 >> 6;
             
@@ -68,7 +72,20 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
             {
                 u8 Dest = (Op1 >> 0) & ((1<<3)-1);
                 u8 Src =  (Op1 >> 3) & ((1<<3)-1);
-                AppendFormatString(&State, "mov %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
+                if(AddImmediateToRegisterMemory)
+                {                    
+                    u8 Op2 = At[Index++];
+                    s8 Value = *(u8 *)&Op2;
+                    AppendFormatString(&State, "add %S, %d", GetRegisterName(Dest, IsWord), Value);
+                }
+                else if(AddRegisterMemoryToFromRegister)
+                {
+                    AppendFormatString(&State, "add %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
+                }
+                else
+                {
+                    AppendFormatString(&State, "mov %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
+                }
             }
             else if(NoDisplacement)
             {
@@ -100,7 +117,7 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                         AppendFormatString(&State, "mov %S, [%d]", GetRegisterName(Src, IsWord), Value);
                     }
                 }
-                else if(RegisterMemoryToFromRegister)
+                else if(MovRegisterMemoryToFromRegister)
                 {                
                     if(Direction)
                     {
@@ -111,10 +128,19 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                         AppendFormatString(&State, "mov %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
                     }
                 }
+                else if(AddRegisterMemoryToFromRegister)
+                {                
+                    if(Direction)
+                    {
+                        AppendFormatString(&State, "add %S, %S", GetRegisterName(Src, IsWord), Bytes[Dest]);
+                    }
+                    else
+                    {
+                        AppendFormatString(&State, "add %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
+                    }
+                }
                 else
                 {
-                    Assert(ImmediateToRegisterMemory);
-                    
                     if(IsWord)
                     {
                         u8 ValueLow = At[Index++];
@@ -129,7 +155,18 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                     {
                         u8 Op2 = At[Index++];
                         s8 Value = *(u8 *)&Op2;
-                        AppendFormatString(&State, "mov %S, byte %d", Bytes[Dest], Value);
+                        if(MovImmediateToRegisterMemory)
+                        {
+                            AppendFormatString(&State, "mov %S, byte %d", Bytes[Dest], Value);
+                        }
+                        else if(AddImmediateToRegisterMemory)
+                        {
+                            AppendFormatString(&State, "add byte %S, %d", Bytes[Dest], Value);
+                        }
+                        else
+                        {
+                            AppendFormatString(&State, "TODO %S, byte %d", Bytes[Dest], Value);
+                        }
                     }
                 }
                 
@@ -162,9 +199,16 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                     String("bx + si"), String("bx + di"), String("bp + si"), String("bp + di"), String("si"), String("di"), String("bp"), String("bx") 
                 };
                 
+                string Op = String("mov");
+                if(AddRegisterMemoryToFromRegister || AddImmediateToRegisterMemory)
+                {
+                    Op = String("add");
+                }
+                
+                
                 if(Direction)
                 {
-                    AppendFormatString(&State, "mov %S, [%S", GetRegisterName(Src, IsWord), Bytes[Dest]);
+                    AppendFormatString(&State, "%S %S, [%S", Op, GetRegisterName(Src, IsWord), Bytes[Dest]);
                     
                     if(Value > 0)
                     {
@@ -182,7 +226,14 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                 }
                 else
                 {
-                    AppendFormatString(&State, "mov [%S", Bytes[Dest]);
+                    if(AddImmediateToRegisterMemory)
+                    {
+                        AppendFormatString(&State, "%S word [%S", Op, Bytes[Dest]);
+                    }
+                    else
+                    {
+                        AppendFormatString(&State, "%S [%S", Op, Bytes[Dest]);
+                    }
                     
                     if(Value > 0)
                     {
@@ -197,26 +248,42 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                     {
                         AppendFormatString(&State, "]");
                     }
-                    if(RegisterMemoryToFromRegister)
+                    if(AddRegisterMemoryToFromRegister|| MovRegisterMemoryToFromRegister)
                     {
                         AppendFormatString(&State, ", %S", GetRegisterName(Src, IsWord));
                     }
-                    else if(ImmediateToRegisterMemory)
+                    else if(MovImmediateToRegisterMemory || AddImmediateToRegisterMemory)
                     {
                         if(IsWord)
                         {
-                            u8 ValueLow = At[Index++];
-                            u8 ValueHigh = At[Index++];
-                            u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
                             
-                            Value = *(u16 *)&ValueWide;
+                            if(AddImmediateToRegisterMemory && (Op0 >> 1) & 1)
+                            {
+                                u8 ValueUnsigned = At[Index++];
+                                Value = *(u16 *)&ValueUnsigned;
+                            }
+                            else
+                            {
+                                u8 ValueLow = At[Index++];
+                                u8 ValueHigh = At[Index++];
+                                u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                                Value = *(u16 *)&ValueWide;
+                            }
                             
-                            AppendFormatString(&State, ", word %d", Value);
+                            
+                            if(MovImmediateToRegisterMemory)
+                            {
+                                AppendFormatString(&State, ", word %d", Value);
+                            }
+                            else
+                            {
+                                AppendFormatString(&State, ", %d", Value);
+                            }
                         }
-                        else
-                        {
-                            AppendFormatString(&State, ", byte TODO");
-                        }
+                    }
+                    else
+                    {
+                        AppendFormatString(&State, "TODO");
                     }
                 }
             }
@@ -226,7 +293,7 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
             }
             
         }
-        else if(ImmediateToRegister)
+        else if(MovImmediateToRegister)
         {
             // NOTE(kstandbridge): MOV Immediate to register
             u8 Wide = (Op0 >> 4) & ((1 << 1)-1);
@@ -469,21 +536,178 @@ RunListing40Tests(memory_arena *Arena)
     }
 }
 
+inline void
+RunListing41Tests(memory_arena *Arena)
+{    
+    {
+        u8 Op[] = { 0b00000011, 0b00011000 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add bx, [bx + si]\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b00000011, 0b01011110, 0b00000000 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add bx, [bp]\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b10000011, 0b11000110, 0b00000010 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add si, 2\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b10000011, 0b11000101, 0b00000010 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add bp, 2\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b10000011, 0b11000001, 0b00001000 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add cx, 8\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b00000011, 0b01011110, 0b00000000 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add bx, [bp]\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b00000011, 0b01001111, 0b00000010 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add cx, [bx + 2]\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b00000010, 0b01111010, 0b00000100 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add bh, [bp + si + 4]\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b00000011, 0b01111011, 0b00000110 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add di, [bp + di + 6]\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b00000001, 0b00011000 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add [bx + si], bx\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b00000001, 0b01011110, 0b00000000 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add [bp], bx\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b00000001, 0b01011110, 0b00000000 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add [bp], bx\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b00000001, 0b01001111, 0b00000010 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add [bx + 2], cx\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b00000000, 0b01111010, 0b00000100 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add [bp + si + 4], bh\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b00000001, 0b01111011, 0b00000110 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add [bp + di + 6], di\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b10000000, 0b00000111, 0b00100010 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add byte [bx], 34\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b10000011, 0b10000010, 0b11101000, 0b00000011, 0b00011101 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add word [bp + si + 1000], 29\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b00000011, 0b01000110, 0b00000000 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add ax, [bp]\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b00000010, 0b00000000 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add al, [bx + si]\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b00000001, 0b11011000 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add ax, bx\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b00000000, 0b11100000 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add al, ah\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b00000101, 0b11101000, 0b00000011 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("add ax, 1000\n"), Actual);
+    }
+    
+}
+
 void
 RunAllTests(memory_arena *Arena)
 {
     RunListing38Tests(Arena);
     RunListing39Tests(Arena);
     RunListing40Tests(Arena);
+    RunListing41Tests(Arena);
     
-    string FileName = String("listing_40");
-    PlatformConsoleOut("\n; %S\n", FileName);
-    
-    PlatformConsoleOut("\nbits 16\n\n");
+    string FileName = String("test");
     
     string Source = Win32ReadEntireFile(Arena, FileName);
     AssertTrue(Source.Data != 0);
     
+    PlatformConsoleOut("\n");
+    b32 IsFirst = true;
+    for(u32 Index = 0;
+        Index < Source.Size;
+        ++Index)
+    {
+        if(IsFirst)
+        {
+            IsFirst = false;
+        }
+        else
+        {
+            PlatformConsoleOut(", ");
+        }
+        u8 Byte = Source.Data[Index];
+        PlatformConsoleOut("%b", Byte);
+    }
+    PlatformConsoleOut("\n");
+    
+    PlatformConsoleOut("\n; %S\n", FileName);
+    PlatformConsoleOut("\nbits 16\n\n");
     string Output = Parse(Arena, Source.Data, Source.Size);
     PlatformConsoleOut("%S\n", Output);
+    
 }
