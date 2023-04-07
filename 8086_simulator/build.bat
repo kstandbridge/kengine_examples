@@ -9,6 +9,8 @@ set InternalCompilerFlags=-DKENGINE_INTERNAL=1 -DKENGINE_SLOW=1
 set IncludeDirectories=-I..\kengine
 set CommonLinkerFlags=-incremental:no -opt:ref
 
+call nasm test.asm
+
 IF NOT EXIST ..\bin mkdir ..\bin
 pushd ..\bin
 
