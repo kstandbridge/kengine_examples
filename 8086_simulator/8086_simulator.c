@@ -1078,6 +1078,128 @@ RunListing41Tests(memory_arena *Arena)
         AssertEqualString(String("cmp ax, 1000\n"), Actual);
     }
     
+    {
+        u8 Op[] = { 0b01110100, 0b11111111 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("je label\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b01111100, 0b11111111 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("jl label\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b01111110, 0b11111111 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("jle label\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b01110010, 0b11111111 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("jb label\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b01110110, 0b11111110 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("jbe label\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b01111010, 0b11111110 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("jp label\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b01110000, 0b11111110 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("jo label\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b01111000, 0b11111110 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("js label\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b01110101, 0b11111110 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("jne label\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b01111101, 0b11111110 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("jnl label\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b01111111, 0b11111110 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("jg label\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b01110011, 0b11111110 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("jnb label\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b01110111, 0b11111110 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("ja label\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b01111011, 0b11111110 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("jnp label\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b01110001, 0b11111110 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("jno label\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b01111001, 0b11111110 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("jns label\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b11100010, 0b11111110 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("loop label\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b11100001, 0b11111110 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("loopz label\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b11100000, 0b11111110 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("loopnz label\n"), Actual);
+    }
+    
+    {
+        u8 Op[] = { 0b11100011, 0b11111110 };
+        string Actual = Parse(Arena, Op, sizeof(Op));
+        AssertEqualString(String("jcxz label\n"), Actual);
+    }
+    
+    
+    
 }
 
 void
@@ -1088,7 +1210,7 @@ RunAllTests(memory_arena *Arena)
     RunListing40Tests(Arena);
     RunListing41Tests(Arena);
     
-#if 1
+#if 0
     string FileName = String("test");
 #else
     string FileName = String("listing_41");
