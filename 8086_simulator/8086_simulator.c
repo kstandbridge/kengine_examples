@@ -1,6 +1,7 @@
 #define KENGINE_WIN32
 #define KENGINE_TEST
 #define KENGINE_IMPLEMENTATION
+
 #include "kengine.h"
 
 
@@ -27,10 +28,86 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
         
         string Label = String("label");
         
-        if(Op0 >> 0 == 0b11010111)
+        if(Op0 >> 0 == 0b00110111)
+        {
+            // NOTE(kstandbridge): AAS ASCII adjust for add
+            AppendFormatString(&State, "aaa");
+        }
+        else if(Op0 >> 0 == 0b00100111)
+        {
+            // NOTE(kstandbridge): DAA Decimal adjust for add
+            AppendFormatString(&State, "daa");
+        }
+        else if(Op0 >> 0 == 0b00111111)
+        {
+            // NOTE(kstandbridge): AAS ASCII adjust for subtract
+            AppendFormatString(&State, "aas");
+        }
+        else if(Op0 >> 0 == 0b00101111)
+        {
+            // NOTE(kstandbridge): DAS Decimal adjust for subtract
+            AppendFormatString(&State, "das");
+        }
+        else if(Op0 >> 0 == 0b10011000)
+        {
+            // NOTE(kstandbridge): CBW Covert byte to word
+            AppendFormatString(&State, "cbw");
+        }
+        else if(Op0 >> 0 == 0b10011001)
+        {
+            // NOTE(kstandbridge): CWD Convert word to double word
+            AppendFormatString(&State, "cwd");
+        }
+        else if(Op0 >> 0 == 0b11010100)
+        {
+            u8 Op1 = At[Index++];
+            if(Op1 == 0b00001010)
+            {
+                // NOTE(kstandbridge): AAM ASCII adjust for multiple
+                AppendFormatString(&State, "aam");
+            }
+            else
+            {
+                AppendFormatString(&State, "Unknown op code %b, %b", Op0, Op1);
+            }
+        }
+        else if(Op0 >> 0 == 0b11010101)
+        {
+            u8 Op1 = At[Index++];
+            if(Op1 == 0b00001010)
+            {
+                // NOTE(kstandbridge): AAD ASCII adjust for divide
+                AppendFormatString(&State, "aad");
+            }
+            else
+            {
+                AppendFormatString(&State, "Unknown op code %b, %b", Op0, Op1);
+            }
+        }
+        else if(Op0 >> 0 == 0b11010111)
         {
             // NOTE(kstandbridge): XLAT translate byte to AL
             AppendFormatString(&State, "xlat");
+        }
+        else if(Op0 >> 0 == 0b10011111)
+        {
+            // NOTE(kstandbridge): LAHF Load AH with flags
+            AppendFormatString(&State, "lahf");
+        }
+        else if(Op0 >> 0 == 0b10011110)
+        {
+            // NOTE(kstandbridge): SAHF Store AH into flags
+            AppendFormatString(&State, "sahf");
+        }
+        else if(Op0 >> 0 == 0b10011100)
+        {
+            // NOTE(kstandbridge): PUSHF Push flags
+            AppendFormatString(&State, "pushf");
+        }
+        else if(Op0 >> 0 == 0b10011101)
+        {
+            // NOTE(kstandbridge): POPF pop flags
+            AppendFormatString(&State, "popf");
         }
         else if(Op0 >> 1 == 0b1110010)
         {
@@ -67,7 +144,7 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
             }
             else
             {
-                AppendFormatString(&State, "out al, dx");
+                AppendFormatString(&State, "out dx, al");
             }
         }
         else if(Op0 >> 3 == 0b01010)
@@ -209,31 +286,52 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
             u8 Reg = Op0 & 0b111;
             AppendFormatString(&State, "xchg ax, %S", GetRegisterName(Reg, 1));
         }
+        else if((Op0 >> 3) == 0b01000)
+        {
+            // NOTE(kstandbridge): INC Register
+            u8 Reg = Op0 & 0b111;
+            AppendFormatString(&State, "inc %S", GetRegisterName(Reg, 1));
+        }
+        else if((Op0 >> 3) == 0b01001)
+        {
+            // NOTE(kstandbridge): DEC Register
+            u8 Reg = Op0 & 0b111;
+            AppendFormatString(&State, "dec %S", GetRegisterName(Reg, 1));
+        }
         else
         {
             u8 Op1 = At[Index++];
-            b32 MovRegisterMemoryToFromRegister =  ((Op0 >> 2) == 0b100010);
-            b32 AddRegisterMemoryToFromRegister =  ((Op0 >> 2) == 0b000000);
-            b32 SubRegisterMemoryToFromRegister =  ((Op0 >> 2) == 0b001010);
-            b32 CmpRegisterMemoryAndFromRegister = ((Op0 >> 2) == 0b001110);
-            b32 XchgRegisterMemoryWithRegister =   ((Op0 >> 1) == 0b1000011);
-            b32 PushRegisterMemory =               ((Op0 >> 0) == 0b11111111);
-            b32 PopRegisterMemory =                ((Op0 >> 0) == 0b10001111);
-            b32 AddImmediateToAccumulator =        ((Op0 >> 2) == 0b000001);
-            b32 CmpImmediateWithAccumulator =      ((Op0 >> 1) == 0b0011110);
-            b32 SubImmediateFromAccumulator =      ((Op0 >> 1) == 0b0010110);
-            b32 MovImmediateToRegisterMemory =     ((Op0 >> 1) == 0b1100011);
-            b32 AddImmediateToRegisterMemory =     ((Op0 >> 2) == 0b100000);
-            b32 MovImmediateToRegister =           ((Op0 >> 4) == 0b1011);
-            b32 MovMemoryToAccumulator =           ((Op0 >> 1) == 0b1010000);
-            b32 MovAccumlatorToMemory =            ((Op0 >> 1) == 0b1010001);
-            b32 LoadEAtoRegister =                 ((Op0 >> 0) == 0b10001101);
-            b32 LoadPointerToDS =                  ((Op0 >> 0) == 0b11000101);
-            b32 LoadPointerToES =                  ((Op0 >> 0) == 0b11000100);
+            b32 Logic =                                 ((Op0 >> 2) == 0b110100);
+            b32 MovRegisterMemoryToFromRegister =       ((Op0 >> 2) == 0b100010);
+            b32 AddRegisterMemoryToFromRegister =       ((Op0 >> 2) == 0b000000);
+            b32 SubRegisterMemoryToFromRegister =       ((Op0 >> 2) == 0b001010);
+            b32 SbbRegisterMemoryToFromRegister =       ((Op0 >> 2) == 0b000110);
+            b32 CmpRegisterMemoryAndFromRegister =      ((Op0 >> 2) == 0b001110);
+            b32 AdcRegisterMemoryWithRegisterToEither = ((Op0 >> 2) == 0b00100);
+            b32 XchgRegisterMemoryWithRegister =        ((Op0 >> 1) == 0b1000011);
+            b32 IncRegisterMemory =                     ((Op0 >> 1) == 0b1111111);
+            b32 NegChangeSign =                         ((Op0 >> 1) == 0b1111011);
+            b32 PushRegisterMemory =                    ((Op0 >> 0) == 0b11111111);
+            b32 PopRegisterMemory =                     ((Op0 >> 0) == 0b10001111);
+            b32 AddImmediateToAccumulator =             ((Op0 >> 2) == 0b000001);
+            b32 AdcImmediateToAccumulator =             ((Op0 >> 2) == 0b000101);
+            b32 CmpImmediateWithAccumulator =           ((Op0 >> 1) == 0b0011110);
+            b32 SubImmediateFromAccumulator =           ((Op0 >> 1) == 0b0010110);
+            b32 SbbImmediateFromAccumulator =           ((Op0 >> 1) == 0b0001110);
+            b32 MovImmediateToRegisterMemory =          ((Op0 >> 1) == 0b1100011);
+            b32 AddImmediateToRegisterMemory =          ((Op0 >> 2) == 0b100000);
+            b32 MovImmediateToRegister =                ((Op0 >> 4) == 0b1011);
+            b32 MovMemoryToAccumulator =                ((Op0 >> 1) == 0b1010000);
+            b32 MovAccumlatorToMemory =                 ((Op0 >> 1) == 0b1010001);
+            b32 LoadEAtoRegister =                      ((Op0 >> 0) == 0b10001101);
+            b32 LoadPointerToDS =                       ((Op0 >> 0) == 0b11000101);
+            b32 LoadPointerToES =                       ((Op0 >> 0) == 0b11000100);
             
             if(AddImmediateToAccumulator ||
+               AdcImmediateToAccumulator ||
                CmpImmediateWithAccumulator ||
                SubImmediateFromAccumulator ||
+               SbbImmediateFromAccumulator ||
                MovMemoryToAccumulator ||
                MovAccumlatorToMemory)
             {
@@ -265,6 +363,17 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                         AppendFormatString(&State, "add al, %d", Value);
                     }
                 }
+                else if(AdcImmediateToAccumulator)
+                {
+                    if(IsWord)
+                    {
+                        AppendFormatString(&State, "adc ax, %d", Value);
+                    }
+                    else
+                    {
+                        AppendFormatString(&State, "adc al, %d", Value);
+                    }
+                }
                 else if (SubImmediateFromAccumulator)
                 {
                     if(IsWord)
@@ -274,6 +383,17 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                     else
                     {
                         AppendFormatString(&State, "sub al, %d", Value);
+                    }
+                }
+                else if (SbbImmediateFromAccumulator)
+                {
+                    if(IsWord)
+                    {
+                        AppendFormatString(&State, "sbb ax, %d", Value);
+                    }
+                    else
+                    {
+                        AppendFormatString(&State, "sbb al, %d", Value);
                     }
                 }
                 else if(CmpImmediateWithAccumulator)
@@ -294,11 +414,16 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                 }
                 
             }
-            else if(MovRegisterMemoryToFromRegister || 
+            else if(Logic ||
+                    MovRegisterMemoryToFromRegister || 
                     AddRegisterMemoryToFromRegister ||
                     SubRegisterMemoryToFromRegister ||
+                    SbbRegisterMemoryToFromRegister ||
                     CmpRegisterMemoryAndFromRegister ||
                     XchgRegisterMemoryWithRegister ||
+                    AdcRegisterMemoryWithRegisterToEither ||
+                    IncRegisterMemory ||
+                    NegChangeSign ||
                     PushRegisterMemory ||
                     PopRegisterMemory ||
                     MovImmediateToRegisterMemory ||
@@ -314,7 +439,9 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                 b32 Direction = (AddRegisterMemoryToFromRegister || 
                                  MovRegisterMemoryToFromRegister ||
                                  SubRegisterMemoryToFromRegister ||
-                                 CmpRegisterMemoryAndFromRegister) ? ((Op0 >> 1) & 1) : 0;
+                                 SbbRegisterMemoryToFromRegister ||
+                                 CmpRegisterMemoryAndFromRegister ||
+                                 AdcRegisterMemoryWithRegisterToEither) ? ((Op0 >> 1) & 1) : 0;
                 
                 if(XchgRegisterMemoryWithRegister)
                 {
@@ -334,8 +461,19 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                     u8 Src =  (Op1 >> 3) & ((1<<3)-1);
                     if(AddImmediateToRegisterMemory)
                     {                    
-                        u8 Op2 = At[Index++];
-                        s8 Value = *(u8 *)&Op2;
+                        s16 Value;
+                        if((Op0 & 0b11) == 0b01)
+                        {
+                            u8 ValueLow = At[Index++];
+                            u8 ValueHigh = At[Index++];
+                            u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                            
+                            Value = *(u16 *)&ValueWide;
+                        }
+                        else
+                        {
+                            Value = *(u8 *)&At[Index++];
+                        }
                         
                         if(Src == 0b000)
                         {
@@ -345,9 +483,17 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                         {
                             AppendFormatString(&State, "sub %S, %d", GetRegisterName(Dest, IsWord), Value);
                         }
+                        else if(Src == 0b011)
+                        {
+                            AppendFormatString(&State, "sbb %S, %d", GetRegisterName(Dest, IsWord), Value);
+                        }
                         else if(Src == 0b111)
                         {
                             AppendFormatString(&State, "cmp %S, %d", GetRegisterName(Dest, IsWord), Value);
+                        }
+                        else if(Src == 0b010)
+                        {
+                            AppendFormatString(&State, "adc %S, %d", GetRegisterName(Dest, IsWord), Value);
                         }
                         else
                         {
@@ -367,6 +513,10 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                     {
                         AppendFormatString(&State, "sub %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
                     }
+                    else if(SbbRegisterMemoryToFromRegister)
+                    {
+                        AppendFormatString(&State, "sbb %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
+                    }
                     else if(CmpRegisterMemoryAndFromRegister)
                     {
                         AppendFormatString(&State, "cmp %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
@@ -380,6 +530,86 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                         else
                         {
                             AppendFormatString(&State, "xchg %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
+                        }
+                    }
+                    else if(AdcRegisterMemoryWithRegisterToEither)
+                    {
+                        AppendFormatString(&State, "adc %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
+                    }
+                    else if(IncRegisterMemory)
+                    {
+                        if(Src == 0b001)
+                        {
+                            AppendFormatString(&State, "dec %S", GetRegisterName(Dest, IsWord));
+                        }
+                        else
+                        {
+                            AppendFormatString(&State, "inc %S", GetRegisterName(Dest, IsWord));
+                        }
+                    }
+                    else if(Logic)
+                    {
+                        b32 IsSpecifiedInClRegister = (1 == ((Op0 >> 1) & 1));
+                        string Count = (IsSpecifiedInClRegister) ? String("cl") : String("1");
+                        
+                        if(Src == 0b100)
+                        {
+                            AppendFormatString(&State, "shl %S, %S", GetRegisterName(Dest, IsWord), Count);
+                        }
+                        else if(Src == 0b101)
+                        {
+                            AppendFormatString(&State, "shr %S, %S", GetRegisterName(Dest, IsWord), Count);
+                        }
+                        else if(Src == 0b111)
+                        {
+                            AppendFormatString(&State, "sar %S, %S", GetRegisterName(Dest, IsWord), Count);
+                        }
+                        else if(Src == 0b000)
+                        {
+                            AppendFormatString(&State, "rol %S, %S", GetRegisterName(Dest, IsWord), Count);
+                        }
+                        else if(Src == 0b001)
+                        {
+                            AppendFormatString(&State, "ror %S, %S", GetRegisterName(Dest, IsWord), Count);
+                        }
+                        else if(Src == 0b010)
+                        {
+                            AppendFormatString(&State, "rcl %S, %S", GetRegisterName(Dest, IsWord), Count);
+                        }
+                        else if(Src == 0b011)
+                        {
+                            AppendFormatString(&State, "rcr %S, %S", GetRegisterName(Dest, IsWord), Count);
+                        }
+                        else
+                        {
+                            AppendFormatString(&State, "TODO %S, %S", GetRegisterName(Dest, IsWord), Count);
+                        }
+                    }
+                    else if(NegChangeSign)
+                    {
+                        if(Src == 0b100)
+                        {
+                            AppendFormatString(&State, "mul %S", GetRegisterName(Dest, IsWord));
+                        }
+                        else if(Src == 0b101)
+                        {
+                            AppendFormatString(&State, "imul %S", GetRegisterName(Dest, IsWord));
+                        }
+                        else if(Src == 0b110)
+                        {
+                            AppendFormatString(&State, "div %S", GetRegisterName(Dest, IsWord));
+                        }
+                        else if(Src == 0b111)
+                        {
+                            AppendFormatString(&State, "idiv %S", GetRegisterName(Dest, IsWord));
+                        }
+                        else if(Src == 0b010)
+                        {
+                            AppendFormatString(&State, "not %S", GetRegisterName(Dest, IsWord));
+                        }
+                        else
+                        {
+                            AppendFormatString(&State, "neg %S", GetRegisterName(Dest, IsWord));
                         }
                     }
                     else
@@ -416,9 +646,37 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                             {
                                 AppendFormatString(&State, "push word [%d]", Value);
                             }
+                            else if(Src == 0b001)
+                            {
+                                if(Logic)
+                                {
+                                    AppendFormatString(&State, "ror word [%d], 1", Value);
+                                }
+                                else
+                                {
+                                    AppendFormatString(&State, "dec word [%d]", Value);
+                                }
+                            }
                             else if(Src == 0b000)
                             {
-                                AppendFormatString(&State, "pop word [%d]", Value);
+                                if(PopRegisterMemory)
+                                {
+                                    AppendFormatString(&State, "pop word [%d]", Value);
+                                }
+                                else
+                                {
+                                    AppendFormatString(&State, "inc word [%d]", Value);
+                                }
+                            }
+                            else if(NegChangeSign &&
+                                    (Src == 0b011))
+                            {
+                                AppendFormatString(&State, "neg word [%d]", Value);
+                            }
+                            else if(NegChangeSign &&
+                                    (Src == 0b101))
+                            {
+                                AppendFormatString(&State, "imul word [%d]", Value);
                             }
                             else
                             {
@@ -430,7 +688,29 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                             u8 Op2 = At[Index++];
                             s8 Value = *(u8 *)&Op2;
                             
-                            AppendFormatString(&State, "mov %S, [%d]", GetRegisterName(Src, IsWord), Value);
+                            if(Logic)
+                            {
+                                At[Index++];
+                                
+                                b32 IsSpecifiedInClRegister = (1 == ((Op0 >> 1) & 1));
+                                string Count = (IsSpecifiedInClRegister) ? String("cl") : String("1");
+                                if(Src == 0b010)
+                                {
+                                    AppendFormatString(&State, "rcl byte [%d], %S", Value, Count);
+                                }
+                                else if(Src == 0b001)
+                                {
+                                    AppendFormatString(&State, "ror byte [%d], %S", Value, Count);
+                                }
+                                else
+                                {
+                                    AppendFormatString(&State, "TODO/logic byte [%d], %S", Value, GetRegisterName(Src, IsWord));
+                                }
+                            }
+                            else
+                            {
+                                AppendFormatString(&State, "mov %S, [%d]", GetRegisterName(Src, IsWord), Value);
+                            }
                         }
                     }
                     else if(MovRegisterMemoryToFromRegister)
@@ -466,6 +746,17 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                             AppendFormatString(&State, "sub %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
                         }
                     }
+                    else if(SbbRegisterMemoryToFromRegister)
+                    {                
+                        if(Direction)
+                        {
+                            AppendFormatString(&State, "sbb %S, %S", GetRegisterName(Src, IsWord), Bytes[Dest]);
+                        }
+                        else
+                        {
+                            AppendFormatString(&State, "sbb %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
+                        }
+                    }
                     else if(CmpRegisterMemoryAndFromRegister)
                     {                
                         if(Direction)
@@ -477,7 +768,28 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                             AppendFormatString(&State, "cmp %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
                         }
                     }
-                    
+                    else if(AdcRegisterMemoryWithRegisterToEither)
+                    {
+                        if(Direction)
+                        {
+                            AppendFormatString(&State, "adc %S, %S", GetRegisterName(Src, IsWord), Bytes[Dest]);
+                        }
+                        else
+                        {
+                            AppendFormatString(&State, "adc %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
+                        }
+                    }
+                    else if(NegChangeSign)
+                    {
+                        if(Src == 0b111)
+                        {
+                            AppendFormatString(&State, "idiv byte %S", Bytes[Dest]);
+                        }
+                        else
+                        {
+                            AppendFormatString(&State, "imul byte %S", Bytes[Dest]);
+                        }
+                    }
 #if 0                    
                     else if(XchgRegisterMemoryWithRegister)
                     {                
@@ -528,6 +840,10 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                             else if(PopRegisterMemory)
                             {
                                 AppendFormatString(&State, "pop word %S", Bytes[Dest]);
+                            }
+                            else if(Logic)
+                            {
+                                AppendFormatString(&State, "rcr word %S, 1", Bytes[Dest]);
                             }
                             else
                             {
@@ -610,6 +926,10 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                     {
                         Op = String("sub");
                     }
+                    else if(SbbRegisterMemoryToFromRegister)
+                    {
+                        Op = String("sbb");
+                    }
                     else if(CmpRegisterMemoryAndFromRegister)
                     {
                         Op = String("cmp");
@@ -618,9 +938,74 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                     {
                         Op = String("xchg");
                     }
-                    else if(PushRegisterMemory)
+                    else if(AdcRegisterMemoryWithRegisterToEither)
                     {
-                        Op = String("push");
+                        Op = String("adc");
+                    }
+                    else if(IncRegisterMemory || PushRegisterMemory)
+                    {
+                        if(Src == 0b110)
+                        {
+                            Op = String("push");
+                        }
+                        else if(Src == 0b001)
+                        {
+                            Op = String("dec");
+                        }
+                        else
+                        {
+                            Op = String("inc");
+                        }
+                    }
+                    else if(Logic)
+                    {
+                        if(Src == 0b100)
+                        {
+                            Op = String("shl");
+                        }
+                        else if(Src == 0b101)
+                        {
+                            Op = String("shr");
+                        }
+                        else if(Src == 0b111)
+                        {
+                            Op = String("sar");
+                        }
+                        else if(Src == 0b000)
+                        {
+                            Op = String("rol");
+                        }
+                        else if(Src == 0b001)
+                        {
+                            Op = String("ror");
+                        }
+                        else
+                        {
+                            Op = String("TODO/Logic");
+                        }
+                    }
+                    else if(NegChangeSign)
+                    {
+                        if(Src == 0b100)
+                        {
+                            Op = String("mul");
+                        }
+                        else if(Src == 0b110)
+                        {
+                            Op = String("div");
+                        }
+                        else if(Src == 0b111)
+                        {
+                            Op = String("idiv");
+                        }
+                        else if(Src == 0b010)
+                        {
+                            Op = String("not");
+                        }
+                        else
+                        {
+                            Op = String("neg");
+                        }
                     }
                     else if(PopRegisterMemory)
                     {
@@ -663,9 +1048,21 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                     }
                     else
                     {
-                        if(AddImmediateToRegisterMemory || PushRegisterMemory || PopRegisterMemory)
+                        if(AddImmediateToRegisterMemory || 
+                           PushRegisterMemory || 
+                           PopRegisterMemory || 
+                           IncRegisterMemory || 
+                           NegChangeSign || 
+                           Logic)
                         {
-                            AppendFormatString(&State, "%S word [%S", Op, Bytes[Dest]);
+                            if(IsWord)
+                            {
+                                AppendFormatString(&State, "%S word [%S", Op, Bytes[Dest]);
+                            }
+                            else
+                            {
+                                AppendFormatString(&State, "%S byte [%S", Op, Bytes[Dest]);
+                            }
                         }
                         else if(LoadEAtoRegister || LoadPointerToDS || LoadPointerToES)
                         {
@@ -691,9 +1088,11 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                         }
                         if(AddRegisterMemoryToFromRegister || 
                            SubRegisterMemoryToFromRegister ||
+                           SbbRegisterMemoryToFromRegister ||
                            MovRegisterMemoryToFromRegister ||
                            CmpRegisterMemoryAndFromRegister ||
-                           XchgRegisterMemoryWithRegister)
+                           XchgRegisterMemoryWithRegister ||
+                           AdcRegisterMemoryWithRegisterToEither)
                         {
                             AppendFormatString(&State, ", %S", GetRegisterName(Src, IsWord));
                         }
@@ -728,11 +1127,19 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
                         }
                         else if(PushRegisterMemory || 
                                 PopRegisterMemory || 
+                                IncRegisterMemory ||
+                                NegChangeSign ||
                                 LoadEAtoRegister || 
                                 LoadPointerToDS || 
                                 LoadPointerToES)
                         {
                             // NOTE(kstandbridge): Intentionally do nothing
+                        }
+                        else if(Logic)
+                        {
+                            b32 IsSpecifiedInClRegister = (1 == ((Op0 >> 1) & 1));
+                            string Count = (IsSpecifiedInClRegister) ? String("cl") : String("1");
+                            AppendFormatString(&State, ", %S", Count);
                         }
                         else
                         {
@@ -771,6 +1178,7 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
             }
         }
         AppendFormatString(&State,"\n" );
+        Assert(Index <= Size);
     }
     
     string Result = EndFormatString(&State, Arena);
@@ -1750,7 +2158,6 @@ RunListing42Tests(memory_arena *Arena)
         AssertEqualString(String("out dx, al\n"), Actual);
     }
     
-#if 0
     {
         u8 Op[] = { 0b11010111 };
         string Actual = Parse(Arena, Op, sizeof(Op));
@@ -2405,6 +2812,7 @@ RunListing42Tests(memory_arena *Arena)
         AssertEqualString(String("aas\n"), Actual);
     }
     
+    
     {
         u8 Op[] = { 0b00101111 };
         string Actual = Parse(Arena, Op, sizeof(Op));
@@ -2412,7 +2820,7 @@ RunListing42Tests(memory_arena *Arena)
     }
     
     {
-        u8 Op[] = { mul al };
+        u8 Op[] = { 0b11110110, 0b11100000 };
         string Actual = Parse(Arena, Op, sizeof(Op));
         AssertEqualString(String("mul al\n"), Actual);
     }
@@ -2528,7 +2936,7 @@ RunListing42Tests(memory_arena *Arena)
     {
         u8 Op[] = { 0b10011001 };
         string Actual = Parse(Arena, Op, sizeof(Op));
-        AssertEqualString(String("cwd  \n"), Actual);
+        AssertEqualString(String("cwd\n"), Actual);
     }
     
     {
@@ -2722,6 +3130,7 @@ RunListing42Tests(memory_arena *Arena)
         string Actual = Parse(Arena, Op, sizeof(Op));
         AssertEqualString(String("ror byte [4938], cl\n"), Actual);
     }
+#if 0
     
     {
         u8 Op[] = { 0b11010010, 0b00010110, 0b00000011, 0b00000000 };
@@ -3491,11 +3900,25 @@ RunListing42Tests(memory_arena *Arena)
 void
 RunAllTests(memory_arena *Arena)
 {
-    RunListing38Tests(Arena);
-    RunListing39Tests(Arena);
-    RunListing40Tests(Arena);
-    RunListing41Tests(Arena);
-    RunListing42Tests(Arena);
+    temporary_memory MemoryFlush = BeginTemporaryMemory(Arena);
+    RunListing38Tests(MemoryFlush.Arena);
+    EndTemporaryMemory(MemoryFlush);
+    
+    MemoryFlush = BeginTemporaryMemory(Arena);
+    RunListing39Tests(MemoryFlush.Arena);
+    EndTemporaryMemory(MemoryFlush);
+    
+    MemoryFlush = BeginTemporaryMemory(Arena);
+    RunListing40Tests(MemoryFlush.Arena);
+    EndTemporaryMemory(MemoryFlush);
+    
+    MemoryFlush = BeginTemporaryMemory(Arena);
+    RunListing41Tests(MemoryFlush.Arena);
+    EndTemporaryMemory(MemoryFlush);
+    
+    MemoryFlush = BeginTemporaryMemory(Arena);
+    RunListing42Tests(MemoryFlush.Arena);
+    EndTemporaryMemory(MemoryFlush);
     
     
 #if 1
