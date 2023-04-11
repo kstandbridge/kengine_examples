@@ -218,7 +218,7 @@ bits 16
 ; shr word [bx + si - 199], cl
 ; sar byte [bx + di - 300], cl
 ; rol byte [bp], cl
-ror byte [4938], cl
+; ror byte [4938], cl
 ; rcl byte [3], cl
 ; rcr word [bx], cl
 ; and al, ah
@@ -323,6 +323,7 @@ label:
 ; hlt
 ; wait
 ; lock not byte [bp + 9905]
+; xchg [100], al
 ; lock xchg [100], al
 ; mov al, cs:[bx + si]
 ; mov bx, ds:[bp + di]
@@ -331,7 +332,7 @@ label:
 ; and ss:[bp + si + 10], ch
 ; or ds:[bx + di + 1000], dx
 ; xor bx, es:[bp]
-; cmp cx, es:[4384]
+cmp cx, es:[4384]
 ; test byte cs:[bp - 39], 239
 ; sbb word cs:[bx + si - 4332], 10328
 ; lock not byte CS:[bp + 9905]
