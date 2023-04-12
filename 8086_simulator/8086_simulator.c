@@ -16,6 +16,86 @@ GetRegisterName(u32 Index, b32 IsWord)
     return Result;
 }
 
+typedef enum op_code
+{
+    OpCode_ProcessorControlSetCarry          = 0b11111001,
+    OpCode_ProcessorControlSetDirection      = 0b11111101,
+    OpCode_ProcessorControlClearCarry        = 0b11111000,
+    OpCode_ProcessorControlCompletementCarry = 0b11110101,
+    OpCode_ProcessorControlClearDirection    = 0b11111100,
+    OpCode_ProcessorControlClearInterrupt    = 0b11111010,
+    OpCode_ProcessorControlSetInterrupt      = 0b11111011,
+    OpCode_ProcessorControlHalt              = 0b11110100,
+    OpCode_ProcessorControlWait              = 0b10011011,
+    
+    OpCode_InterruptOnOverflow               = 0b11001110,
+    OpCode_InterruptReturn                   = 0b11001111,
+    OpCode_InterruptTypeSpecified            = 0b11001101,
+    OpCode_InterruptType3                    = 0b11001100,
+    
+    OpCode_ReturnWithinSegment               = 0b11000011,
+    OpCode_ReturnWithinSegAddingImmedToSP    = 0b11000010,
+    OpCode_ReturnJumpOnEqualZero             = 0b01110100,
+    OpCode_ReturnJumpOnLessNotGreaterOrEqual = 0b01111100,
+    OpCode_ReturnJumpOnLessOrEqualNotGreater = 0b01111110,
+    OpCode_ReturnJumpOnBelowNotAboveOrEqual  = 0b01110010,
+    OpCode_ReturnJumpOnBelowOrEqualNotAbove  = 0b01110110,
+    OpCode_ReturnJumpOnParityEven            = 0b01111010,
+    OpCode_ReturnJumpOnOverflow              = 0b01110000,
+    OpCode_ReturnJumpOnSign                  = 0b01111000,
+    OpCode_ReturnJumpOnNotEqualNotZero       = 0b01110101,
+    OpCode_ReturnJumpOnNotLessGreaterOrEqual = 0b01111101,
+    OpCode_ReturnJumpOnNotLessOrEqualGreater = 0b01111111,
+    OpCode_ReturnJumpOnNotBelowAboveOrEqual  = 0b01110011,
+    OpCode_ReturnJumpOnNotBelowOrEqualAbove  = 0b01110111,
+    OpCode_ReturnJumpOnNotParOdd             = 0b01111011,
+    OpCode_ReturnJumpOnNotOverflow           = 0b01110001,
+    OpCode_ReturnJumpOnNotSign               = 0b01111001,
+    OpCode_ReturnLoopCXTimes                 = 0b11100010,
+    OpCode_ReturnLoopWhileZeroEqual          = 0b11100001,
+    OpCode_ReturnLoopWhileNotZeroEqual       = 0b11100000,
+    OpCode_ReturnJumpOnCXZero                = 0b11100011,
+    
+    OpCode_IncrementASCIIAdjustForAdd        = 0b00110111,
+    OpCode_IncrementDecimalAdjustForAdd      = 0b00100111,
+    
+    OpCode_CompareASCIIAdjustForSubtract     = 0b00111111,
+    OpCode_CompareDecimalAdjustForSubtract   = 0b00101111,
+    OpCode_CompareConvertByteToWord          = 0b10011000,
+    OpCode_CompareConvertWordToDoubleWord    = 0b10011001,
+    OpCode_CompareASCIIAdjustForMultiply     = 0b11010100,
+    OpCode_CompareASCIIAdjustForDivide       = 0b11010101,
+    
+    OpCode_OutTranslateByteToAL              = 0b11010111,
+    OpCode_OutLoadAHWithFlags                = 0b10011111,
+    OpCode_OutStoreAHIntoFlags               = 0b10011110,
+    OpCode_OutPushFlags                      = 0b10011100,
+    OpCode_OutPopFlags                       = 0b10011101,
+    
+    OpCodeStringRepeat                       = 0b1111001,
+    OpCodeStringMoveByteWord                 = 0b1010010,
+    OpCodeStringCompareByteWord              = 0b1010011,
+    OpCodeStringScanByteWord                 = 0b1010111,
+    OpCodeStringLoadByteWdToALXL             = 0b1010110,
+    OpCodeStringStoreByteWdFromALXL          = 0b1010101,
+    
+    OpInFixedPort                            = 0b1110010,
+    OpInVariablePort                         = 0b1110110,
+    
+    OpOutFixedPort                           = 0b1110011,
+    OpOutVariablePort                        = 0b1110111,
+    
+    OpPushRegister                           = 0b01010,
+    OpPopRegister                            = 0b01011,
+    
+    OpXchgRegisterWithMemory                 = 0b10010,
+    
+    OpIncRegister                            = 0b01000,
+    
+    OpDecRegister                            = 0b01001,
+    
+} op_code;
+
 inline string
 Parse(memory_arena *Arena, u8 *At, umm Size)
 {
@@ -28,1546 +108,1324 @@ Parse(memory_arena *Arena, u8 *At, umm Size)
         string Label = String("label");
         string SegmentRegisterCode[] = { String("es"), String("cs"), String("ss"), String("ds") };
         
-        if(Op0 >> 0 == 0b11111000)
+        switch(Op0)
         {
-            // NOTE(kstandbridge): Processor control Clear carry
-            AppendFormatString(&State, "clc");
-        }
-        else if(Op0 >> 0 == 0b11110101)
-        {
-            // NOTE(kstandbridge): Processor control Complement carry
-            AppendFormatString(&State, "cmc");
-        }
-        else if(Op0 >> 0 == 0b11111001)
-        {
-            // NOTE(kstandbridge): Processor control set carry
-            AppendFormatString(&State, "stc");
-        }
-        else if(Op0 >> 0 == 0b11111100)
-        {
-            // NOTE(kstandbridge): Processor control clear direction
-            AppendFormatString(&State, "cld");
-        }
-        else if(Op0 >> 0 == 0b11111101)
-        {
-            // NOTE(kstandbridge): Processor control set direction
-            AppendFormatString(&State, "std");
-        }
-        else if(Op0 >> 0 == 0b11111010)
-        {
-            // NOTE(kstandbridge): Processor control clear interrupt
-            AppendFormatString(&State, "cli");
-        }
-        else if(Op0 >> 0 == 0b11111011)
-        {
-            // NOTE(kstandbridge): Processor control set interrupt
-            AppendFormatString(&State, "sti");
-        }
-        else if(Op0 >> 0 == 0b11110100)
-        {
-            // NOTE(kstandbridge): Processor control halt
-            AppendFormatString(&State, "hlt");
-        }
-        else if(Op0 >> 0 == 0b10011011)
-        {
-            // NOTE(kstandbridge): Processor control wait
-            AppendFormatString(&State, "wait");
-        }
-        else if(Op0 >> 0 == 0b11001110)
-        {
-            // NOTE(kstandbridge): INT INTO interrupt on overflow
-            AppendFormatString(&State, "into");
-        }
-        else if(Op0 >> 0 == 0b11001111)
-        {
-            // NOTE(kstandbridge): INT INTO interrupt return
-            AppendFormatString(&State, "iret");
-        }
-        else if(Op0 >> 0 == 0b11001101)
-        {
-            // NOTE(kstandbridge): INT interrupt type specified
-            u8 Value = At[Index++];
-            AppendFormatString(&State, "int %d", Value);
-        }
-        else if(Op0 >> 0 == 0b11001100)
-        {
-            // NOTE(kstandbridge): INT interrupt type 3
-            AppendFormatString(&State, "int3");
-        }
-        else if(Op0 >> 0 == 0b11000011)
-        {
-            // NOTE(kstandbridge): RET Within segment
-            AppendFormatString(&State, "ret");
-        }
-        else if(Op0 >> 0 == 0b11000010)
-        {
-            // NOTE(kstandbridge): RET Within seg adding immed to SP
-            u8 ValueLow = At[Index++];
-            u8 ValueHigh = At[Index++];
-            u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+            case OpCode_ProcessorControlSetCarry:          { AppendFormatString(&State, "stc"); } break;
+            case OpCode_ProcessorControlSetDirection:      { AppendFormatString(&State, "std"); } break;
+            case OpCode_ProcessorControlClearCarry:        { AppendFormatString(&State, "clc"); } break;
+            case OpCode_ProcessorControlCompletementCarry: { AppendFormatString(&State, "cmc"); } break;
+            case OpCode_ProcessorControlClearDirection:    { AppendFormatString(&State, "cld"); } break;
+            case OpCode_ProcessorControlClearInterrupt:    { AppendFormatString(&State, "cli"); } break;
+            case OpCode_ProcessorControlSetInterrupt:      { AppendFormatString(&State, "sti"); } break;
+            case OpCode_ProcessorControlHalt:              { AppendFormatString(&State, "hlt"); } break;
+            case OpCode_ProcessorControlWait:              { AppendFormatString(&State, "wait"); } break;
             
-            s16 Value = *(s16 *)&ValueWide;
-            AppendFormatString(&State, "ret %d", Value);
-        }
-        else if(Op0 >> 1 == 0b1111001)
-        {
-            // NOTE(kstandbridge): String Manipulation REP
-            u8 Op1 = At[Index++];
-            b32 IsWord = (Op1 & 1);
-            string W = (IsWord) ? String("w") : String("b");
-            if((Op1 >> 1) == 0b1010010)
-            {
-                AppendFormatString(&State, "rep movs%S", W);
-            }
-            else if((Op1 >> 1) == 0b1010011)
-            {
-                AppendFormatString(&State, "rep cmps%S", W);
-            }
-            else if((Op1 >> 1) == 0b1010111)
-            {
-                AppendFormatString(&State, "rep scas%S", W);
-            }
-            else if((Op1 >> 1) == 0b1010110)
-            {
-                AppendFormatString(&State, "rep lods%S", W);
-            }
-            else if((Op1 >> 1) == 0b1010101)
-            {
-                AppendFormatString(&State, "rep stos%S", W);
-            }
-            else
-            {
-                AppendFormatString(&State, "TODO REP %b", Op1);
-            }
-        }
-        else if(Op0 >> 0 == 0b00110111)
-        {
-            // NOTE(kstandbridge): AAS ASCII adjust for add
-            AppendFormatString(&State, "aaa");
-        }
-        else if(Op0 >> 0 == 0b00100111)
-        {
-            // NOTE(kstandbridge): DAA Decimal adjust for add
-            AppendFormatString(&State, "daa");
-        }
-        else if(Op0 >> 0 == 0b00111111)
-        {
-            // NOTE(kstandbridge): AAS ASCII adjust for subtract
-            AppendFormatString(&State, "aas");
-        }
-        else if(Op0 >> 0 == 0b00101111)
-        {
-            // NOTE(kstandbridge): DAS Decimal adjust for subtract
-            AppendFormatString(&State, "das");
-        }
-        else if(Op0 >> 0 == 0b10011000)
-        {
-            // NOTE(kstandbridge): CBW Covert byte to word
-            AppendFormatString(&State, "cbw");
-        }
-        else if(Op0 >> 0 == 0b10011001)
-        {
-            // NOTE(kstandbridge): CWD Convert word to double word
-            AppendFormatString(&State, "cwd");
-        }
-        else if(Op0 >> 0 == 0b11010100)
-        {
-            u8 Op1 = At[Index++];
-            if(Op1 == 0b00001010)
-            {
-                // NOTE(kstandbridge): AAM ASCII adjust for multiple
-                AppendFormatString(&State, "aam");
-            }
-            else
-            {
-                AppendFormatString(&State, "Unknown op code %b, %b", Op0, Op1);
-            }
-        }
-        else if(Op0 >> 0 == 0b11010101)
-        {
-            u8 Op1 = At[Index++];
-            if(Op1 == 0b00001010)
-            {
-                // NOTE(kstandbridge): AAD ASCII adjust for divide
-                AppendFormatString(&State, "aad");
-            }
-            else
-            {
-                AppendFormatString(&State, "Unknown op code %b, %b", Op0, Op1);
-            }
-        }
-        else if(Op0 >> 0 == 0b11010111)
-        {
-            // NOTE(kstandbridge): XLAT translate byte to AL
-            AppendFormatString(&State, "xlat");
-        }
-        else if(Op0 >> 0 == 0b10011111)
-        {
-            // NOTE(kstandbridge): LAHF Load AH with flags
-            AppendFormatString(&State, "lahf");
-        }
-        else if(Op0 >> 0 == 0b10011110)
-        {
-            // NOTE(kstandbridge): SAHF Store AH into flags
-            AppendFormatString(&State, "sahf");
-        }
-        else if(Op0 >> 0 == 0b10011100)
-        {
-            // NOTE(kstandbridge): PUSHF Push flags
-            AppendFormatString(&State, "pushf");
-        }
-        else if(Op0 >> 0 == 0b10011101)
-        {
-            // NOTE(kstandbridge): POPF pop flags
-            AppendFormatString(&State, "popf");
-        }
-        else if(Op0 >> 1 == 0b1110010)
-        {
-            // NOTE(kstandbridge): IN Fixed port
-            u8 Value = At[Index++];
-            AppendFormatString(&State, "in al, %u", Value);
-        }
-        else if(Op0 >> 1 == 0b1110110)
-        {
-            // NOTE(kstandbridge): IN variable port
-            b32 IsWord = (Op0 & 1);
-            if(IsWord)
-            {
-                AppendFormatString(&State, "in ax, dx");
-            }
-            else
-            {
-                AppendFormatString(&State, "in al, dx");
-            }
-        }
-        else if(Op0 >> 1 == 0b1110011)
-        {
-            // NOTE(kstandbridge): OUT Fixed port
-            u8 Value = At[Index++];
-            AppendFormatString(&State, "out %u, ax", Value);
-        }
-        else if(Op0 >> 1 == 0b1110111)
-        {
-            // NOTE(kstandbridge): OUT variable port
-            b32 IsWord = (Op0 & 1);
-            if(IsWord)
-            {
-                AppendFormatString(&State, "out ax, dx");
-            }
-            else
-            {
-                AppendFormatString(&State, "out dx, al");
-            }
-        }
-        else if(Op0 >> 3 == 0b01010)
-        {
-            // NOTE(kstandbridge): Push Register
-            u8 Reg = Op0 & 0b111;
-            AppendFormatString(&State, "push %S", GetRegisterName(Reg, 1));
-        }
-        else if(Op0 >> 3 == 0b01011)
-        {
-            // NOTE(kstandbridge): Pop Register
-            u8 Reg = Op0 & 0b111;
-            AppendFormatString(&State, "pop %S", GetRegisterName(Reg, 1));
-        }
-        else if((Op0 >> 6 == 0b000) &&
-                ((Op0 & 0b111) == 0b110) &&
-                (((Op0 >> 3) & 0b111) < ArrayCount(SegmentRegisterCode)))
-        {
-            // NOTE(kstandbridge): Push Segment Register
-            u8 Reg =  (Op0 >> 3) & ((1<<3)-1);
-            if(Reg > ArrayCount(SegmentRegisterCode))
-            {
-                AppendFormatString(&State, "; TODO SegmentRegisterCode overflow");
-            }
-            else
-            {
-                AppendFormatString(&State, "push %S", SegmentRegisterCode[Reg]);
-            }
-        }
-        else if((Op0 >> 6 == 0b000) &&
-                ((Op0 & 0b111) == 0b111))
-        {
-            // NOTE(kstandbridge): Pop Segment Register
-            u8 Reg =  (Op0 >> 3) & ((1<<3)-1);
-            AppendFormatString(&State, "pop %S", SegmentRegisterCode[Reg]);
-        }
-        else if(Op0 >> 3 == 0b01010)
-        {
-            At[Index++];
-            AppendFormatString(&State, "je %S", Label);
-        }
-        else if(Op0 == 0b1110100)
-        {
-            At[Index++];
-            AppendFormatString(&State, "je %S", Label);
-        }
-        else if(Op0 == 0b01111100)
-        {
-            At[Index++];
-            AppendFormatString(&State, "jl %S", Label);
-        }
-        else if(Op0 == 0b01111110)
-        {
-            At[Index++];
-            AppendFormatString(&State, "jle %S", Label);
-        }
-        else if(Op0 == 0b01110010)
-        {
-            At[Index++];
-            AppendFormatString(&State, "jb %S", Label);
-        }
-        else if(Op0 == 0b01110110)
-        {
-            At[Index++];
-            AppendFormatString(&State, "jbe %S", Label);
-        }
-        else if(Op0 == 0b01111010)
-        {
-            At[Index++];
-            AppendFormatString(&State, "jp %S", Label);
-        }
-        else if(Op0 == 0b01110000)
-        {
-            At[Index++];
-            AppendFormatString(&State, "jo %S", Label);
-        }
-        else if(Op0 == 0b01111000)
-        {
-            At[Index++];
-            AppendFormatString(&State, "js %S", Label);
-        }
-        else if(Op0 == 0b01110101)
-        {
-            At[Index++];
-            AppendFormatString(&State, "jne %S", Label);
-        }
-        else if(Op0 == 0b01111101)
-        {
-            At[Index++];
-            AppendFormatString(&State, "jnl %S", Label);
-        }
-        else if(Op0 == 0b01111111)
-        {
-            At[Index++];
-            AppendFormatString(&State, "jg %S", Label);
-        }
-        else if(Op0 == 0b01110011)
-        {
-            At[Index++];
-            AppendFormatString(&State, "jnb %S", Label);
-        }
-        else if(Op0 == 0b01110111)
-        {
-            At[Index++];
-            AppendFormatString(&State, "ja %S", Label);
-        }
-        else if(Op0 == 0b01111011)
-        {
-            At[Index++];
-            AppendFormatString(&State, "jnp %S", Label);
-        }
-        else if(Op0 == 0b01110001)
-        {
-            At[Index++];
-            AppendFormatString(&State, "jno %S", Label);
-        }
-        else if(Op0 == 0b01111001)
-        {
-            At[Index++];
-            AppendFormatString(&State, "jns %S", Label);
-        }
-        else if(Op0 == 0b11100010)
-        {
-            At[Index++];
-            AppendFormatString(&State, "loop %S", Label);
-        }
-        else if(Op0 == 0b11100001)
-        {
-            At[Index++];
-            AppendFormatString(&State, "loopz %S", Label);
-        }
-        else if(Op0 == 0b11100000)
-        {
-            At[Index++];
-            AppendFormatString(&State, "loopnz %S", Label);
-        }
-        else if(Op0 == 0b11100011)
-        {
-            At[Index++];
-            AppendFormatString(&State, "jcxz %S", Label);
-        }
-        else if((Op0 >> 3) == 0b10010)
-        {
-            // NOTE(kstandbridge): XCHQ Register with accumlator
-            u8 Reg = Op0 & 0b111;
-            AppendFormatString(&State, "xchg ax, %S", GetRegisterName(Reg, 1));
-        }
-        else if((Op0 >> 3) == 0b01000)
-        {
-            // NOTE(kstandbridge): INC Register
-            u8 Reg = Op0 & 0b111;
-            AppendFormatString(&State, "inc %S", GetRegisterName(Reg, 1));
-        }
-        else if((Op0 >> 3) == 0b01001)
-        {
-            // NOTE(kstandbridge): DEC Register
-            u8 Reg = Op0 & 0b111;
-            AppendFormatString(&State, "dec %S", GetRegisterName(Reg, 1));
-        }
-        else
-        {
-            b32 LockPrefix = ((Op0 >> 0) == 0b11110000);
-            if(LockPrefix)
-            {
-                AppendFormatString(&State, "lock ");
-                Op0 = At[Index++];
-            }
+            case OpCode_InterruptOnOverflow:               { AppendFormatString(&State, "into"); } break;
+            case OpCode_InterruptReturn:                   { AppendFormatString(&State, "iret"); } break;
+            case OpCode_InterruptType3:                    { AppendFormatString(&State, "int3"); } break;
+            case OpCode_InterruptTypeSpecified:
+            { 
+                u8 Value = At[Index++];
+                AppendFormatString(&State, "int %d", Value);
+            } break;
             
-            b32 Segment = ((Op0 >> 6 == 0b000) &&
-                           ((Op0 & 0b111) == 0b110));
-            string SegPrefix = String("");
-            if(Segment)
+            case OpCode_ReturnWithinSegment:               { AppendFormatString(&State, "ret"); } break;
+            case OpCode_ReturnWithinSegAddingImmedToSP:
             {
-                u8 SegCode = (((Op0 >> 3) & 0b111));
-                SegCode -= ArrayCount(SegmentRegisterCode);
-                SegPrefix = SegmentRegisterCode[SegCode];
-                Op0 = At[Index++];
-            }
-            
-            u8 Op1 = At[Index++];
-            b32 Logic =                                 ((Op0 >> 2) == 0b110100);
-            b32 MovRegisterMemoryToFromRegister =       ((Op0 >> 2) == 0b100010);
-            b32 AddRegisterMemoryToFromRegister =       ((Op0 >> 2) == 0b000000);
-            b32 SubRegisterMemoryToFromRegister =       ((Op0 >> 2) == 0b001010);
-            b32 SbbRegisterMemoryToFromRegister =       ((Op0 >> 2) == 0b000110);
-            b32 CmpRegisterMemoryAndFromRegister =      ((Op0 >> 2) == 0b001110);
-            b32 OrRegisterMemoryAndFromRegister =       ((Op0 >> 2) == 0b000010);
-            b32 XorRegisterMemoryAndFromRegister =      ((Op0 >> 2) == 0b001100);
-            b32 AdcRegisterMemoryWithRegisterToEither = ((Op0 >> 2) == 0b000100);
-            b32 AndRegisterMemoryWithRegisterToEither = ((Op0 >> 2) == 0b001000);
-            b32 XchgRegisterMemoryWithRegister =        ((Op0 >> 1) == 0b1000011);
-            b32 TestRegisterMemoryAndRegister =         ((Op0 >> 1) == 0b1000010);
-            b32 IncRegisterMemory =                     ((Op0 >> 1) == 0b1111111);
-            b32 NegChangeSign =                         ((Op0 >> 1) == 0b1111011);
-            b32 PushRegisterMemory =                    ((Op0 >> 0) == 0b11111111);
-            b32 PopRegisterMemory =                     ((Op0 >> 0) == 0b10001111);
-            b32 AddImmediateToAccumulator =             ((Op0 >> 2) == 0b000001);
-            b32 AdcImmediateToAccumulator =             ((Op0 >> 2) == 0b000101);
-            b32 AndImmediateToAccumulator =             ((Op0 >> 1) == 0b0010010);
-            b32 OrImmediateToAccumulator =              ((Op0 >> 1) == 0b0000110);
-            b32 XorImmediateToAccumulator =             ((Op0 >> 1) == 0b0011010);
-            b32 CmpImmediateWithAccumulator =           ((Op0 >> 1) == 0b0011110);
-            b32 SubImmediateFromAccumulator =           ((Op0 >> 1) == 0b0010110);
-            b32 SbbImmediateFromAccumulator =           ((Op0 >> 1) == 0b0001110);
-            b32 TestImmediateDataAndAccumulator =       ((Op0 >> 1) == 0b1010100);
-            b32 MovImmediateToRegisterMemory =          ((Op0 >> 1) == 0b1100011);
-            b32 AddImmediateToRegisterMemory =          ((Op0 >> 2) == 0b100000);
-            b32 MovImmediateToRegister =                ((Op0 >> 4) == 0b1011);
-            b32 MovMemoryToAccumulator =                ((Op0 >> 1) == 0b1010000);
-            b32 MovAccumlatorToMemory =                 ((Op0 >> 1) == 0b1010001);
-            b32 LoadEAtoRegister =                      ((Op0 >> 0) == 0b10001101);
-            b32 LoadPointerToDS =                       ((Op0 >> 0) == 0b11000101);
-            b32 LoadPointerToES =                       ((Op0 >> 0) == 0b11000100);
-            
-            if(AddImmediateToAccumulator ||
-               AdcImmediateToAccumulator ||
-               AndImmediateToAccumulator ||
-               OrImmediateToAccumulator ||
-               XorImmediateToAccumulator ||
-               CmpImmediateWithAccumulator ||
-               SubImmediateFromAccumulator ||
-               SbbImmediateFromAccumulator ||
-               TestImmediateDataAndAccumulator ||
-               MovMemoryToAccumulator ||
-               MovAccumlatorToMemory)
-            {
-                b32 IsWord = (Op0 & 1);
+                u8 ValueLow = At[Index++];
+                u8 ValueHigh = At[Index++];
+                u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
                 
-                s16 Value;
-                
-                if(IsWord)
+                s16 Value = *(s16 *)&ValueWide;
+                AppendFormatString(&State, "ret %d", Value);
+            } break;
+            case OpCode_ReturnJumpOnEqualZero:             { AppendFormatString(&State, "je %S", Label); Index++; } break;
+            case OpCode_ReturnJumpOnLessNotGreaterOrEqual: { AppendFormatString(&State, "jl %S", Label); Index++; } break;
+            case OpCode_ReturnJumpOnLessOrEqualNotGreater: { AppendFormatString(&State, "jle %S", Label); Index++; } break;
+            case OpCode_ReturnJumpOnBelowNotAboveOrEqual:  { AppendFormatString(&State, "jb %S", Label); Index++; } break;
+            case OpCode_ReturnJumpOnBelowOrEqualNotAbove:  { AppendFormatString(&State, "jbe %S", Label); Index++; } break;
+            case OpCode_ReturnJumpOnParityEven:            { AppendFormatString(&State, "jp %S", Label); Index++; } break;
+            case OpCode_ReturnJumpOnOverflow:              { AppendFormatString(&State, "jo %S", Label); Index++; } break;
+            case OpCode_ReturnJumpOnSign:                  { AppendFormatString(&State, "js %S", Label); Index++; } break;
+            case OpCode_ReturnJumpOnNotEqualNotZero:       { AppendFormatString(&State, "jne %S", Label); Index++; } break;
+            case OpCode_ReturnJumpOnNotLessGreaterOrEqual: { AppendFormatString(&State, "jnl %S", Label); Index++; } break;
+            case OpCode_ReturnJumpOnNotLessOrEqualGreater: { AppendFormatString(&State, "jg %S", Label); Index++; } break;
+            case OpCode_ReturnJumpOnNotBelowAboveOrEqual:  { AppendFormatString(&State, "jnb %S", Label); Index++; } break;
+            case OpCode_ReturnJumpOnNotBelowOrEqualAbove:  { AppendFormatString(&State, "ja %S", Label); Index++; } break;
+            case OpCode_ReturnJumpOnNotParOdd:             { AppendFormatString(&State, "jnp %S", Label); Index++; } break;
+            case OpCode_ReturnJumpOnNotOverflow:           { AppendFormatString(&State, "jno %S", Label); Index++; } break;
+            case OpCode_ReturnJumpOnNotSign:               { AppendFormatString(&State, "jns %S", Label); Index++; } break;
+            case OpCode_ReturnLoopCXTimes:                 { AppendFormatString(&State, "loop %S", Label); Index++; } break;
+            case OpCode_ReturnLoopWhileZeroEqual:          { AppendFormatString(&State, "loopz %S", Label); Index++; } break;
+            case OpCode_ReturnLoopWhileNotZeroEqual:       { AppendFormatString(&State, "loopnz %S", Label); Index++; } break;
+            case OpCode_ReturnJumpOnCXZero:                { AppendFormatString(&State, "jcxz %S", Label); Index++; } break;
+            
+            case OpCode_IncrementASCIIAdjustForAdd:        { AppendFormatString(&State, "aaa"); } break;
+            case OpCode_IncrementDecimalAdjustForAdd:      { AppendFormatString(&State, "daa"); } break;
+            
+            case OpCode_CompareASCIIAdjustForSubtract:     { AppendFormatString(&State, "aas"); } break;
+            case OpCode_CompareDecimalAdjustForSubtract:   { AppendFormatString(&State, "das"); } break;
+            case OpCode_CompareConvertByteToWord:          { AppendFormatString(&State, "cbw"); } break;
+            case OpCode_CompareConvertWordToDoubleWord:    { AppendFormatString(&State, "cwd"); } break;
+            
+            case OpCode_CompareASCIIAdjustForMultiply:
+            {
+                u8 Op1 = At[Index++];
+                if(Op1 == 0b00001010)
                 {
-                    u8 ValueLow = Op1;
-                    u8 ValueHigh = At[Index++];
-                    u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-                    
-                    Value = *(s16 *)&ValueWide;
+                    AppendFormatString(&State, "aam");
                 }
                 else
                 {
-                    Value = *(s8 *)&Op1;
+                    AppendFormatString(&State, "Unknown op code %b, %b", Op0, Op1);
                 }
-                
-                if(AddImmediateToAccumulator)
+            } break;
+            
+            case OpCode_CompareASCIIAdjustForDivide:
+            {
+                u8 Op1 = At[Index++];
+                if(Op1 == 0b00001010)
                 {
-                    if(IsWord)
-                    {
-                        AppendFormatString(&State, "add ax, %d", Value);
-                    }
-                    else
-                    {
-                        AppendFormatString(&State, "add al, %d", Value);
-                    }
-                }
-                else if(AdcImmediateToAccumulator)
-                {
-                    if(IsWord)
-                    {
-                        AppendFormatString(&State, "adc ax, %d", Value);
-                    }
-                    else
-                    {
-                        AppendFormatString(&State, "adc al, %d", Value);
-                    }
-                }
-                else if(AndImmediateToAccumulator)
-                {
-                    if(IsWord)
-                    {
-                        AppendFormatString(&State, "and ax, %d", Value);
-                    }
-                    else
-                    {
-                        AppendFormatString(&State, "and al, %d", Value);
-                    }
-                }
-                else if(OrImmediateToAccumulator)
-                {
-                    if(IsWord)
-                    {
-                        AppendFormatString(&State, "or ax, %d", Value);
-                    }
-                    else
-                    {
-                        AppendFormatString(&State, "or al, %d", Value);
-                    }
-                }
-                else if(XorImmediateToAccumulator)
-                {
-                    if(IsWord)
-                    {
-                        AppendFormatString(&State, "xor ax, %d", Value);
-                    }
-                    else
-                    {
-                        AppendFormatString(&State, "xor al, %d", Value);
-                    }
-                }
-                else if (SubImmediateFromAccumulator)
-                {
-                    if(IsWord)
-                    {
-                        AppendFormatString(&State, "sub ax, %d", Value);
-                    }
-                    else
-                    {
-                        AppendFormatString(&State, "sub al, %d", Value);
-                    }
-                }
-                else if (SbbImmediateFromAccumulator)
-                {
-                    if(IsWord)
-                    {
-                        AppendFormatString(&State, "sbb ax, %d", Value);
-                    }
-                    else
-                    {
-                        AppendFormatString(&State, "sbb al, %d", Value);
-                    }
-                }
-                else if (TestImmediateDataAndAccumulator)
-                {
-                    if(IsWord)
-                    {
-                        AppendFormatString(&State, "test ax, %d", Value);
-                    }
-                    else
-                    {
-                        AppendFormatString(&State, "test al, %d", Value);
-                    }
-                }
-                else if(CmpImmediateWithAccumulator)
-                {
-                    AppendFormatString(&State, "cmp ax, %d", Value);
-                }
-                else if(MovAccumlatorToMemory)
-                {
-                    AppendFormatString(&State, "mov [%d], ax", Value);
-                }
-                else if(MovMemoryToAccumulator)
-                {
-                    AppendFormatString(&State, "mov ax, [%d]", Value);
+                    // NOTE(kstandbridge): AAD ASCII adjust for divide
+                    AppendFormatString(&State, "aad");
                 }
                 else
                 {
-                    AppendFormatString(&State, "TODO [%d], ax", Value);
+                    AppendFormatString(&State, "Unknown op code %b, %b", Op0, Op1);
                 }
-                
-            }
-            else if(Logic ||
-                    MovRegisterMemoryToFromRegister || 
-                    AddRegisterMemoryToFromRegister ||
-                    SubRegisterMemoryToFromRegister ||
-                    SbbRegisterMemoryToFromRegister ||
-                    CmpRegisterMemoryAndFromRegister ||
-                    OrRegisterMemoryAndFromRegister ||
-                    XorRegisterMemoryAndFromRegister ||
-                    XchgRegisterMemoryWithRegister ||
-                    TestRegisterMemoryAndRegister ||
-                    AdcRegisterMemoryWithRegisterToEither ||
-                    AndRegisterMemoryWithRegisterToEither ||
-                    IncRegisterMemory ||
-                    NegChangeSign ||
-                    PushRegisterMemory ||
-                    PopRegisterMemory ||
-                    MovImmediateToRegisterMemory ||
-                    AddImmediateToRegisterMemory ||
-                    LoadEAtoRegister ||
-                    LoadPointerToDS ||
-                    LoadPointerToES)
+            } break;
+            
+            case OpCode_OutTranslateByteToAL:            { AppendFormatString(&State, "xlat"); } break;
+            case OpCode_OutLoadAHWithFlags:              { AppendFormatString(&State, "lahf"); } break;
+            case OpCode_OutStoreAHIntoFlags:             { AppendFormatString(&State, "sahf"); } break;
+            case OpCode_OutPushFlags:                    { AppendFormatString(&State, "pushf"); } break;
+            case OpCode_OutPopFlags:                     { AppendFormatString(&State, "popf"); } break;
+            
+            default:
             {
-                b32 IsWord = (Op0 & 1);
                 
-                // NOTE(kstandbridge): 
-                
-                b32 Direction = (AddRegisterMemoryToFromRegister || 
-                                 MovRegisterMemoryToFromRegister ||
-                                 SubRegisterMemoryToFromRegister ||
-                                 SbbRegisterMemoryToFromRegister ||
-                                 CmpRegisterMemoryAndFromRegister ||
-                                 OrRegisterMemoryAndFromRegister ||
-                                 XorRegisterMemoryAndFromRegister ||
-                                 AdcRegisterMemoryWithRegisterToEither ||
-                                 AndRegisterMemoryWithRegisterToEither) ? ((Op0 >> 1) & 1) : 0;
-                
-                if(XchgRegisterMemoryWithRegister || TestRegisterMemoryAndRegister)
+                switch(Op0 >> 1)
                 {
-                    Direction = (Op1 >> 7);
-                }
-                
-                u8 Mod = Op1 >> 6;
-                
-                b32 NoDisplacement = (Mod == 0b00);
-                b32 Displace8Bit = (Mod == 0b01);
-                b32 Displace16Bit = (Mod == 0b10);
-                b32 RegisterMode = (Mod == 0b11);
-                
-                if(RegisterMode)
-                {
-                    u8 Dest = (Op1 >> 0) & ((1<<3)-1);
-                    u8 Src =  (Op1 >> 3) & ((1<<3)-1);
-                    if(AddImmediateToRegisterMemory)
-                    {                    
-                        s16 Value;
+                    case OpCodeStringRepeat:
+                    {
+                        u8 Op1 = At[Index++];
+                        b32 IsWord = (Op1 & 1);
+                        string W = (IsWord) ? String("w") : String("b");
                         
-                        if((Op0 & 0b11) == 0b01)
+                        switch(Op1 >> 1)
                         {
-                            u8 ValueLow = At[Index++];
-                            u8 ValueHigh = At[Index++];
-                            u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-                            
-                            Value = *(u16 *)&ValueWide;
+                            case OpCodeStringMoveByteWord:        { AppendFormatString(&State, "rep movs%S", W); } break;
+                            case OpCodeStringCompareByteWord:     { AppendFormatString(&State, "rep cmps%S", W); } break;
+                            case OpCodeStringScanByteWord:        { AppendFormatString(&State, "rep scas%S", W); } break;
+                            case OpCodeStringLoadByteWdToALXL:    { AppendFormatString(&State, "rep lods%S", W); } break;
+                            case OpCodeStringStoreByteWdFromALXL: { AppendFormatString(&State, "rep stos%S", W); } break;
+                            default:                              { AppendFormatString(&State, "TODO REP %b", Op1); }
                         }
-                        else
-                        {
-                            Value = *(u8 *)&At[Index++];
-                        }
-                        
-                        if(Src == 0b000)
-                        {
-                            AppendFormatString(&State, "add %S, %d", GetRegisterName(Dest, IsWord), Value);
-                        }
-                        else if(Src == 0b101)
-                        {
-                            AppendFormatString(&State, "sub %S, %d", GetRegisterName(Dest, IsWord), Value);
-                        }
-                        else if(Src == 0b011)
-                        {
-                            AppendFormatString(&State, "sbb %S, %d", GetRegisterName(Dest, IsWord), Value);
-                        }
-                        else if(Src == 0b111)
-                        {
-                            AppendFormatString(&State, "cmp %S, %d", GetRegisterName(Dest, IsWord), Value);
-                        }
-                        else if(Src == 0b010)
-                        {
-                            AppendFormatString(&State, "adc %S, %d", GetRegisterName(Dest, IsWord), Value);
-                        }
-                        else
-                        {
-                            AppendFormatString(&State, "TODO");
-                        }
-                        
-                    }
-                    else if(MovRegisterMemoryToFromRegister)
-                    {
-                        AppendFormatString(&State, "mov %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
-                    }
-                    else if(AddRegisterMemoryToFromRegister)
-                    {
-                        AppendFormatString(&State, "add %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
-                    }
-                    else if(SubRegisterMemoryToFromRegister)
-                    {
-                        AppendFormatString(&State, "sub %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
-                    }
-                    else if(SbbRegisterMemoryToFromRegister)
-                    {
-                        AppendFormatString(&State, "sbb %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
-                    }
-                    else if(CmpRegisterMemoryAndFromRegister)
-                    {
-                        AppendFormatString(&State, "cmp %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
-                    }
-                    else if(OrRegisterMemoryAndFromRegister)
-                    {
-                        AppendFormatString(&State, "or %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
-                    }
-                    else if(XorRegisterMemoryAndFromRegister)
-                    {
-                        AppendFormatString(&State, "xor %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
-                    }
-                    else if(XchgRegisterMemoryWithRegister)
-                    {
-                        if(Direction)
-                        {
-                            AppendFormatString(&State, "xchg %S, %S", GetRegisterName(Src, IsWord), GetRegisterName(Dest, IsWord));
-                        }
-                        else
-                        {
-                            AppendFormatString(&State, "xchg %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
-                        }
-                    }
-                    else if(AdcRegisterMemoryWithRegisterToEither)
-                    {
-                        AppendFormatString(&State, "adc %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
-                    }
-                    else if(TestRegisterMemoryAndRegister)
-                    {
-                        AppendFormatString(&State, "test %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
-                    }
-                    else if(AndRegisterMemoryWithRegisterToEither)
-                    {
-                        AppendFormatString(&State, "and %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
-                    }
-                    else if(IncRegisterMemory)
-                    {
-                        if(Src == 0b001)
-                        {
-                            AppendFormatString(&State, "dec %S", GetRegisterName(Dest, IsWord));
-                        }
-                        else if(Src == 0b000)
-                        {
-                            AppendFormatString(&State, "inc %S", GetRegisterName(Dest, IsWord));
-                        }
-                        else if(Src == 0b010)
-                        {
-                            AppendFormatString(&State, "call %S", GetRegisterName(Dest, IsWord));
-                        }
-                        else if(Src == 0b100)
-                        {
-                            AppendFormatString(&State, "jmp %S", GetRegisterName(Dest, IsWord));
-                        }
-                        else
-                        {
-                            AppendFormatString(&State, "TODO IncRegisterMemory %S", GetRegisterName(Dest, IsWord));
-                        }
-                    }
-                    else if(Logic)
-                    {
-                        b32 IsSpecifiedInClRegister = (1 == ((Op0 >> 1) & 1));
-                        string Count = (IsSpecifiedInClRegister) ? String("cl") : String("1");
-                        
-                        if(Src == 0b100)
-                        {
-                            AppendFormatString(&State, "shl %S, %S", GetRegisterName(Dest, IsWord), Count);
-                        }
-                        else if(Src == 0b101)
-                        {
-                            AppendFormatString(&State, "shr %S, %S", GetRegisterName(Dest, IsWord), Count);
-                        }
-                        else if(Src == 0b111)
-                        {
-                            AppendFormatString(&State, "sar %S, %S", GetRegisterName(Dest, IsWord), Count);
-                        }
-                        else if(Src == 0b000)
-                        {
-                            AppendFormatString(&State, "rol %S, %S", GetRegisterName(Dest, IsWord), Count);
-                        }
-                        else if(Src == 0b001)
-                        {
-                            AppendFormatString(&State, "ror %S, %S", GetRegisterName(Dest, IsWord), Count);
-                        }
-                        else if(Src == 0b010)
-                        {
-                            AppendFormatString(&State, "rcl %S, %S", GetRegisterName(Dest, IsWord), Count);
-                        }
-                        else if(Src == 0b011)
-                        {
-                            AppendFormatString(&State, "rcr %S, %S", GetRegisterName(Dest, IsWord), Count);
-                        }
-                        else
-                        {
-                            AppendFormatString(&State, "TODO %S, %S", GetRegisterName(Dest, IsWord), Count);
-                        }
-                    }
-                    else if(NegChangeSign)
-                    {
-                        if(Src == 0b100)
-                        {
-                            AppendFormatString(&State, "mul %S", GetRegisterName(Dest, IsWord));
-                        }
-                        else if(Src == 0b101)
-                        {
-                            AppendFormatString(&State, "imul %S", GetRegisterName(Dest, IsWord));
-                        }
-                        else if(Src == 0b110)
-                        {
-                            AppendFormatString(&State, "div %S", GetRegisterName(Dest, IsWord));
-                        }
-                        else if(Src == 0b111)
-                        {
-                            AppendFormatString(&State, "idiv %S", GetRegisterName(Dest, IsWord));
-                        }
-                        else if(Src == 0b010)
-                        {
-                            AppendFormatString(&State, "not %S", GetRegisterName(Dest, IsWord));
-                        }
-                        else if(Src == 0b000)
-                        {
-                            s8 Value = At[Index++];
-                            AppendFormatString(&State, "test %S, %d", GetRegisterName(Dest, IsWord), Value);
-                        }
-                        else
-                        {
-                            AppendFormatString(&State, "neg %S", GetRegisterName(Dest, IsWord));
-                        }
-                    }
-                    else
-                    {
-                        AppendFormatString(&State, "TODO %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
-                    }
-                }
-                else if(NoDisplacement)
-                {
-                    string Bytes[] = 
-                    { 
-                        String("[bx + si]"), String("[bx + di]"), String("[bp + si]"), String("[bp + di]"), String("[si]"), String("[di]"), String("DIRECT ADDRESS"), String("[bx]") 
-                    };
+                    } break;
                     
-                    u8 Dest = (Op1 >> 0) & ((1<<3)-1);
-                    u8 Src  = (Op1 >> 3) & ((1<<3)-1);
-                    b32 DirectAccess = (Dest == 0b110);
-                    if(DirectAccess)
-                    {
-                        if(IsWord)
-                        {
-                            u8 ValueLow = At[Index++];
-                            u8 ValueHigh = At[Index++];
-                            u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-                            
-                            s16 Value = *(u16 *)&ValueWide;
-                            
-                            if(AndRegisterMemoryWithRegisterToEither)
-                            {
-                                AppendFormatString(&State, "and %S, [%d]", GetRegisterName(Src, IsWord), Value);
-                            }
-                            else if(CmpRegisterMemoryAndFromRegister)
-                            {
-                                if(Segment)
-                                {
-                                    AppendFormatString(&State, "cmp %S, %S:[%d]", GetRegisterName(Src, IsWord), SegPrefix, Value);
-                                }
-                                else
-                                {
-                                    AppendFormatString(&State, "cmp %S, [%d]", GetRegisterName(Src, IsWord), Value);
-                                }
-                            }
-                            else if(Src == 0b111)
-                            {
-                                s8 Value2 = *(s8 *)&At[Index++];
-                                AppendFormatString(&State, "cmp word [%d], %d", Value, Value2);
-                            }
-                            else if(Src == 0b010)
-                            {
-                                AppendFormatString(&State, "call [%u]", (u16)Value);
-                            }
-                            else if(Src == 0b100)
-                            {
-                                AppendFormatString(&State, "jmp [%u]", (u16)Value);
-                            }
-                            else if(Src == 0b110)
-                            {
-                                AppendFormatString(&State, "push word [%d]", Value);
-                            }
-                            else if(Src == 0b001)
-                            {
-                                if(Logic)
-                                {
-                                    AppendFormatString(&State, "ror word [%d], 1", Value);
-                                }
-                                else if(OrRegisterMemoryAndFromRegister)
-                                {
-                                    AppendFormatString(&State, "or cx, [%d]", Value);
-                                }
-                                else if(XorRegisterMemoryAndFromRegister)
-                                {
-                                    AppendFormatString(&State, "xor cx, [%d]", Value);
-                                }
-                                else
-                                {
-                                    AppendFormatString(&State, "dec word [%d]", Value);
-                                }
-                            }
-                            else if(Src == 0b000)
-                            {
-                                if(PopRegisterMemory)
-                                {
-                                    AppendFormatString(&State, "pop word [%d]", Value);
-                                }
-                                else
-                                {
-                                    AppendFormatString(&State, "inc word [%d]", Value);
-                                }
-                            }
-                            else if(NegChangeSign &&
-                                    (Src == 0b011))
-                            {
-                                AppendFormatString(&State, "neg word [%d]", Value);
-                            }
-                            else if(NegChangeSign &&
-                                    (Src == 0b101))
-                            {
-                                AppendFormatString(&State, "imul word [%d]", Value);
-                            }
-                            else
-                            {
-                                AppendFormatString(&State, "mov %S, [%d]", GetRegisterName(Src, IsWord), Value);
-                            }
-                        }
-                        else
-                        {
-                            if(Logic || XchgRegisterMemoryWithRegister)
-                            {
-                                u8 ValueLow = At[Index++];
-                                u8 ValueHigh = At[Index++];
-                                u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-                                
-                                s16 Value = *(u16 *)&ValueWide;
-                                
-                                b32 IsSpecifiedInClRegister = (1 == ((Op0 >> 1) & 1));
-                                string Count = (IsSpecifiedInClRegister) ? String("cl") : String("1");
-                                if(XchgRegisterMemoryWithRegister)
-                                {
-                                    AppendFormatString(&State, "xchg [%d], %S", Value, GetRegisterName(Src, IsWord));
-                                }
-                                else if(Src == 0b010)
-                                {
-                                    AppendFormatString(&State, "rcl byte [%d], %S", Value, Count);
-                                }
-                                else if(Src == 0b001)
-                                {
-                                    AppendFormatString(&State, "ror byte [%d], %S", Value, Count);
-                                }
-                                else
-                                {
-                                    AppendFormatString(&State, "TODO/logic byte [%d], %S", Value, GetRegisterName(Src, IsWord));
-                                }
-                            }
-                            else
-                            {
-                                u8 Op2 = At[Index++];
-                                s8 Value = *(u8 *)&Op2;
-                                AppendFormatString(&State, "mov %S, [%d]", GetRegisterName(Src, IsWord), Value);
-                            }
-                        }
-                    }
-                    else if(MovRegisterMemoryToFromRegister)
-                    {                
-                        if(Direction)
-                        {
-                            if(Segment)
-                            {
-                                AppendFormatString(&State, "mov %S, %S:%S", GetRegisterName(Dest, IsWord), SegPrefix, Bytes[Src]);
-                            }
-                            else
-                            {
-                                AppendFormatString(&State, "mov %S, %S", GetRegisterName(Dest, IsWord), Bytes[Src]);
-                            }
-                        }
-                        else
-                        {
-                            AppendFormatString(&State, "mov %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
-                        }
-                    }
-                    else if(AddRegisterMemoryToFromRegister)
-                    {                
-                        if(Direction)
-                        {
-                            AppendFormatString(&State, "add %S, %S", GetRegisterName(Src, IsWord), Bytes[Dest]);
-                        }
-                        else
-                        {
-                            AppendFormatString(&State, "add %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
-                        }
-                    }
-                    else if(SubRegisterMemoryToFromRegister)
-                    {                
-                        if(Direction)
-                        {
-                            AppendFormatString(&State, "sub %S, %S", GetRegisterName(Src, IsWord), Bytes[Dest]);
-                        }
-                        else
-                        {
-                            AppendFormatString(&State, "sub %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
-                        }
-                    }
-                    else if(SbbRegisterMemoryToFromRegister)
-                    {                
-                        if(Direction)
-                        {
-                            AppendFormatString(&State, "sbb %S, %S", GetRegisterName(Src, IsWord), Bytes[Dest]);
-                        }
-                        else
-                        {
-                            AppendFormatString(&State, "sbb %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
-                        }
-                    }
-                    else if(CmpRegisterMemoryAndFromRegister)
-                    {                
-                        if(Direction)
-                        {
-                            AppendFormatString(&State, "cmp %S, %S", GetRegisterName(Src, IsWord), Bytes[Dest]);
-                        }
-                        else
-                        {
-                            AppendFormatString(&State, "cmp %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
-                        }
-                    }
-                    else if(AdcRegisterMemoryWithRegisterToEither)
-                    {
-                        if(Direction)
-                        {
-                            AppendFormatString(&State, "adc %S, %S", GetRegisterName(Src, IsWord), Bytes[Dest]);
-                        }
-                        else
-                        {
-                            AppendFormatString(&State, "adc %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
-                        }
-                    }
+                    case OpInFixedPort:    { AppendFormatString(&State, "in al, %u", At[Index++]); } break;
+                    case OpInVariablePort: { AppendFormatString(&State, "in %S, dx", (Op0 & 1) ? String("ax") : String("al")); } break;
                     
+                    case OpOutFixedPort:    { AppendFormatString(&State, "out %u, ax", At[Index++]); } break;
+                    case OpOutVariablePort: { AppendFormatString(&State, "out dx, %S", (Op0 & 1) ? String("ax") : String("al")); } break;
+                    
+                    default:
+                    {
+                        switch(Op0 >> 3)
+                        {
+                            case OpPushRegister:            { AppendFormatString(&State, "push %S", GetRegisterName(Op0 & 0b111, 1)); } break;
+                            case OpPopRegister:             { AppendFormatString(&State, "pop %S", GetRegisterName(Op0 & 0b111, 1)); } break;
+                            
+                            case OpXchgRegisterWithMemory:  { AppendFormatString(&State, "xchg ax, %S", GetRegisterName(Op0 & 0b111, 1)); } break;
+                            
+                            case OpIncRegister:             { AppendFormatString(&State, "inc %S", GetRegisterName(Op0 & 0b111, 1)); } break;
+                            
+                            case OpDecRegister:             { AppendFormatString(&State, "dec %S", GetRegisterName(Op0 & 0b111, 1)); } break;
+                            
+                            
+                            default:
+                            {
+                                if((Op0 >> 6 == 0b000) &&
+                                   ((Op0 & 0b111) == 0b110) &&
+                                   (((Op0 >> 3) & 0b111) < ArrayCount(SegmentRegisterCode)))
+                                {
+                                    // NOTE(kstandbridge): Push Segment Register
+                                    u8 Reg =  (Op0 >> 3) & ((1<<3)-1);
+                                    if(Reg > ArrayCount(SegmentRegisterCode))
+                                    {
+                                        AppendFormatString(&State, "; TODO SegmentRegisterCode overflow");
+                                    }
+                                    else
+                                    {
+                                        AppendFormatString(&State, "push %S", SegmentRegisterCode[Reg]);
+                                    }
+                                }
+                                else if((Op0 >> 6 == 0b000) &&
+                                        ((Op0 & 0b111) == 0b111))
+                                {
+                                    // NOTE(kstandbridge): Pop Segment Register
+                                    u8 Reg =  (Op0 >> 3) & ((1<<3)-1);
+                                    AppendFormatString(&State, "pop %S", SegmentRegisterCode[Reg]);
+                                }
+                                else
+                                {
+                                    b32 LockPrefix = ((Op0 >> 0) == 0b11110000);
+                                    if(LockPrefix)
+                                    {
+                                        AppendFormatString(&State, "lock ");
+                                        Op0 = At[Index++];
+                                    }
+                                    
+                                    b32 Segment = ((Op0 >> 6 == 0b000) &&
+                                                   ((Op0 & 0b111) == 0b110));
+                                    string SegPrefix = String("");
+                                    if(Segment)
+                                    {
+                                        u8 SegCode = (((Op0 >> 3) & 0b111));
+                                        SegCode -= ArrayCount(SegmentRegisterCode);
+                                        SegPrefix = SegmentRegisterCode[SegCode];
+                                        Op0 = At[Index++];
+                                    }
+                                    
+                                    u8 Op1 = At[Index++];
+                                    b32 Logic =                                 ((Op0 >> 2) == 0b110100);
+                                    b32 MovRegisterMemoryToFromRegister =       ((Op0 >> 2) == 0b100010);
+                                    b32 AddRegisterMemoryToFromRegister =       ((Op0 >> 2) == 0b000000);
+                                    b32 SubRegisterMemoryToFromRegister =       ((Op0 >> 2) == 0b001010);
+                                    b32 SbbRegisterMemoryToFromRegister =       ((Op0 >> 2) == 0b000110);
+                                    b32 CmpRegisterMemoryAndFromRegister =      ((Op0 >> 2) == 0b001110);
+                                    b32 OrRegisterMemoryAndFromRegister =       ((Op0 >> 2) == 0b000010);
+                                    b32 XorRegisterMemoryAndFromRegister =      ((Op0 >> 2) == 0b001100);
+                                    b32 AdcRegisterMemoryWithRegisterToEither = ((Op0 >> 2) == 0b000100);
+                                    b32 AndRegisterMemoryWithRegisterToEither = ((Op0 >> 2) == 0b001000);
+                                    b32 XchgRegisterMemoryWithRegister =        ((Op0 >> 1) == 0b1000011);
+                                    b32 TestRegisterMemoryAndRegister =         ((Op0 >> 1) == 0b1000010);
+                                    b32 IncRegisterMemory =                     ((Op0 >> 1) == 0b1111111);
+                                    b32 NegChangeSign =                         ((Op0 >> 1) == 0b1111011);
+                                    b32 PushRegisterMemory =                    ((Op0 >> 0) == 0b11111111);
+                                    b32 PopRegisterMemory =                     ((Op0 >> 0) == 0b10001111);
+                                    b32 AddImmediateToAccumulator =             ((Op0 >> 2) == 0b000001);
+                                    b32 AdcImmediateToAccumulator =             ((Op0 >> 2) == 0b000101);
+                                    b32 AndImmediateToAccumulator =             ((Op0 >> 1) == 0b0010010);
+                                    b32 OrImmediateToAccumulator =              ((Op0 >> 1) == 0b0000110);
+                                    b32 XorImmediateToAccumulator =             ((Op0 >> 1) == 0b0011010);
+                                    b32 CmpImmediateWithAccumulator =           ((Op0 >> 1) == 0b0011110);
+                                    b32 SubImmediateFromAccumulator =           ((Op0 >> 1) == 0b0010110);
+                                    b32 SbbImmediateFromAccumulator =           ((Op0 >> 1) == 0b0001110);
+                                    b32 TestImmediateDataAndAccumulator =       ((Op0 >> 1) == 0b1010100);
+                                    b32 MovImmediateToRegisterMemory =          ((Op0 >> 1) == 0b1100011);
+                                    b32 AddImmediateToRegisterMemory =          ((Op0 >> 2) == 0b100000);
+                                    b32 MovImmediateToRegister =                ((Op0 >> 4) == 0b1011);
+                                    b32 MovMemoryToAccumulator =                ((Op0 >> 1) == 0b1010000);
+                                    b32 MovAccumlatorToMemory =                 ((Op0 >> 1) == 0b1010001);
+                                    b32 LoadEAtoRegister =                      ((Op0 >> 0) == 0b10001101);
+                                    b32 LoadPointerToDS =                       ((Op0 >> 0) == 0b11000101);
+                                    b32 LoadPointerToES =                       ((Op0 >> 0) == 0b11000100);
+                                    
+                                    if(AddImmediateToAccumulator ||
+                                       AdcImmediateToAccumulator ||
+                                       AndImmediateToAccumulator ||
+                                       OrImmediateToAccumulator ||
+                                       XorImmediateToAccumulator ||
+                                       CmpImmediateWithAccumulator ||
+                                       SubImmediateFromAccumulator ||
+                                       SbbImmediateFromAccumulator ||
+                                       TestImmediateDataAndAccumulator ||
+                                       MovMemoryToAccumulator ||
+                                       MovAccumlatorToMemory)
+                                    {
+                                        b32 IsWord = (Op0 & 1);
+                                        
+                                        s16 Value;
+                                        
+                                        if(IsWord)
+                                        {
+                                            u8 ValueLow = Op1;
+                                            u8 ValueHigh = At[Index++];
+                                            u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                                            
+                                            Value = *(s16 *)&ValueWide;
+                                        }
+                                        else
+                                        {
+                                            Value = *(s8 *)&Op1;
+                                        }
+                                        
+                                        if(AddImmediateToAccumulator)
+                                        {
+                                            if(IsWord)
+                                            {
+                                                AppendFormatString(&State, "add ax, %d", Value);
+                                            }
+                                            else
+                                            {
+                                                AppendFormatString(&State, "add al, %d", Value);
+                                            }
+                                        }
+                                        else if(AdcImmediateToAccumulator)
+                                        {
+                                            if(IsWord)
+                                            {
+                                                AppendFormatString(&State, "adc ax, %d", Value);
+                                            }
+                                            else
+                                            {
+                                                AppendFormatString(&State, "adc al, %d", Value);
+                                            }
+                                        }
+                                        else if(AndImmediateToAccumulator)
+                                        {
+                                            if(IsWord)
+                                            {
+                                                AppendFormatString(&State, "and ax, %d", Value);
+                                            }
+                                            else
+                                            {
+                                                AppendFormatString(&State, "and al, %d", Value);
+                                            }
+                                        }
+                                        else if(OrImmediateToAccumulator)
+                                        {
+                                            if(IsWord)
+                                            {
+                                                AppendFormatString(&State, "or ax, %d", Value);
+                                            }
+                                            else
+                                            {
+                                                AppendFormatString(&State, "or al, %d", Value);
+                                            }
+                                        }
+                                        else if(XorImmediateToAccumulator)
+                                        {
+                                            if(IsWord)
+                                            {
+                                                AppendFormatString(&State, "xor ax, %d", Value);
+                                            }
+                                            else
+                                            {
+                                                AppendFormatString(&State, "xor al, %d", Value);
+                                            }
+                                        }
+                                        else if (SubImmediateFromAccumulator)
+                                        {
+                                            if(IsWord)
+                                            {
+                                                AppendFormatString(&State, "sub ax, %d", Value);
+                                            }
+                                            else
+                                            {
+                                                AppendFormatString(&State, "sub al, %d", Value);
+                                            }
+                                        }
+                                        else if (SbbImmediateFromAccumulator)
+                                        {
+                                            if(IsWord)
+                                            {
+                                                AppendFormatString(&State, "sbb ax, %d", Value);
+                                            }
+                                            else
+                                            {
+                                                AppendFormatString(&State, "sbb al, %d", Value);
+                                            }
+                                        }
+                                        else if (TestImmediateDataAndAccumulator)
+                                        {
+                                            if(IsWord)
+                                            {
+                                                AppendFormatString(&State, "test ax, %d", Value);
+                                            }
+                                            else
+                                            {
+                                                AppendFormatString(&State, "test al, %d", Value);
+                                            }
+                                        }
+                                        else if(CmpImmediateWithAccumulator)
+                                        {
+                                            AppendFormatString(&State, "cmp ax, %d", Value);
+                                        }
+                                        else if(MovAccumlatorToMemory)
+                                        {
+                                            AppendFormatString(&State, "mov [%d], ax", Value);
+                                        }
+                                        else if(MovMemoryToAccumulator)
+                                        {
+                                            AppendFormatString(&State, "mov ax, [%d]", Value);
+                                        }
+                                        else
+                                        {
+                                            AppendFormatString(&State, "TODO [%d], ax", Value);
+                                        }
+                                        
+                                    }
+                                    else if(Logic ||
+                                            MovRegisterMemoryToFromRegister || 
+                                            AddRegisterMemoryToFromRegister ||
+                                            SubRegisterMemoryToFromRegister ||
+                                            SbbRegisterMemoryToFromRegister ||
+                                            CmpRegisterMemoryAndFromRegister ||
+                                            OrRegisterMemoryAndFromRegister ||
+                                            XorRegisterMemoryAndFromRegister ||
+                                            XchgRegisterMemoryWithRegister ||
+                                            TestRegisterMemoryAndRegister ||
+                                            AdcRegisterMemoryWithRegisterToEither ||
+                                            AndRegisterMemoryWithRegisterToEither ||
+                                            IncRegisterMemory ||
+                                            NegChangeSign ||
+                                            PushRegisterMemory ||
+                                            PopRegisterMemory ||
+                                            MovImmediateToRegisterMemory ||
+                                            AddImmediateToRegisterMemory ||
+                                            LoadEAtoRegister ||
+                                            LoadPointerToDS ||
+                                            LoadPointerToES)
+                                    {
+                                        b32 IsWord = (Op0 & 1);
+                                        
+                                        // NOTE(kstandbridge): 
+                                        
+                                        b32 Direction = (AddRegisterMemoryToFromRegister || 
+                                                         MovRegisterMemoryToFromRegister ||
+                                                         SubRegisterMemoryToFromRegister ||
+                                                         SbbRegisterMemoryToFromRegister ||
+                                                         CmpRegisterMemoryAndFromRegister ||
+                                                         OrRegisterMemoryAndFromRegister ||
+                                                         XorRegisterMemoryAndFromRegister ||
+                                                         AdcRegisterMemoryWithRegisterToEither ||
+                                                         AndRegisterMemoryWithRegisterToEither) ? ((Op0 >> 1) & 1) : 0;
+                                        
+                                        if(XchgRegisterMemoryWithRegister || TestRegisterMemoryAndRegister)
+                                        {
+                                            Direction = (Op1 >> 7);
+                                        }
+                                        
+                                        u8 Mod = Op1 >> 6;
+                                        
+                                        b32 NoDisplacement = (Mod == 0b00);
+                                        b32 Displace8Bit = (Mod == 0b01);
+                                        b32 Displace16Bit = (Mod == 0b10);
+                                        b32 RegisterMode = (Mod == 0b11);
+                                        
+                                        if(RegisterMode)
+                                        {
+                                            u8 Dest = (Op1 >> 0) & ((1<<3)-1);
+                                            u8 Src =  (Op1 >> 3) & ((1<<3)-1);
+                                            if(AddImmediateToRegisterMemory)
+                                            {                    
+                                                s16 Value;
+                                                
+                                                if((Op0 & 0b11) == 0b01)
+                                                {
+                                                    u8 ValueLow = At[Index++];
+                                                    u8 ValueHigh = At[Index++];
+                                                    u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                                                    
+                                                    Value = *(u16 *)&ValueWide;
+                                                }
+                                                else
+                                                {
+                                                    Value = *(u8 *)&At[Index++];
+                                                }
+                                                
+                                                if(Src == 0b000)
+                                                {
+                                                    AppendFormatString(&State, "add %S, %d", GetRegisterName(Dest, IsWord), Value);
+                                                }
+                                                else if(Src == 0b101)
+                                                {
+                                                    AppendFormatString(&State, "sub %S, %d", GetRegisterName(Dest, IsWord), Value);
+                                                }
+                                                else if(Src == 0b011)
+                                                {
+                                                    AppendFormatString(&State, "sbb %S, %d", GetRegisterName(Dest, IsWord), Value);
+                                                }
+                                                else if(Src == 0b111)
+                                                {
+                                                    AppendFormatString(&State, "cmp %S, %d", GetRegisterName(Dest, IsWord), Value);
+                                                }
+                                                else if(Src == 0b010)
+                                                {
+                                                    AppendFormatString(&State, "adc %S, %d", GetRegisterName(Dest, IsWord), Value);
+                                                }
+                                                else
+                                                {
+                                                    AppendFormatString(&State, "TODO");
+                                                }
+                                                
+                                            }
+                                            else if(MovRegisterMemoryToFromRegister)
+                                            {
+                                                AppendFormatString(&State, "mov %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
+                                            }
+                                            else if(AddRegisterMemoryToFromRegister)
+                                            {
+                                                AppendFormatString(&State, "add %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
+                                            }
+                                            else if(SubRegisterMemoryToFromRegister)
+                                            {
+                                                AppendFormatString(&State, "sub %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
+                                            }
+                                            else if(SbbRegisterMemoryToFromRegister)
+                                            {
+                                                AppendFormatString(&State, "sbb %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
+                                            }
+                                            else if(CmpRegisterMemoryAndFromRegister)
+                                            {
+                                                AppendFormatString(&State, "cmp %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
+                                            }
+                                            else if(OrRegisterMemoryAndFromRegister)
+                                            {
+                                                AppendFormatString(&State, "or %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
+                                            }
+                                            else if(XorRegisterMemoryAndFromRegister)
+                                            {
+                                                AppendFormatString(&State, "xor %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
+                                            }
+                                            else if(XchgRegisterMemoryWithRegister)
+                                            {
+                                                if(Direction)
+                                                {
+                                                    AppendFormatString(&State, "xchg %S, %S", GetRegisterName(Src, IsWord), GetRegisterName(Dest, IsWord));
+                                                }
+                                                else
+                                                {
+                                                    AppendFormatString(&State, "xchg %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
+                                                }
+                                            }
+                                            else if(AdcRegisterMemoryWithRegisterToEither)
+                                            {
+                                                AppendFormatString(&State, "adc %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
+                                            }
+                                            else if(TestRegisterMemoryAndRegister)
+                                            {
+                                                AppendFormatString(&State, "test %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
+                                            }
+                                            else if(AndRegisterMemoryWithRegisterToEither)
+                                            {
+                                                AppendFormatString(&State, "and %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
+                                            }
+                                            else if(IncRegisterMemory)
+                                            {
+                                                if(Src == 0b001)
+                                                {
+                                                    AppendFormatString(&State, "dec %S", GetRegisterName(Dest, IsWord));
+                                                }
+                                                else if(Src == 0b000)
+                                                {
+                                                    AppendFormatString(&State, "inc %S", GetRegisterName(Dest, IsWord));
+                                                }
+                                                else if(Src == 0b010)
+                                                {
+                                                    AppendFormatString(&State, "call %S", GetRegisterName(Dest, IsWord));
+                                                }
+                                                else if(Src == 0b100)
+                                                {
+                                                    AppendFormatString(&State, "jmp %S", GetRegisterName(Dest, IsWord));
+                                                }
+                                                else
+                                                {
+                                                    AppendFormatString(&State, "TODO IncRegisterMemory %S", GetRegisterName(Dest, IsWord));
+                                                }
+                                            }
+                                            else if(Logic)
+                                            {
+                                                b32 IsSpecifiedInClRegister = (1 == ((Op0 >> 1) & 1));
+                                                string Count = (IsSpecifiedInClRegister) ? String("cl") : String("1");
+                                                
+                                                if(Src == 0b100)
+                                                {
+                                                    AppendFormatString(&State, "shl %S, %S", GetRegisterName(Dest, IsWord), Count);
+                                                }
+                                                else if(Src == 0b101)
+                                                {
+                                                    AppendFormatString(&State, "shr %S, %S", GetRegisterName(Dest, IsWord), Count);
+                                                }
+                                                else if(Src == 0b111)
+                                                {
+                                                    AppendFormatString(&State, "sar %S, %S", GetRegisterName(Dest, IsWord), Count);
+                                                }
+                                                else if(Src == 0b000)
+                                                {
+                                                    AppendFormatString(&State, "rol %S, %S", GetRegisterName(Dest, IsWord), Count);
+                                                }
+                                                else if(Src == 0b001)
+                                                {
+                                                    AppendFormatString(&State, "ror %S, %S", GetRegisterName(Dest, IsWord), Count);
+                                                }
+                                                else if(Src == 0b010)
+                                                {
+                                                    AppendFormatString(&State, "rcl %S, %S", GetRegisterName(Dest, IsWord), Count);
+                                                }
+                                                else if(Src == 0b011)
+                                                {
+                                                    AppendFormatString(&State, "rcr %S, %S", GetRegisterName(Dest, IsWord), Count);
+                                                }
+                                                else
+                                                {
+                                                    AppendFormatString(&State, "TODO %S, %S", GetRegisterName(Dest, IsWord), Count);
+                                                }
+                                            }
+                                            else if(NegChangeSign)
+                                            {
+                                                if(Src == 0b100)
+                                                {
+                                                    AppendFormatString(&State, "mul %S", GetRegisterName(Dest, IsWord));
+                                                }
+                                                else if(Src == 0b101)
+                                                {
+                                                    AppendFormatString(&State, "imul %S", GetRegisterName(Dest, IsWord));
+                                                }
+                                                else if(Src == 0b110)
+                                                {
+                                                    AppendFormatString(&State, "div %S", GetRegisterName(Dest, IsWord));
+                                                }
+                                                else if(Src == 0b111)
+                                                {
+                                                    AppendFormatString(&State, "idiv %S", GetRegisterName(Dest, IsWord));
+                                                }
+                                                else if(Src == 0b010)
+                                                {
+                                                    AppendFormatString(&State, "not %S", GetRegisterName(Dest, IsWord));
+                                                }
+                                                else if(Src == 0b000)
+                                                {
+                                                    s8 Value = At[Index++];
+                                                    AppendFormatString(&State, "test %S, %d", GetRegisterName(Dest, IsWord), Value);
+                                                }
+                                                else
+                                                {
+                                                    AppendFormatString(&State, "neg %S", GetRegisterName(Dest, IsWord));
+                                                }
+                                            }
+                                            else
+                                            {
+                                                AppendFormatString(&State, "TODO %S, %S", GetRegisterName(Dest, IsWord), GetRegisterName(Src, IsWord));
+                                            }
+                                        }
+                                        else if(NoDisplacement)
+                                        {
+                                            string Bytes[] = 
+                                            { 
+                                                String("[bx + si]"), String("[bx + di]"), String("[bp + si]"), String("[bp + di]"), String("[si]"), String("[di]"), String("DIRECT ADDRESS"), String("[bx]") 
+                                            };
+                                            
+                                            u8 Dest = (Op1 >> 0) & ((1<<3)-1);
+                                            u8 Src  = (Op1 >> 3) & ((1<<3)-1);
+                                            b32 DirectAccess = (Dest == 0b110);
+                                            if(DirectAccess)
+                                            {
+                                                if(IsWord)
+                                                {
+                                                    u8 ValueLow = At[Index++];
+                                                    u8 ValueHigh = At[Index++];
+                                                    u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                                                    
+                                                    s16 Value = *(u16 *)&ValueWide;
+                                                    
+                                                    if(AndRegisterMemoryWithRegisterToEither)
+                                                    {
+                                                        AppendFormatString(&State, "and %S, [%d]", GetRegisterName(Src, IsWord), Value);
+                                                    }
+                                                    else if(CmpRegisterMemoryAndFromRegister)
+                                                    {
+                                                        if(Segment)
+                                                        {
+                                                            AppendFormatString(&State, "cmp %S, %S:[%d]", GetRegisterName(Src, IsWord), SegPrefix, Value);
+                                                        }
+                                                        else
+                                                        {
+                                                            AppendFormatString(&State, "cmp %S, [%d]", GetRegisterName(Src, IsWord), Value);
+                                                        }
+                                                    }
+                                                    else if(Src == 0b111)
+                                                    {
+                                                        s8 Value2 = *(s8 *)&At[Index++];
+                                                        AppendFormatString(&State, "cmp word [%d], %d", Value, Value2);
+                                                    }
+                                                    else if(Src == 0b010)
+                                                    {
+                                                        AppendFormatString(&State, "call [%u]", (u16)Value);
+                                                    }
+                                                    else if(Src == 0b100)
+                                                    {
+                                                        AppendFormatString(&State, "jmp [%u]", (u16)Value);
+                                                    }
+                                                    else if(Src == 0b110)
+                                                    {
+                                                        AppendFormatString(&State, "push word [%d]", Value);
+                                                    }
+                                                    else if(Src == 0b001)
+                                                    {
+                                                        if(Logic)
+                                                        {
+                                                            AppendFormatString(&State, "ror word [%d], 1", Value);
+                                                        }
+                                                        else if(OrRegisterMemoryAndFromRegister)
+                                                        {
+                                                            AppendFormatString(&State, "or cx, [%d]", Value);
+                                                        }
+                                                        else if(XorRegisterMemoryAndFromRegister)
+                                                        {
+                                                            AppendFormatString(&State, "xor cx, [%d]", Value);
+                                                        }
+                                                        else
+                                                        {
+                                                            AppendFormatString(&State, "dec word [%d]", Value);
+                                                        }
+                                                    }
+                                                    else if(Src == 0b000)
+                                                    {
+                                                        if(PopRegisterMemory)
+                                                        {
+                                                            AppendFormatString(&State, "pop word [%d]", Value);
+                                                        }
+                                                        else
+                                                        {
+                                                            AppendFormatString(&State, "inc word [%d]", Value);
+                                                        }
+                                                    }
+                                                    else if(NegChangeSign &&
+                                                            (Src == 0b011))
+                                                    {
+                                                        AppendFormatString(&State, "neg word [%d]", Value);
+                                                    }
+                                                    else if(NegChangeSign &&
+                                                            (Src == 0b101))
+                                                    {
+                                                        AppendFormatString(&State, "imul word [%d]", Value);
+                                                    }
+                                                    else
+                                                    {
+                                                        AppendFormatString(&State, "mov %S, [%d]", GetRegisterName(Src, IsWord), Value);
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    if(Logic || XchgRegisterMemoryWithRegister)
+                                                    {
+                                                        u8 ValueLow = At[Index++];
+                                                        u8 ValueHigh = At[Index++];
+                                                        u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                                                        
+                                                        s16 Value = *(u16 *)&ValueWide;
+                                                        
+                                                        b32 IsSpecifiedInClRegister = (1 == ((Op0 >> 1) & 1));
+                                                        string Count = (IsSpecifiedInClRegister) ? String("cl") : String("1");
+                                                        if(XchgRegisterMemoryWithRegister)
+                                                        {
+                                                            AppendFormatString(&State, "xchg [%d], %S", Value, GetRegisterName(Src, IsWord));
+                                                        }
+                                                        else if(Src == 0b010)
+                                                        {
+                                                            AppendFormatString(&State, "rcl byte [%d], %S", Value, Count);
+                                                        }
+                                                        else if(Src == 0b001)
+                                                        {
+                                                            AppendFormatString(&State, "ror byte [%d], %S", Value, Count);
+                                                        }
+                                                        else
+                                                        {
+                                                            AppendFormatString(&State, "TODO/logic byte [%d], %S", Value, GetRegisterName(Src, IsWord));
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        u8 Op2 = At[Index++];
+                                                        s8 Value = *(u8 *)&Op2;
+                                                        AppendFormatString(&State, "mov %S, [%d]", GetRegisterName(Src, IsWord), Value);
+                                                    }
+                                                }
+                                            }
+                                            else if(MovRegisterMemoryToFromRegister)
+                                            {                
+                                                if(Direction)
+                                                {
+                                                    if(Segment)
+                                                    {
+                                                        AppendFormatString(&State, "mov %S, %S:%S", GetRegisterName(Dest, IsWord), SegPrefix, Bytes[Src]);
+                                                    }
+                                                    else
+                                                    {
+                                                        AppendFormatString(&State, "mov %S, %S", GetRegisterName(Dest, IsWord), Bytes[Src]);
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    AppendFormatString(&State, "mov %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
+                                                }
+                                            }
+                                            else if(AddRegisterMemoryToFromRegister)
+                                            {                
+                                                if(Direction)
+                                                {
+                                                    AppendFormatString(&State, "add %S, %S", GetRegisterName(Src, IsWord), Bytes[Dest]);
+                                                }
+                                                else
+                                                {
+                                                    AppendFormatString(&State, "add %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
+                                                }
+                                            }
+                                            else if(SubRegisterMemoryToFromRegister)
+                                            {                
+                                                if(Direction)
+                                                {
+                                                    AppendFormatString(&State, "sub %S, %S", GetRegisterName(Src, IsWord), Bytes[Dest]);
+                                                }
+                                                else
+                                                {
+                                                    AppendFormatString(&State, "sub %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
+                                                }
+                                            }
+                                            else if(SbbRegisterMemoryToFromRegister)
+                                            {                
+                                                if(Direction)
+                                                {
+                                                    AppendFormatString(&State, "sbb %S, %S", GetRegisterName(Src, IsWord), Bytes[Dest]);
+                                                }
+                                                else
+                                                {
+                                                    AppendFormatString(&State, "sbb %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
+                                                }
+                                            }
+                                            else if(CmpRegisterMemoryAndFromRegister)
+                                            {                
+                                                if(Direction)
+                                                {
+                                                    AppendFormatString(&State, "cmp %S, %S", GetRegisterName(Src, IsWord), Bytes[Dest]);
+                                                }
+                                                else
+                                                {
+                                                    AppendFormatString(&State, "cmp %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
+                                                }
+                                            }
+                                            else if(AdcRegisterMemoryWithRegisterToEither)
+                                            {
+                                                if(Direction)
+                                                {
+                                                    AppendFormatString(&State, "adc %S, %S", GetRegisterName(Src, IsWord), Bytes[Dest]);
+                                                }
+                                                else
+                                                {
+                                                    AppendFormatString(&State, "adc %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
+                                                }
+                                            }
+                                            
 #if 0                    
-                    else if(AndRegisterMemoryWithRegisterToEither)
-                    {
-                        if(Direction)
-                        {
-                            AppendFormatString(&State, "and %S, %S", GetRegisterName(Src, IsWord), Bytes[Dest]);
-                        }
-                        else
-                        {
-                            AppendFormatString(&State, "and %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
-                        }
-                    }
+                                            else if(AndRegisterMemoryWithRegisterToEither)
+                                            {
+                                                if(Direction)
+                                                {
+                                                    AppendFormatString(&State, "and %S, %S", GetRegisterName(Src, IsWord), Bytes[Dest]);
+                                                }
+                                                else
+                                                {
+                                                    AppendFormatString(&State, "and %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
+                                                }
+                                            }
 #endif
-                    
-                    else if(NegChangeSign)
-                    {
-                        if(Src == 0b000)
-                        {
-                            s8 Value = At[Index++];
-                            AppendFormatString(&State, "test byte %S, %d", Bytes[Dest], Value);
-                        }
-                        else if(Src == 0b111)
-                        {
-                            AppendFormatString(&State, "idiv byte %S", Bytes[Dest]);
-                        }
-                        else
-                        {
-                            AppendFormatString(&State, "imul byte %S", Bytes[Dest]);
-                        }
-                    }
+                                            
+                                            else if(NegChangeSign)
+                                            {
+                                                if(Src == 0b000)
+                                                {
+                                                    s8 Value = At[Index++];
+                                                    AppendFormatString(&State, "test byte %S, %d", Bytes[Dest], Value);
+                                                }
+                                                else if(Src == 0b111)
+                                                {
+                                                    AppendFormatString(&State, "idiv byte %S", Bytes[Dest]);
+                                                }
+                                                else
+                                                {
+                                                    AppendFormatString(&State, "imul byte %S", Bytes[Dest]);
+                                                }
+                                            }
 #if 0                    
-                    else if(XchgRegisterMemoryWithRegister)
-                    {                
-                        if(Direction)
-                        {
-                            AppendFormatString(&State, "xchg %S, %S", GetRegisterName(Src, IsWord), Bytes[Dest]);
-                        }
-                        else
-                        {
-                            AppendFormatString(&State, "xchg %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
-                        }
-                    }
+                                            else if(XchgRegisterMemoryWithRegister)
+                                            {                
+                                                if(Direction)
+                                                {
+                                                    AppendFormatString(&State, "xchg %S, %S", GetRegisterName(Src, IsWord), Bytes[Dest]);
+                                                }
+                                                else
+                                                {
+                                                    AppendFormatString(&State, "xchg %S, %S", Bytes[Dest], GetRegisterName(Src, IsWord));
+                                                }
+                                            }
 #endif
-                    
-                    else
-                    {
-                        if(IsWord)
-                        {
-                            if(MovImmediateToRegisterMemory)
-                            {
-                                u8 ValueLow = At[Index++];
-                                u8 ValueHigh = At[Index++];
-                                u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-                                
-                                s16 Value = *(u16 *)&ValueWide;
-                                AppendFormatString(&State, "mov %S, word %d", Bytes[Dest], Value);
-                            }
-                            else if(AddImmediateToRegisterMemory)
-                            {
-                                s8 Value = *(u8 *)&At[Index++];
-                                if(Src == 0b000)
-                                {
-                                    AppendFormatString(&State, "add word %S, %d", Bytes[Dest], Value);
+                                            
+                                            else
+                                            {
+                                                if(IsWord)
+                                                {
+                                                    if(MovImmediateToRegisterMemory)
+                                                    {
+                                                        u8 ValueLow = At[Index++];
+                                                        u8 ValueHigh = At[Index++];
+                                                        u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                                                        
+                                                        s16 Value = *(u16 *)&ValueWide;
+                                                        AppendFormatString(&State, "mov %S, word %d", Bytes[Dest], Value);
+                                                    }
+                                                    else if(AddImmediateToRegisterMemory)
+                                                    {
+                                                        s8 Value = *(u8 *)&At[Index++];
+                                                        if(Src == 0b000)
+                                                        {
+                                                            AppendFormatString(&State, "add word %S, %d", Bytes[Dest], Value);
+                                                        }
+                                                        else if(Src == 0b101)
+                                                        {
+                                                            AppendFormatString(&State, "sub word %S, %d", Bytes[Dest], Value);
+                                                        }
+                                                        else
+                                                        {
+                                                            AppendFormatString(&State, "TODO %S, word %d", Bytes[Dest], Value);
+                                                        }
+                                                    }
+                                                    else if(PushRegisterMemory)
+                                                    {
+                                                        AppendFormatString(&State, "push word %S", Bytes[Dest]);
+                                                    }
+                                                    else if(PopRegisterMemory)
+                                                    {
+                                                        AppendFormatString(&State, "pop word %S", Bytes[Dest]);
+                                                    }
+                                                    else if(Logic)
+                                                    {
+                                                        b32 IsSpecifiedInClRegister = (1 == ((Op0 >> 1) & 1));
+                                                        string Count = (IsSpecifiedInClRegister) ? String("cl") : String("1");
+                                                        AppendFormatString(&State, "rcr word %S, %S", Bytes[Dest], Count);
+                                                    }
+                                                    else
+                                                    {
+                                                        AppendFormatString(&State, "TODO 42, word 42");
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    u8 Op2 = At[Index++];
+                                                    s8 Value = *(u8 *)&Op2;
+                                                    if(MovImmediateToRegisterMemory)
+                                                    {
+                                                        AppendFormatString(&State, "mov %S, byte %d", Bytes[Dest], Value);
+                                                    }
+                                                    else if(AddImmediateToRegisterMemory)
+                                                    {
+                                                        if(Src == 0b000)
+                                                        {
+                                                            AppendFormatString(&State, "add byte %S, %d", Bytes[Dest], Value);
+                                                        }
+                                                        else if(Src == 0b101)
+                                                        {
+                                                            AppendFormatString(&State, "sub byte %S, %d", Bytes[Dest], Value);
+                                                        }
+                                                        else if(Src == 0b111)
+                                                        {
+                                                            AppendFormatString(&State, "cmp byte %S, %d", Bytes[Dest], Value);
+                                                        }
+                                                        else
+                                                        {
+                                                            AppendFormatString(&State, "TODO");
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        AppendFormatString(&State, "TODO %S, byte %d", Bytes[Dest], Value);
+                                                    }
+                                                }
+                                            }
+                                            
+                                        }
+                                        else if((Displace8Bit) ||
+                                                (Displace16Bit))
+                                        {
+                                            u8 Dest = (Op1 >> 0) & ((1<<3)-1);
+                                            u8 Src =  (Op1 >> 3) & ((1<<3)-1);
+                                            
+                                            s16 Value;
+                                            if(Displace8Bit)
+                                            {
+                                                u8 Op2 = At[Index++];
+                                                s8 Value_ = *(u8 *)&Op2;
+                                                Value = Value_;
+                                            }
+                                            else
+                                            {
+                                                Assert(Displace16Bit);
+                                                u8 ValueLow = At[Index++];
+                                                u8 ValueHigh = At[Index++];
+                                                u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                                                
+                                                Value = *(u16 *)&ValueWide;
+                                            }
+                                            
+                                            string Bytes[] = 
+                                            { 
+                                                String("bx + si"), String("bx + di"), String("bp + si"), String("bp + di"), String("si"), String("di"), String("bp"), String("bx") 
+                                            };
+                                            
+                                            string Op;
+                                            if(MovRegisterMemoryToFromRegister || MovImmediateToRegisterMemory)
+                                            {
+                                                Op = String("mov");
+                                            }
+                                            else if(AddRegisterMemoryToFromRegister)
+                                            {
+                                                Op = String("add");
+                                            }
+                                            else if(AddImmediateToRegisterMemory)
+                                            {
+                                                if(Src == 0b100)
+                                                {
+                                                    Op = String("and");
+                                                }
+                                                else if(Src == 0b000)
+                                                {
+                                                    Op = String("add");
+                                                }
+                                                else if(Src == 0b001)
+                                                {
+                                                    Op = String("or");
+                                                }
+                                                else if(Src == 0b011)
+                                                {
+                                                    Op = String("sbb");
+                                                }
+                                                else
+                                                {
+                                                    Op = String("xor");
+                                                }
+                                            }
+                                            else if(SubRegisterMemoryToFromRegister)
+                                            {
+                                                Op = String("sub");
+                                            }
+                                            else if(SbbRegisterMemoryToFromRegister)
+                                            {
+                                                Op = String("sbb");
+                                            }
+                                            else if(CmpRegisterMemoryAndFromRegister)
+                                            {
+                                                Op = String("cmp");
+                                            }
+                                            else if(OrRegisterMemoryAndFromRegister)
+                                            {
+                                                Op = String("or");
+                                            }
+                                            else if(XorRegisterMemoryAndFromRegister)
+                                            {
+                                                Op = String("xor");
+                                            }
+                                            else if(XchgRegisterMemoryWithRegister)
+                                            {
+                                                Op = String("xchg");
+                                            }
+                                            else if(TestRegisterMemoryAndRegister)
+                                            {
+                                                Op = String("test");
+                                            }
+                                            else if(AdcRegisterMemoryWithRegisterToEither)
+                                            {
+                                                Op = String("adc");
+                                            }
+                                            else if(AndRegisterMemoryWithRegisterToEither)
+                                            {
+                                                Op = String("and");
+                                            }
+                                            else if(IncRegisterMemory || PushRegisterMemory)
+                                            {
+                                                if(Src == 0b110)
+                                                {
+                                                    Op = String("push");
+                                                }
+                                                else if(Src == 0b001)
+                                                {
+                                                    Op = String("dec");
+                                                }
+                                                else if(Src == 0b010)
+                                                {
+                                                    Op = String("call");
+                                                }
+                                                else
+                                                {
+                                                    Op = String("inc");
+                                                }
+                                            }
+                                            else if(Logic)
+                                            {
+                                                if(Src == 0b100)
+                                                {
+                                                    Op = String("shl");
+                                                }
+                                                else if(Src == 0b101)
+                                                {
+                                                    Op = String("shr");
+                                                }
+                                                else if(Src == 0b111)
+                                                {
+                                                    Op = String("sar");
+                                                }
+                                                else if(Src == 0b000)
+                                                {
+                                                    Op = String("rol");
+                                                }
+                                                else if(Src == 0b001)
+                                                {
+                                                    Op = String("ror");
+                                                }
+                                                else
+                                                {
+                                                    Op = String("TODO/Logic");
+                                                }
+                                            }
+                                            else if(NegChangeSign)
+                                            {
+                                                if(Src == 0b100)
+                                                {
+                                                    Op = String("mul");
+                                                }
+                                                else if(Src == 0b110)
+                                                {
+                                                    Op = String("div");
+                                                }
+                                                else if(Src == 0b111)
+                                                {
+                                                    Op = String("idiv");
+                                                }
+                                                else if(Src == 0b010)
+                                                {
+                                                    Op = String("not");
+                                                }
+                                                else if(Src == 0b000)
+                                                {
+                                                    Op = String("test");
+                                                }
+                                                else
+                                                {
+                                                    Op = String("neg");
+                                                }
+                                            }
+                                            else if(PopRegisterMemory)
+                                            {
+                                                Op = String("pop");
+                                            }
+                                            else if(LoadEAtoRegister)
+                                            {
+                                                Op = String("lea");
+                                            }
+                                            else if(LoadPointerToDS)
+                                            {
+                                                Op = String("lds");
+                                            }
+                                            else if(LoadPointerToES)
+                                            {
+                                                Op = String("les");
+                                            }
+                                            else
+                                            {
+                                                Op = String("TODO");
+                                            }
+                                            
+                                            if(Direction)
+                                            {
+                                                if(Segment)
+                                                {
+                                                    AppendFormatString(&State, "%S %S, %S:[%S", Op, GetRegisterName(Src, IsWord), SegPrefix, Bytes[Dest]);
+                                                }
+                                                else
+                                                {
+                                                    AppendFormatString(&State, "%S %S, [%S", Op, GetRegisterName(Src, IsWord), Bytes[Dest]);
+                                                }
+                                                
+                                                if(Value > 0)
+                                                {
+                                                    AppendFormatString(&State, " + %d]", Value);
+                                                }
+                                                else if(Value < 0)
+                                                {
+                                                    Value *= -1;
+                                                    AppendFormatString(&State, " - %d]", Value);
+                                                }
+                                                else
+                                                {
+                                                    AppendFormatString(&State, "]");
+                                                }
+                                            }
+                                            else
+                                            {
+                                                if(AddImmediateToRegisterMemory || 
+                                                   PushRegisterMemory || 
+                                                   PopRegisterMemory || 
+                                                   IncRegisterMemory || 
+                                                   NegChangeSign || 
+                                                   Logic)
+                                                {
+                                                    if(IncRegisterMemory && 
+                                                       (Src == 0b010))
+                                                    {
+                                                        AppendFormatString(&State, "%S [%S", Op, Bytes[Dest]);
+                                                    }
+                                                    else if(IsWord)
+                                                    {
+                                                        if(Segment)
+                                                        {
+                                                            AppendFormatString(&State, "%S word %S:[%S", Op, SegPrefix, Bytes[Dest]);
+                                                        }
+                                                        else
+                                                        {
+                                                            AppendFormatString(&State, "%S word [%S", Op, Bytes[Dest]);
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        
+                                                        if(Segment)
+                                                        {
+                                                            AppendFormatString(&State, "%S byte %S:[%S", Op, SegPrefix, Bytes[Dest]);
+                                                        }
+                                                        else
+                                                        {
+                                                            AppendFormatString(&State, "%S byte [%S", Op, Bytes[Dest]);
+                                                        }
+                                                    }
+                                                }
+                                                else if(LoadEAtoRegister || LoadPointerToDS || LoadPointerToES)
+                                                {
+                                                    AppendFormatString(&State, "%S %S, [%S", Op, GetRegisterName(Src, 1), Bytes[Dest]);
+                                                }
+                                                else
+                                                {
+                                                    if(Segment)
+                                                    {
+                                                        AppendFormatString(&State, "%S %S:[%S", Op, SegPrefix, Bytes[Dest]);
+                                                    }
+                                                    else
+                                                    {
+                                                        AppendFormatString(&State, "%S [%S", Op, Bytes[Dest]);
+                                                    }
+                                                }
+                                                
+                                                if(Value > 0)
+                                                {
+                                                    AppendFormatString(&State, " + %d]", Value);
+                                                }
+                                                else if(Value < 0)
+                                                {
+                                                    Value *= -1;
+                                                    AppendFormatString(&State, " - %d]", Value);
+                                                }
+                                                else
+                                                {
+                                                    AppendFormatString(&State, "]");
+                                                }
+                                                if(AddRegisterMemoryToFromRegister || 
+                                                   SubRegisterMemoryToFromRegister ||
+                                                   SbbRegisterMemoryToFromRegister ||
+                                                   MovRegisterMemoryToFromRegister ||
+                                                   CmpRegisterMemoryAndFromRegister ||
+                                                   OrRegisterMemoryAndFromRegister ||
+                                                   XorRegisterMemoryAndFromRegister ||
+                                                   XchgRegisterMemoryWithRegister ||
+                                                   TestRegisterMemoryAndRegister ||
+                                                   AdcRegisterMemoryWithRegisterToEither ||
+                                                   AndRegisterMemoryWithRegisterToEither)
+                                                {
+                                                    AppendFormatString(&State, ", %S", GetRegisterName(Src, IsWord));
+                                                }
+                                                else if(MovImmediateToRegisterMemory || 
+                                                        AddImmediateToRegisterMemory ||
+                                                        (NegChangeSign && Src == 0b000))
+                                                {
+                                                    if(IsWord)
+                                                    {
+                                                        if(AddImmediateToRegisterMemory && (Op0 >> 1) & 1)
+                                                        {
+                                                            u8 ValueUnsigned = At[Index++];
+                                                            Value = *(u8 *)&ValueUnsigned;
+                                                        }
+                                                        else
+                                                        {
+                                                            u8 ValueLow = At[Index++];
+                                                            u8 ValueHigh = At[Index++];
+                                                            u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                                                            Value = *(u16 *)&ValueWide;
+                                                        }
+                                                        
+                                                        
+                                                        if(MovImmediateToRegisterMemory)
+                                                        {
+                                                            AppendFormatString(&State, ", word %d", Value);
+                                                        }
+                                                        else
+                                                        {
+                                                            AppendFormatString(&State, ", %d", Value);
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        Value = At[Index++];
+                                                        AppendFormatString(&State, ", %d", Value);
+                                                    }
+                                                }
+                                                else if(PushRegisterMemory || 
+                                                        PopRegisterMemory || 
+                                                        IncRegisterMemory ||
+                                                        LoadEAtoRegister || 
+                                                        LoadPointerToDS || 
+                                                        NegChangeSign ||
+                                                        LoadPointerToES)
+                                                {
+                                                    // NOTE(kstandbridge): Intentionally do nothing
+                                                }
+                                                else if(Logic)
+                                                {
+                                                    b32 IsSpecifiedInClRegister = (1 == ((Op0 >> 1) & 1));
+                                                    string Count = (IsSpecifiedInClRegister) ? String("cl") : String("1");
+                                                    AppendFormatString(&State, ", %S", Count);
+                                                }
+                                                else
+                                                {
+                                                    AppendFormatString(&State, "TODO");
+                                                }
+                                            }
+                                        }
+                                        else
+                                        {
+                                            AppendFormatString(&State, "; Unknown mod %b from Op code %b", Mod, Op0);
+                                        }
+                                        
+                                    }
+                                    else if(MovImmediateToRegister)
+                                    {
+                                        // NOTE(kstandbridge): MOV Immediate to register
+                                        b32 Wide = (1 == ((Op0 >> 3) & 1));
+                                        u8 Reg = (Op0 & 0b111);
+                                        if(Wide)
+                                        {
+                                            u8 Op2 = At[Index++];
+                                            u16 ValueWide = ((Op2 & 0xFF) << 8) | (Op1 & 0xFF);
+                                            s16 Value = *(u16 *)&ValueWide;
+                                            AppendFormatString(&State, "mov %S, %d", GetRegisterName(Reg, Wide), Value);
+                                        }
+                                        else
+                                        {
+                                            s8 Value = *(u8 *)&Op1;
+                                            AppendFormatString(&State, "mov %S, %d", GetRegisterName(Reg, Wide), Value);
+                                        }
+                                        
+                                    }
+                                    else
+                                    {
+                                        AppendFormatString(&State, "; Unknown Op code %b", Op0);
+                                    }
                                 }
-                                else if(Src == 0b101)
-                                {
-                                    AppendFormatString(&State, "sub word %S, %d", Bytes[Dest], Value);
-                                }
-                                else
-                                {
-                                    AppendFormatString(&State, "TODO %S, word %d", Bytes[Dest], Value);
-                                }
-                            }
-                            else if(PushRegisterMemory)
-                            {
-                                AppendFormatString(&State, "push word %S", Bytes[Dest]);
-                            }
-                            else if(PopRegisterMemory)
-                            {
-                                AppendFormatString(&State, "pop word %S", Bytes[Dest]);
-                            }
-                            else if(Logic)
-                            {
-                                b32 IsSpecifiedInClRegister = (1 == ((Op0 >> 1) & 1));
-                                string Count = (IsSpecifiedInClRegister) ? String("cl") : String("1");
-                                AppendFormatString(&State, "rcr word %S, %S", Bytes[Dest], Count);
-                            }
-                            else
-                            {
-                                AppendFormatString(&State, "TODO 42, word 42");
-                            }
-                        }
-                        else
-                        {
-                            u8 Op2 = At[Index++];
-                            s8 Value = *(u8 *)&Op2;
-                            if(MovImmediateToRegisterMemory)
-                            {
-                                AppendFormatString(&State, "mov %S, byte %d", Bytes[Dest], Value);
-                            }
-                            else if(AddImmediateToRegisterMemory)
-                            {
-                                if(Src == 0b000)
-                                {
-                                    AppendFormatString(&State, "add byte %S, %d", Bytes[Dest], Value);
-                                }
-                                else if(Src == 0b101)
-                                {
-                                    AppendFormatString(&State, "sub byte %S, %d", Bytes[Dest], Value);
-                                }
-                                else if(Src == 0b111)
-                                {
-                                    AppendFormatString(&State, "cmp byte %S, %d", Bytes[Dest], Value);
-                                }
-                                else
-                                {
-                                    AppendFormatString(&State, "TODO");
-                                }
-                            }
-                            else
-                            {
-                                AppendFormatString(&State, "TODO %S, byte %d", Bytes[Dest], Value);
                             }
                         }
                     }
-                    
                 }
-                else if((Displace8Bit) ||
-                        (Displace16Bit))
-                {
-                    u8 Dest = (Op1 >> 0) & ((1<<3)-1);
-                    u8 Src =  (Op1 >> 3) & ((1<<3)-1);
-                    
-                    s16 Value;
-                    if(Displace8Bit)
-                    {
-                        u8 Op2 = At[Index++];
-                        s8 Value_ = *(u8 *)&Op2;
-                        Value = Value_;
-                    }
-                    else
-                    {
-                        Assert(Displace16Bit);
-                        u8 ValueLow = At[Index++];
-                        u8 ValueHigh = At[Index++];
-                        u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-                        
-                        Value = *(u16 *)&ValueWide;
-                    }
-                    
-                    string Bytes[] = 
-                    { 
-                        String("bx + si"), String("bx + di"), String("bp + si"), String("bp + di"), String("si"), String("di"), String("bp"), String("bx") 
-                    };
-                    
-                    string Op;
-                    if(MovRegisterMemoryToFromRegister || MovImmediateToRegisterMemory)
-                    {
-                        Op = String("mov");
-                    }
-                    else if(AddRegisterMemoryToFromRegister)
-                    {
-                        Op = String("add");
-                    }
-                    else if(AddImmediateToRegisterMemory)
-                    {
-                        if(Src == 0b100)
-                        {
-                            Op = String("and");
-                        }
-                        else if(Src == 0b000)
-                        {
-                            Op = String("add");
-                        }
-                        else if(Src == 0b001)
-                        {
-                            Op = String("or");
-                        }
-                        else if(Src == 0b011)
-                        {
-                            Op = String("sbb");
-                        }
-                        else
-                        {
-                            Op = String("xor");
-                        }
-                    }
-                    else if(SubRegisterMemoryToFromRegister)
-                    {
-                        Op = String("sub");
-                    }
-                    else if(SbbRegisterMemoryToFromRegister)
-                    {
-                        Op = String("sbb");
-                    }
-                    else if(CmpRegisterMemoryAndFromRegister)
-                    {
-                        Op = String("cmp");
-                    }
-                    else if(OrRegisterMemoryAndFromRegister)
-                    {
-                        Op = String("or");
-                    }
-                    else if(XorRegisterMemoryAndFromRegister)
-                    {
-                        Op = String("xor");
-                    }
-                    else if(XchgRegisterMemoryWithRegister)
-                    {
-                        Op = String("xchg");
-                    }
-                    else if(TestRegisterMemoryAndRegister)
-                    {
-                        Op = String("test");
-                    }
-                    else if(AdcRegisterMemoryWithRegisterToEither)
-                    {
-                        Op = String("adc");
-                    }
-                    else if(AndRegisterMemoryWithRegisterToEither)
-                    {
-                        Op = String("and");
-                    }
-                    else if(IncRegisterMemory || PushRegisterMemory)
-                    {
-                        if(Src == 0b110)
-                        {
-                            Op = String("push");
-                        }
-                        else if(Src == 0b001)
-                        {
-                            Op = String("dec");
-                        }
-                        else if(Src == 0b010)
-                        {
-                            Op = String("call");
-                        }
-                        else
-                        {
-                            Op = String("inc");
-                        }
-                    }
-                    else if(Logic)
-                    {
-                        if(Src == 0b100)
-                        {
-                            Op = String("shl");
-                        }
-                        else if(Src == 0b101)
-                        {
-                            Op = String("shr");
-                        }
-                        else if(Src == 0b111)
-                        {
-                            Op = String("sar");
-                        }
-                        else if(Src == 0b000)
-                        {
-                            Op = String("rol");
-                        }
-                        else if(Src == 0b001)
-                        {
-                            Op = String("ror");
-                        }
-                        else
-                        {
-                            Op = String("TODO/Logic");
-                        }
-                    }
-                    else if(NegChangeSign)
-                    {
-                        if(Src == 0b100)
-                        {
-                            Op = String("mul");
-                        }
-                        else if(Src == 0b110)
-                        {
-                            Op = String("div");
-                        }
-                        else if(Src == 0b111)
-                        {
-                            Op = String("idiv");
-                        }
-                        else if(Src == 0b010)
-                        {
-                            Op = String("not");
-                        }
-                        else if(Src == 0b000)
-                        {
-                            Op = String("test");
-                        }
-                        else
-                        {
-                            Op = String("neg");
-                        }
-                    }
-                    else if(PopRegisterMemory)
-                    {
-                        Op = String("pop");
-                    }
-                    else if(LoadEAtoRegister)
-                    {
-                        Op = String("lea");
-                    }
-                    else if(LoadPointerToDS)
-                    {
-                        Op = String("lds");
-                    }
-                    else if(LoadPointerToES)
-                    {
-                        Op = String("les");
-                    }
-                    else
-                    {
-                        Op = String("TODO");
-                    }
-                    
-                    if(Direction)
-                    {
-                        if(Segment)
-                        {
-                            AppendFormatString(&State, "%S %S, %S:[%S", Op, GetRegisterName(Src, IsWord), SegPrefix, Bytes[Dest]);
-                        }
-                        else
-                        {
-                            AppendFormatString(&State, "%S %S, [%S", Op, GetRegisterName(Src, IsWord), Bytes[Dest]);
-                        }
-                        
-                        if(Value > 0)
-                        {
-                            AppendFormatString(&State, " + %d]", Value);
-                        }
-                        else if(Value < 0)
-                        {
-                            Value *= -1;
-                            AppendFormatString(&State, " - %d]", Value);
-                        }
-                        else
-                        {
-                            AppendFormatString(&State, "]");
-                        }
-                    }
-                    else
-                    {
-                        if(AddImmediateToRegisterMemory || 
-                           PushRegisterMemory || 
-                           PopRegisterMemory || 
-                           IncRegisterMemory || 
-                           NegChangeSign || 
-                           Logic)
-                        {
-                            if(IncRegisterMemory && 
-                               (Src == 0b010))
-                            {
-                                AppendFormatString(&State, "%S [%S", Op, Bytes[Dest]);
-                            }
-                            else if(IsWord)
-                            {
-                                if(Segment)
-                                {
-                                    AppendFormatString(&State, "%S word %S:[%S", Op, SegPrefix, Bytes[Dest]);
-                                }
-                                else
-                                {
-                                    AppendFormatString(&State, "%S word [%S", Op, Bytes[Dest]);
-                                }
-                            }
-                            else
-                            {
-                                
-                                if(Segment)
-                                {
-                                    AppendFormatString(&State, "%S byte %S:[%S", Op, SegPrefix, Bytes[Dest]);
-                                }
-                                else
-                                {
-                                    AppendFormatString(&State, "%S byte [%S", Op, Bytes[Dest]);
-                                }
-                            }
-                        }
-                        else if(LoadEAtoRegister || LoadPointerToDS || LoadPointerToES)
-                        {
-                            AppendFormatString(&State, "%S %S, [%S", Op, GetRegisterName(Src, 1), Bytes[Dest]);
-                        }
-                        else
-                        {
-                            if(Segment)
-                            {
-                                AppendFormatString(&State, "%S %S:[%S", Op, SegPrefix, Bytes[Dest]);
-                            }
-                            else
-                            {
-                                AppendFormatString(&State, "%S [%S", Op, Bytes[Dest]);
-                            }
-                        }
-                        
-                        if(Value > 0)
-                        {
-                            AppendFormatString(&State, " + %d]", Value);
-                        }
-                        else if(Value < 0)
-                        {
-                            Value *= -1;
-                            AppendFormatString(&State, " - %d]", Value);
-                        }
-                        else
-                        {
-                            AppendFormatString(&State, "]");
-                        }
-                        if(AddRegisterMemoryToFromRegister || 
-                           SubRegisterMemoryToFromRegister ||
-                           SbbRegisterMemoryToFromRegister ||
-                           MovRegisterMemoryToFromRegister ||
-                           CmpRegisterMemoryAndFromRegister ||
-                           OrRegisterMemoryAndFromRegister ||
-                           XorRegisterMemoryAndFromRegister ||
-                           XchgRegisterMemoryWithRegister ||
-                           TestRegisterMemoryAndRegister ||
-                           AdcRegisterMemoryWithRegisterToEither ||
-                           AndRegisterMemoryWithRegisterToEither)
-                        {
-                            AppendFormatString(&State, ", %S", GetRegisterName(Src, IsWord));
-                        }
-                        else if(MovImmediateToRegisterMemory || 
-                                AddImmediateToRegisterMemory ||
-                                (NegChangeSign && Src == 0b000))
-                        {
-                            if(IsWord)
-                            {
-                                if(AddImmediateToRegisterMemory && (Op0 >> 1) & 1)
-                                {
-                                    u8 ValueUnsigned = At[Index++];
-                                    Value = *(u8 *)&ValueUnsigned;
-                                }
-                                else
-                                {
-                                    u8 ValueLow = At[Index++];
-                                    u8 ValueHigh = At[Index++];
-                                    u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-                                    Value = *(u16 *)&ValueWide;
-                                }
-                                
-                                
-                                if(MovImmediateToRegisterMemory)
-                                {
-                                    AppendFormatString(&State, ", word %d", Value);
-                                }
-                                else
-                                {
-                                    AppendFormatString(&State, ", %d", Value);
-                                }
-                            }
-                            else
-                            {
-                                Value = At[Index++];
-                                AppendFormatString(&State, ", %d", Value);
-                            }
-                        }
-                        else if(PushRegisterMemory || 
-                                PopRegisterMemory || 
-                                IncRegisterMemory ||
-                                LoadEAtoRegister || 
-                                LoadPointerToDS || 
-                                NegChangeSign ||
-                                LoadPointerToES)
-                        {
-                            // NOTE(kstandbridge): Intentionally do nothing
-                        }
-                        else if(Logic)
-                        {
-                            b32 IsSpecifiedInClRegister = (1 == ((Op0 >> 1) & 1));
-                            string Count = (IsSpecifiedInClRegister) ? String("cl") : String("1");
-                            AppendFormatString(&State, ", %S", Count);
-                        }
-                        else
-                        {
-                            AppendFormatString(&State, "TODO");
-                        }
-                    }
-                }
-                else
-                {
-                    AppendFormatString(&State, "; Unknown mod %b from Op code %b", Mod, Op0);
-                }
-                
-            }
-            else if(MovImmediateToRegister)
-            {
-                // NOTE(kstandbridge): MOV Immediate to register
-                b32 Wide = (1 == ((Op0 >> 3) & 1));
-                u8 Reg = (Op0 & 0b111);
-                if(Wide)
-                {
-                    u8 Op2 = At[Index++];
-                    u16 ValueWide = ((Op2 & 0xFF) << 8) | (Op1 & 0xFF);
-                    s16 Value = *(u16 *)&ValueWide;
-                    AppendFormatString(&State, "mov %S, %d", GetRegisterName(Reg, Wide), Value);
-                }
-                else
-                {
-                    s8 Value = *(u8 *)&Op1;
-                    AppendFormatString(&State, "mov %S, %d", GetRegisterName(Reg, Wide), Value);
-                }
-                
-            }
-            else
-            {
-                AppendFormatString(&State, "; Unknown Op code %b", Op0);
             }
         }
+        
         AppendFormatString(&State,"\n" );
         if(Index > Size)
         {
@@ -4296,26 +4154,13 @@ RunListing42Tests(memory_arena *Arena)
 void
 RunAllTests(memory_arena *Arena)
 {
-    temporary_memory MemoryFlush = BeginTemporaryMemory(Arena);
-    RunListing38Tests(MemoryFlush.Arena);
-    EndTemporaryMemory(MemoryFlush);
+    RunListing38Tests(Arena);
+    RunListing39Tests(Arena);
+    RunListing40Tests(Arena);
+    RunListing41Tests(Arena);
+    RunListing42Tests(Arena);
     
-    MemoryFlush = BeginTemporaryMemory(Arena);
-    RunListing39Tests(MemoryFlush.Arena);
-    EndTemporaryMemory(MemoryFlush);
-    
-    MemoryFlush = BeginTemporaryMemory(Arena);
-    RunListing40Tests(MemoryFlush.Arena);
-    EndTemporaryMemory(MemoryFlush);
-    
-    MemoryFlush = BeginTemporaryMemory(Arena);
-    RunListing41Tests(MemoryFlush.Arena);
-    EndTemporaryMemory(MemoryFlush);
-    
-    MemoryFlush = BeginTemporaryMemory(Arena);
-    RunListing42Tests(MemoryFlush.Arena);
-    EndTemporaryMemory(MemoryFlush);
-    
+#if 0    
     
 #if 1
     string FileName = String("test");
@@ -4349,5 +4194,7 @@ RunAllTests(memory_arena *Arena)
     PlatformConsoleOut("\nbits 16\n\n");
     string Output = Parse(Arena, Source.Data, Source.Size);
     PlatformConsoleOut("%S\n", Output);
+    
+#endif
     
 }

@@ -332,10 +332,10 @@ label:
 ; and ss:[bp + si + 10], ch
 ; or ds:[bx + di + 1000], dx
 ; xor bx, es:[bp]
-cmp cx, es:[4384]
+; cmp cx, es:[4384]
 ; test byte cs:[bp - 39], 239
 ; sbb word cs:[bx + si - 4332], 10328
-; lock not byte CS:[bp + 9905]
+lock not byte CS:[bp + 9905]
 ; call 123:456
 ; jmp 789:34
 ; mov [bx+si+59],es
