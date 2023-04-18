@@ -1087,16 +1087,16 @@ RunParseHtmlTest(memory_arena *Arena)
                              "\t</body>\n"
                              "</html>");
     
-    xml_element DocElement = ParseXmlDocument(Arena, HtmlData, String("DummyFile.html"));
-    xml_element *HtmlElement = GetXmlElement(&DocElement, String("html"));
+    xml_element *DocElement = ParseXmlDocument(Arena, HtmlData, String("DummyFile.html"));
+    xml_element *HtmlElement = GetXmlElement(DocElement, String("html"));
     AssertTrue(HtmlElement);
     xml_element *BodyElement = GetXmlElement(HtmlElement, String("body"));
     AssertTrue(BodyElement);
     
-    xml_element *UlElement = GetXmlElement(HtmlElement, String("ul"));
+    xml_element *UlElement = GetXmlElement(BodyElement, String("ul"));
     AssertTrue(UlElement);
     
-    xml_element *LiElements = GetXmlElements(UlElement, String("li"));
+    xml_element *LiElements = GetXmlElement(UlElement, String("li"));
     AssertTrue(LiElements);
     
     xml_element *LiElement = LiElements;
@@ -1131,6 +1131,7 @@ RunParseHtmlTest(memory_arena *Arena)
 inline void
 RunParseXmlTest(memory_arena *Arena)
 {
+    
     {
         string FileName = String("/dev/null");
         string FileData = String("<Config>\n"
@@ -1140,8 +1141,8 @@ RunParseXmlTest(memory_arena *Arena)
                                  "\t-->\n"
                                  "\t<Name>SomeName</Name>\n"
                                  "</Config>");
-        xml_element DocElement = ParseXmlDocument(Arena, FileData, FileName);
-        xml_element *ConfigElement = GetXmlElement(&DocElement, String("Config"));
+        xml_element *DocElement = ParseXmlDocument(Arena, FileData, FileName);
+        xml_element *ConfigElement = GetXmlElement(DocElement, String("Config"));
         AssertTrue(ConfigElement);
         
         xml_element *SourceElement = GetXmlElement(ConfigElement, String("Source"));
@@ -1160,8 +1161,8 @@ RunParseXmlTest(memory_arena *Arena)
         string FileData = String("<foo>"
                                  "bar"
                                  "</foo>");
-        xml_element DocElement = ParseXmlDocument(Arena, FileData, FileName);
-        xml_element *FooElement = GetXmlElement(&DocElement, String("foo"));
+        xml_element *DocElement = ParseXmlDocument(Arena, FileData, FileName);
+        xml_element *FooElement = GetXmlElement(DocElement, String("foo"));
         AssertTrue(FooElement);
         string Value = GetXmlElementValue(FooElement);
         AssertEqualString(String("bar"), Value);
@@ -1172,8 +1173,8 @@ RunParseXmlTest(memory_arena *Arena)
         string FileData = String("<foo abc=\"123\" cba=\"321\">"
                                  "bar"
                                  "</foo>");
-        xml_element DocElement = ParseXmlDocument(Arena, FileData, FileName);
-        xml_element *FooElement = GetXmlElement(&DocElement, String("foo"));
+        xml_element *DocElement = ParseXmlDocument(Arena, FileData, FileName);
+        xml_element *FooElement = GetXmlElement(DocElement, String("foo"));
         AssertTrue(FooElement);
         string Value = GetXmlElementValue(FooElement);
         AssertEqualString(String("bar"), Value);
@@ -1183,7 +1184,6 @@ RunParseXmlTest(memory_arena *Arena)
         AssertEqualString(String("123"), AbcAttribute->Value);
     }
     
-    
     {
         string FileName = String("/dev/null");
         string FileData = String("<foo>"
@@ -1191,11 +1191,11 @@ RunParseXmlTest(memory_arena *Arena)
                                  "\t<bar A=\"2\" />"
                                  "\t<bar A=\"3\" />"
                                  "</foo>");
-        xml_element DocElement = ParseXmlDocument(Arena, FileData, FileName);
-        xml_element *FooElement = GetXmlElement(&DocElement, String("foo"));
+        xml_element *DocElement = ParseXmlDocument(Arena, FileData, FileName);
+        xml_element *FooElement = GetXmlElement(DocElement, String("foo"));
         AssertTrue(FooElement);
         
-        xml_element *BarElement = GetXmlElements(FooElement, String("bar"));
+        xml_element *BarElement = GetXmlElement(FooElement, String("bar"));
         AssertTrue(BarElement);
         xml_attribute *AAttribute = GetXmlAttribute(BarElement, String("A"));
         AssertTrue(AAttribute);
@@ -1221,11 +1221,11 @@ RunParseXmlTest(memory_arena *Arena)
                                  "<bar>2</bar>"
                                  "<bar>3</bar>"
                                  "</foo>");
-        xml_element DocElement = ParseXmlDocument(Arena, FileData, FileName);
-        xml_element *FooElement = GetXmlElement(&DocElement, String("foo"));
+        xml_element *DocElement = ParseXmlDocument(Arena, FileData, FileName);
+        xml_element *FooElement = GetXmlElement(DocElement, String("foo"));
         AssertTrue(FooElement);
         
-        xml_element *BarElement = GetXmlElements(FooElement, String("bar"));
+        xml_element *BarElement = GetXmlElement(FooElement, String("bar"));
         AssertTrue(BarElement);
         string Value = GetXmlElementValue(BarElement);
         AssertEqualString(String("1"), Value);
@@ -1240,6 +1240,55 @@ RunParseXmlTest(memory_arena *Arena)
         Value = GetXmlElementValue(BarElement);
         AssertEqualString(String("3"), Value);
     }
+    
+    {
+        string Filename = String("/dev/null");
+        string FileData = String("<header>"
+                                 "<first>"
+                                 "<sub>1</sub>"
+                                 "<sub>2</sub>"
+                                 "</first>"
+                                 "<second>"
+                                 "<sub>3</sub>"
+                                 "</second>");
+        xml_element *DocElement = ParseXmlDocument(Arena, FileData, Filename);
+        xml_element *HeaderElement = GetXmlElement(DocElement, String("header"));
+        Assert(HeaderElement);
+        
+        xml_element *FirstElement = GetXmlElement(HeaderElement, String("first"));
+        Assert(FirstElement);
+        
+        xml_element *SubElement = GetXmlElement(FirstElement, String("sub"));
+        Assert(SubElement);
+        string Value = GetXmlElementValue(SubElement);
+        AssertEqualString(String("1"), Value);
+        
+        SubElement = SubElement->Next;
+        Value = GetXmlElementValue(SubElement);
+        AssertEqualString(String("2"), Value);
+        
+        SubElement = SubElement->Next;
+        AssertTrue(SubElement == 0);
+    }
+    
+    {
+        string Filename = String("/dev/null");
+        string FileData = String("<header>"
+                                 "<first />"
+                                 "<second>"
+                                 "<sub>3</sub>"
+                                 "</second>");
+        xml_element *DocElement = ParseXmlDocument(Arena, FileData, Filename);
+        xml_element *HeaderElement = GetXmlElement(DocElement, String("header"));
+        Assert(HeaderElement);
+        
+        xml_element *FirstElement = GetXmlElement(HeaderElement, String("first"));
+        Assert(FirstElement);
+        
+        xml_element *SubElement = GetXmlElement(FirstElement, String("sub"));
+        AssertTrue(SubElement == 0);
+    }
+    
 }
 
 void
