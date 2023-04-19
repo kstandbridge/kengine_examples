@@ -174,9 +174,14 @@ typedef enum instruction_type
     
     Instruction_Mov,
     Instruction_MovImmediate,
+    
     Instruction_Push,
     Instruction_PushRegister,
     Instruction_PushSegmentRegister,
+    
+    Instruction_Pop,
+    Instruction_PopRegister,
+    Instruction_PopSegmentRegister,
 } instruction_type;
 
 inline string
@@ -186,10 +191,16 @@ InstructionToString(instruction_type Type)
     switch(Type)
     {
         case Instruction_MovImmediate:
-        case Instruction_Mov:  { Result = String("mov"); } break;
+        case Instruction_Mov: { Result = String("mov"); } break;
+        
         case Instruction_PushRegister:
         case Instruction_PushSegmentRegister:
-        case Instruction_Push: { Result = String("push"); } break;
+        case Instruction_Push:{ Result = String("push"); } break;
+        
+        case Instruction_PopRegister:
+        case Instruction_PopSegmentRegister:
+        case Instruction_Pop: { Result = String("pop"); } break;
+        
         default: { Result = String("; Invalid instruction"); } break;
     }
     return Result;

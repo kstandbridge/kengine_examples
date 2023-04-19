@@ -28,7 +28,11 @@ global instruction_table_entry GlobalInstructionTable[] =
     
     { Instruction_Push, 0b1111111, 7, { W, MOD, B(3, 0b110), RM, DISP_LO, DISP_HI } },
     { Instruction_PushRegister, 0b01010, 5, { REG } },
-    { Instruction_PushSegmentRegister, 0b000, 3, { MOD, B(3, 0b110) } }
+    { Instruction_PushSegmentRegister, 0b000, 3, { MOD, B(3, 0b110) } },
+    
+    { Instruction_Pop, 0b1000111, 7, { W, MOD, B(3, 0b000), RM, DISP_LO, DISP_HI } },
+    { Instruction_PopRegister, 0b01011, 5, { REG } },
+    { Instruction_PopSegmentRegister, 0b000, 3, { MOD, B(3, 0b111) } },
 };
 
 inline u8
@@ -122,6 +126,16 @@ GetNextInstruction(simulator_context *Context)
                 u8 Bits = GetBits(Op0, BitsAt, Field.Size);
                 Result.Bits[Field.Type] = Bits;
                 BitsAt -= Field.Size;
+                
+                if(Field.Type == Encoding_Bits)
+                {
+                    if(Result.Bits[Field.Type] != Field.Value)
+                    {
+                        Result.Type = Instruction_NOP;
+                        break;
+                    }
+                }
+                
                 if(BitsAt < 0)
                 {
                     BitsAt = 7;
@@ -135,20 +149,10 @@ GetNextInstruction(simulator_context *Context)
                     }
                 }
                 
-                if(Field.Type == Encoding_Bits)
-                {
-                    if(Result.Bits[Field.Type] != Field.Value)
-                    {
-                        Result.Type = Instruction_NOP;
-                        Context->InstructionStreamAt = StartingAt;
-                        break;
-                    }
-                }
-                
                 
             }
             
-            if(TestEntry.Type != Instruction_NOP)
+            if(Result.Type != Instruction_NOP)
             {
                 break;
             }
@@ -213,7 +217,8 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
             AppendFormatString(&State, "%S [%S], %S", Op, Src, Dest);
         }
     }
-    else if(Instruction.Type == Instruction_PushSegmentRegister)
+    else if((Instruction.Type == Instruction_PushSegmentRegister) ||
+            (Instruction.Type == Instruction_PopSegmentRegister))
     {
         AppendFormatString(&State, "%S %S", Op, SegmentRegisterToString(Instruction.Bits[Encoding_MOD]));
     }
@@ -305,7 +310,8 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                         }
                         else
                         {
-                            if(Instruction.Type == Instruction_PushRegister)
+                            if((Instruction.Type == Instruction_PushRegister) ||
+                               (Instruction.Type == Instruction_PopRegister))
                             {
                                 Dest = RegisterWordToString(Instruction.Bits[Encoding_REG]);
                                 AppendFormatString(&State, "%S %S", Op, Dest);
@@ -545,6 +551,23 @@ RunDisassembleTests(memory_arena *Arena)
         AssertEqualBits(0b01, Instruction.Bits[Encoding_MOD]);
         AssertEqualBits(0b110, Instruction.Bits[Encoding_Bits]);
     }
+    
+    {
+        // NOTE(kstandbridge): pop ds
+        u8 Buffer[] = { 0b00011111 };
+        simulator_context Context = 
+        {
+            .InstructionStream = Buffer,
+            .InstructionStreamAt = 0,
+            .InstructionStreamSize = sizeof(Buffer)
+        };
+        instruction Instruction = GetNextInstruction(&Context);
+        AssertEqualU32(Instruction_PopSegmentRegister, Instruction.Type);
+        AssertEqualBits(0b000, Instruction.OpCode);
+        AssertEqualBits(0b11, Instruction.Bits[Encoding_MOD]);
+        AssertEqualBits(0b111, Instruction.Bits[Encoding_Bits]);
+    }
+    
 }
 
 inline void
@@ -760,7 +783,6 @@ RunDisassembleToAssemblyTests(memory_arena *Arena)
         string Actual = Parse(Arena, Op, sizeof(Op));
         AssertEqualString(String("pop word [bp + si]\n"), Actual);
     }
-#if 0
     
     {
         u8 Op[] = { 0b10001111, 0b00000110, 0b00000011, 0b00000000 };
@@ -803,6 +825,7 @@ RunDisassembleToAssemblyTests(memory_arena *Arena)
         string Actual = Parse(Arena, Op, sizeof(Op));
         AssertEqualString(String("xchg ax, [bp - 1000]\n"), Actual);
     }
+#if 0
     
     {
         u8 Op[] = { 0b10000111, 0b01101111, 0b00110010 };
