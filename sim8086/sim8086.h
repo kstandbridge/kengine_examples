@@ -173,6 +173,7 @@ typedef enum instruction_type
     Instruction_NOP,
     
     Instruction_Mov,
+    Instruction_MovImmediateMemory,
     Instruction_MovImmediate,
     
     Instruction_Push,
@@ -182,6 +183,100 @@ typedef enum instruction_type
     Instruction_Pop,
     Instruction_PopRegister,
     Instruction_PopSegmentRegister,
+    
+    Instruction_Xchg,
+    Instruction_XchgWithAccumulator,
+    
+    Instruction_In,
+    
+    Instruction_Out,
+    
+    Instruction_Xlat,
+    
+    Instruction_Lea,
+    
+    Instruction_Lds,
+    
+    Instruction_Les,
+    
+    Instruction_Lahf,
+    
+    Instruction_Sahf,
+    
+    Instruction_Pushf,
+    
+    Instruction_Popf,
+    
+    Instruction_Add,
+    Instruction_AddImmediate,
+    Instruction_AddAccumulator,
+    
+    Instruction_Adc,
+    Instruction_AdcImmediate,
+    Instruction_AdcAccumulator,
+    
+    Instruction_Inc,
+    
+    Instruction_Aaa,
+    
+    Instruction_Daa,
+    
+    Instruction_Sub,
+    Instruction_SubImmediate,
+    Instruction_SubAccumulator,
+    
+    Instruction_Sbb,
+    Instruction_SbbImmediate,
+    Instruction_SbbAccumulator,
+    
+    Instruction_Dec,
+    
+    Instruction_Neg,
+    
+    Instruction_Cmp,
+    Instruction_CmpImmediate,
+    Instruction_CmpAccumulator,
+    
+    Instruction_Aas,
+    
+    Instruction_Das,
+    
+    Instruction_Mul,
+    
+    Instruction_Imul,
+    
+    Instruction_Aam,
+    
+    Instruction_Div,
+    
+    Instruction_Idiv,
+    
+    Instruction_Aad,
+    
+    Instruction_Cbw,
+    
+    Instruction_Cwd,
+    
+    Instruction_Not,
+    
+    Instruction_Shl,
+    
+    Instruction_Shr,
+    
+    Instruction_Sar,
+    
+    Instruction_Rol,
+    
+    Instruction_Ror,
+    
+    Instruction_Rcl,
+    
+    Instruction_Rcr,
+    
+    Instruction_And,
+    Instruction_AndImmediate,
+    Instruction_AndAccumulator,
+    
 } instruction_type;
 
 inline string
@@ -190,16 +285,110 @@ InstructionToString(instruction_type Type)
     string Result;
     switch(Type)
     {
+        case Instruction_MovImmediateMemory:
         case Instruction_MovImmediate:
-        case Instruction_Mov: { Result = String("mov"); } break;
+        case Instruction_Mov:  { Result = String("mov"); } break;
         
         case Instruction_PushRegister:
         case Instruction_PushSegmentRegister:
-        case Instruction_Push:{ Result = String("push"); } break;
+        case Instruction_Push: { Result = String("push"); } break;
         
         case Instruction_PopRegister:
         case Instruction_PopSegmentRegister:
-        case Instruction_Pop: { Result = String("pop"); } break;
+        case Instruction_Pop:  { Result = String("pop"); } break;
+        
+        case Instruction_XchgWithAccumulator:
+        case Instruction_Xchg: { Result = String("xchg"); } break;
+        
+        case Instruction_In:   { Result = String("in"); } break;
+        
+        case Instruction_Out:  { Result = String("out"); } break;
+        
+        case Instruction_Xlat: { Result = String("xlat"); } break;
+        
+        case Instruction_Lea: { Result = String("lea"); } break;
+        
+        case Instruction_Lds: { Result = String("lds"); } break;
+        
+        case Instruction_Les: { Result = String("les"); } break;
+        
+        case Instruction_Lahf: { Result = String("lahf"); } break;
+        
+        case Instruction_Sahf: { Result = String("sahf"); } break;
+        
+        case Instruction_Pushf: { Result = String("pushf"); } break;
+        
+        case Instruction_Popf: { Result = String("popf"); } break;
+        
+        case Instruction_AddImmediate:
+        case Instruction_AddAccumulator:
+        case Instruction_Add: { Result = String("add"); } break;
+        
+        case Instruction_AdcImmediate:
+        case Instruction_AdcAccumulator:
+        case Instruction_Adc: { Result = String("adc"); } break;
+        
+        case Instruction_Inc: { Result = String("inc"); } break;
+        
+        case Instruction_Aaa: { Result = String("aaa"); } break;
+        
+        case Instruction_Daa: { Result = String("daa"); } break;
+        
+        case Instruction_SubImmediate:
+        case Instruction_SubAccumulator:
+        case Instruction_Sub: { Result = String("sub"); } break;
+        
+        case Instruction_SbbImmediate:
+        case Instruction_SbbAccumulator:
+        case Instruction_Sbb: { Result = String("sbb"); } break;
+        
+        case Instruction_Dec: { Result = String("dec"); } break;
+        
+        case Instruction_Neg: { Result = String("neg"); } break;
+        
+        case Instruction_CmpImmediate:
+        case Instruction_CmpAccumulator:
+        case Instruction_Cmp: { Result = String("cmp"); } break;
+        
+        case Instruction_Aas: { Result = String("aas"); } break;
+        
+        case Instruction_Das: { Result = String("das"); } break;
+        
+        case Instruction_Mul: { Result = String("mul"); } break;
+        
+        case Instruction_Imul: { Result = String("imul"); } break;
+        
+        case Instruction_Aam: { Result = String("aam"); } break;
+        
+        case Instruction_Div: { Result = String("div"); } break;
+        
+        case Instruction_Idiv: { Result = String("idiv"); } break;
+        
+        case Instruction_Aad: { Result = String("aad"); } break;
+        
+        case Instruction_Cbw: { Result = String("cbw"); } break;
+        
+        case Instruction_Cwd: { Result = String("cwd"); } break;
+        
+        case Instruction_Not: { Result = String("not"); } break;
+        
+        case Instruction_Shl: { Result = String("shl"); } break;
+        
+        case Instruction_Shr: { Result = String("shr"); } break;
+        
+        case Instruction_Sar: { Result = String("sar"); } break;
+        
+        case Instruction_Rol: { Result = String("rol"); } break;
+        
+        case Instruction_Ror: { Result = String("ror"); } break;
+        
+        case Instruction_Rcl: { Result = String("rcl"); } break;
+        
+        case Instruction_Rcr: { Result = String("rcr"); } break;
+        
+        case Instruction_AndImmediate:
+        case Instruction_AndAccumulator:
+        case Instruction_And: { Result = String("and"); } break;
         
         default: { Result = String("; Invalid instruction"); } break;
     }
@@ -210,6 +399,7 @@ typedef struct instruction
 {
     instruction_type Type;
     u8 OpCode;
+    u8 OpCodeSize;
     u8 Bits[Encoding_Count];
     
 } instruction;
@@ -219,7 +409,7 @@ typedef struct instruction_table_entry
     instruction_type Type;
     u8 OpCode;
     u8 OpCodeSize;
-    encoding Fields[8];
+    encoding Fields[9];
 } instruction_table_entry;
 
 

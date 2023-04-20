@@ -210,7 +210,7 @@ RegisterMemory(format_string_state *State, u8 **At, umm *Index, u8 Op0, b32 Segm
             {
                 AppendFormatString(State, ", %d", (*At)[(*Index)++]);
             }
-                       
+            
         }
     }
     else
@@ -4149,13 +4149,28 @@ RunListing42Tests(memory_arena *Arena)
 void
 RunAllTests(memory_arena *Arena)
 {
+    
+#if 0    
     RunListing38Tests(Arena);
     RunListing39Tests(Arena);
     RunListing40Tests(Arena);
     RunListing41Tests(Arena);
     RunListing42Tests(Arena);
+#endif
     
-#if 0    
+    // shl al, 255 ; 0b11000000, 0b11100000, 0b11111111
+    // shl ax, 170 ; 0b11000001, 0b11100000, 0b10101010
+    // shl cx, 170 ; 0b11000001, 0b11100001, 0b10101010
+    // shl al, 170 ; 0b11000000, 0b11100000, 0b00101010
+    // shl ah, 2   ; 0b11000000, 0b11100100, 0b00000010
+    
+    // shl bp, 1            ; 0b11010001, 0b11100101
+    // shl ah, 1            ; 0b11010000, 0b11100100
+    // shl dh, 1            ; 0b11010000, 0b11100110
+    
+    // shl word [bp + 5], 1 ; 0b11010001, 0b01100110, 0b00000101
+    // shl word [bp + 5], 2 ; 0b11000001, 0b01100110, 0b00000101, 0b00000010
+#if 1
     
 #if 1
     string FileName = String("test");

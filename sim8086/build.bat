@@ -12,10 +12,10 @@ set CommonLinkerFlags=-incremental:no -opt:ref
 IF NOT EXIST ..\bin mkdir ..\bin
 pushd ..\bin
 
-cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -Z7 %IncludeDirectories% ..\sim8086\sim8086.c /Fe:sim8086.exe /link %CommonLinkerFlags%
+cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -Z7 %IncludeDirectories% ..\sim8086\sim8086_tests.c /Fe:sim8086_tests.exe /link %CommonLinkerFlags%
 
 del *.obj
 
-sim8086.exe
+sim8086_tests.exe
 
 popd

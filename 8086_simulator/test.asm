@@ -184,7 +184,7 @@ bits 16
 ; idiv si
 ; idiv byte [bp + si]
 ; idiv word [bx + 493]
-; aad
+; aad 42
 ; cbw
 ; cwd  
 ; not ah
@@ -193,14 +193,14 @@ bits 16
 ; not si
 ; not word [bp]
 ; not byte [bp + 9905]
-; shl ah, 1
+; shl dh, 1
 ; shr ax, 1
 ; sar bx, 1
 ; rol cx, 1
 ; ror dh, 1
 ; rcl sp, 1
 ; rcr bp, 1
-; shl word [bp + 5], 1
+shl word [bp + 6553], 1
 ; shr byte [bx + si - 199], 1
 ; sar byte [bx + di - 300], 1
 ; rol word [bp], 1
@@ -335,7 +335,7 @@ label:
 ; cmp cx, es:[4384]
 ; test byte cs:[bp - 39], 239
 ; sbb word cs:[bx + si - 4332], 10328
-lock not byte CS:[bp + 9905]
+; lock not byte CS:[bp + 9905]
 ; call 123:456
 ; jmp 789:34
 ; mov [bx+si+59],es
