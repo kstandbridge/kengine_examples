@@ -11,7 +11,7 @@ typedef struct simulator_context
 
 typedef enum encoding_type
 {
-    Encoding_NOP,
+    Encoding_None,
     
     Encoding_Bits,
     
@@ -277,6 +277,10 @@ typedef enum instruction_type
     Instruction_AndImmediate,
     Instruction_AndAccumulator,
     
+    Instruction_Test,
+    Instruction_TestImmediate,
+    Instruction_TestAccumulator
+        
 } instruction_type;
 
 inline string
@@ -389,6 +393,10 @@ InstructionToString(instruction_type Type)
         case Instruction_AndImmediate:
         case Instruction_AndAccumulator:
         case Instruction_And: { Result = String("and"); } break;
+        
+        case Instruction_TestImmediate:
+        case Instruction_TestAccumulator:
+        case Instruction_Test: { Result = String("test"); } break;
         
         default: { Result = String("; Invalid instruction"); } break;
     }

@@ -38,8 +38,8 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Xchg, 0b1000011, 7, { W, MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_XchgWithAccumulator, 0b10010, 5, { REG } },
     
-    { Instruction_In, 0b1110010, 7, { W, DATA } },
-    { Instruction_In, 0b1110110, 7, { W } },
+    { Instruction_In,  0b1110010, 7, { W, DATA } },
+    { Instruction_In,  0b1110110, 7, { W } },
     
     { Instruction_Out, 0b1110011, 7, { W, DATA } },
     { Instruction_Out, 0b1110111, 7, { W } },
@@ -128,8 +128,12 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Rcr, 0b110100, 6, { V, W, MOD, B(3, 0b011), RM, DISP_LO, DISP_HI } },
     
     { Instruction_And, 0b001000, 6, { D, W, MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_AndImmediate, 0b100000, 6, { S, W, MOD, B(3, 0b100), RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
+    { Instruction_AndImmediate, 0b1000000, 7, { W, MOD, B(3, 0b100), RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
     { Instruction_AndAccumulator, 0b0010010, 7, { W, DATA, DATA_IF_W } },
+    
+    { Instruction_Test, 0b1000010, 7, { W, MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_TestImmediate, 0b1111011, 7, { W, MOD, B(3, 0b000), RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
+    { Instruction_TestAccumulator, 0b1010100, 7, { W, DATA, DATA_IF_W } },
 };
 
 inline u8
@@ -148,7 +152,7 @@ GetNextInstruction(simulator_context *Context)
     {
         umm StartingAt = Context->InstructionStreamAt;
         for(u32 TableIndex = 0;
-            TableIndex< ArrayCount(GlobalInstructionTable);
+            TableIndex < ArrayCount(GlobalInstructionTable);
             ++TableIndex)
         {
             u8 Op0 = Context->InstructionStream[Context->InstructionStreamAt++];
@@ -180,7 +184,7 @@ GetNextInstruction(simulator_context *Context)
                 ++FieldIndex)
             {
                 encoding Field = TestEntry.Fields[FieldIndex];
-                if(Field.Type == Encoding_NOP)
+                if(Field.Type == Encoding_None)
                 {
                     // NOTE(kstandbridge): No more fields
                     break;
@@ -271,7 +275,6 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                   (Instruction.Type == Instruction_Lds) ||
                   (Instruction.Type == Instruction_Les));
     string Size = (IsWord) ? String("word") : String("byte");
-    string Dest;
     
     b32 NoFieldData = (Instruction.OpCodeSize == 8);
     if(NoFieldData)
@@ -356,7 +359,8 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
             (Instruction.Type == Instruction_SubAccumulator) ||
             (Instruction.Type == Instruction_SbbAccumulator) ||
             (Instruction.Type == Instruction_CmpAccumulator) ||
-            (Instruction.Type == Instruction_AndAccumulator))
+            (Instruction.Type == Instruction_AndAccumulator) ||
+            (Instruction.Type == Instruction_TestAccumulator))
     {
         s16 Value;
         
@@ -371,10 +375,9 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
         {
             Value = *(s8 *)&Instruction.Bits[Encoding_DATA];
         }
-        Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_RM]) : RegisterByteToString(Instruction.Bits[Encoding_RM]);
+        string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_RM]) : RegisterByteToString(Instruction.Bits[Encoding_RM]);
         AppendFormatString(&State, "%S %S, %d", Op, Dest, Value);
     } 
-    
     else if((Instruction.Type == Instruction_PushSegmentRegister) ||
             (Instruction.Type == Instruction_PopSegmentRegister))
     {
@@ -391,7 +394,7 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
         u8 ValueHigh = Instruction.Bits[Encoding_ADDR_HI];
         u16 Value = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
         
-        Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
+        string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
         if(Instruction.Bits[Encoding_D])
         {
             AppendFormatString(&State, "%S [%u], %S", Op, Value, Dest);
@@ -403,7 +406,7 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
     }
     else if(Instruction.Type == Instruction_In)
     {
-        Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
+        string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
         if((Instruction.Bits[Encoding_DATA] > 0))
         {
             u8 Value = Instruction.Bits[Encoding_DATA];
@@ -416,7 +419,7 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
     }
     else if(Instruction.Type == Instruction_Out)
     {
-        Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
+        string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
         if((Instruction.Bits[Encoding_DATA] > 0))
         {
             u8 Value = Instruction.Bits[Encoding_DATA];
@@ -429,9 +432,9 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
     }
     else
     {
-        
         switch(Instruction.Bits[Encoding_MOD])
         {
+            
             case Mod_RegisterMode:
             {
                 string Src = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_RM]) : RegisterByteToString(Instruction.Bits[Encoding_RM]);
@@ -441,7 +444,8 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                    (Instruction.Type == Instruction_AdcImmediate) ||
                    (Instruction.Type == Instruction_SubImmediate) ||
                    (Instruction.Type == Instruction_SbbImmediate) ||
-                   (Instruction.Type == Instruction_CmpImmediate))
+                   (Instruction.Type == Instruction_CmpImmediate) ||
+                   (Instruction.Type == Instruction_TestImmediate))
                 {
                     s16 Value;
                     
@@ -457,22 +461,11 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                         Value = *(s8 *)&Instruction.Bits[Encoding_DATA];
                     }
                     
-                    Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_RM]) : RegisterByteToString(Instruction.Bits[Encoding_RM]);
+                    string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_RM]) : RegisterByteToString(Instruction.Bits[Encoding_RM]);
                     AppendFormatString(&State, "%S %S, %d", Op, Dest, Value);
                 }
                 else
                 {                
-                    Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
-                    
-                    // NOTE(kstandbridge): xchg uses the first bit on MOD to determin direction
-                    // TODO(kstandbridge): Consider putting this into the instruction?
-                    if((Instruction.Type == Instruction_Xchg) && 
-                       (GetBits(Instruction.Bits[Encoding_MOD], 1, 1)))
-                    {
-                        string Temp = Dest;
-                        Dest = Src;
-                        Src = Temp;
-                    } 
                     if((Instruction.Type == Instruction_Inc) ||
                        (Instruction.Type == Instruction_Dec) ||
                        (Instruction.Type == Instruction_Neg) ||
@@ -505,11 +498,21 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                     }
                     else
                     {
+                        string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
+                        
+                        // NOTE(kstandbridge): xchg requires the direction flip
+                        if(Instruction.Type == Instruction_Xchg)
+                        {
+                            string Temp = Dest;
+                            Dest = Src;
+                            Src = Temp;
+                        } 
+                        
                         AppendFormatString(&State, "%S %S, %S", Op, Src, Dest);
                     }
                 }
-                
             } break;
+            
             case Mod_MemoryMode:
             {
                 if(Instruction.Bits[Encoding_RM] == EffectiveAddress_DirectAddress)
@@ -523,7 +526,7 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                     u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
                     Displacement = *(s16 *)&ValueWide;
                     
-                    Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
+                    string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
                     if((Instruction.Type == Instruction_Mov) ||
                        (Instruction.Type == Instruction_And))
                     {
@@ -559,7 +562,8 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                     string Src = EffectiveAddressToString(Instruction.Bits[Encoding_RM]);
                     
                     if((Instruction.Type == Instruction_MovImmediate) ||
-                       (Instruction.Type == Instruction_CmpImmediate))
+                       (Instruction.Type == Instruction_CmpImmediate) ||
+                       (Instruction.Type == Instruction_TestImmediate))
                     {
                         s16 Value;
                         
@@ -592,7 +596,7 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                             (Instruction.Type == Instruction_Sbb) ||
                             (Instruction.Type == Instruction_Cmp))
                     {                            
-                        Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
+                        string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
                         if(Instruction.Bits[Encoding_D])
                         {
                             AppendFormatString(&State, "%S %S, [%S]", Op, Dest, Src);
@@ -609,12 +613,12 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                            (Instruction.Type == Instruction_Inc) ||
                            (Instruction.Type == Instruction_Dec))
                         {
-                            Dest = RegisterWordToString(Instruction.Bits[Encoding_REG]);
+                            string Dest = RegisterWordToString(Instruction.Bits[Encoding_REG]);
                             AppendFormatString(&State, "%S %S", Op, Dest);
                         }
                         else if(Instruction.Type == Instruction_PushSegmentRegister)
                         {
-                            Dest = SegmentRegisterToString(Instruction.Bits[Encoding_MOD]);
+                            string Dest = SegmentRegisterToString(Instruction.Bits[Encoding_MOD]);
                             AppendFormatString(&State, "%S %S", Op, Dest);
                         }
                         else if(Instruction.Type == Instruction_Adc)
@@ -647,6 +651,7 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                     }
                 }
             } break;
+            
             case Mod_8BitDisplace:
             case Mod_16BitDisplace:
             {
@@ -680,19 +685,22 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                     Src = FormatString(Arena, "[%S]", EffectiveAddressToString(Instruction.Bits[Encoding_RM]));
                 }
                 
-                Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
+                string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
                 
                 
-                // NOTE(kstandbridge): xchg uses the first bit on MOD to determin direction
-                // TODO(kstandbridge): Consider putting this into the instruction?
-                if((Instruction.Type == Instruction_Xchg) && 
-                   (GetBits(Instruction.Bits[Encoding_MOD], 1, 1)))
+                // NOTE(kstandbridge): xchg and test seems to require this order on 16 bit displacements but not 8 bit??
+                if(((Instruction.Type == Instruction_Xchg) || 
+                    (Instruction.Type == Instruction_Test)) &&
+                   (Instruction.Bits[Encoding_MOD] == Mod_16BitDisplace))
                 {
                     string Temp = Dest;
                     Dest = Src;
                     Src = Temp;
                 } 
-                else if((Instruction.Bits[Encoding_D]))
+                else if((Instruction.Bits[Encoding_D]) ||
+                        (Instruction.Type == Instruction_Lea) ||
+                        (Instruction.Type == Instruction_Lds) ||
+                        (Instruction.Type == Instruction_Les))
                 {
                     string Temp = Dest;
                     Dest = Src;
@@ -706,15 +714,13 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                    (Instruction.Type == Instruction_Sub) ||
                    (Instruction.Type == Instruction_Sbb) ||
                    (Instruction.Type == Instruction_Cmp) ||
-                   (Instruction.Type == Instruction_And))
+                   (Instruction.Type == Instruction_And) ||
+                   (Instruction.Type == Instruction_Lea) ||
+                   (Instruction.Type == Instruction_Lds) ||
+                   (Instruction.Type == Instruction_Les) ||
+                   (Instruction.Type == Instruction_Test))
                 {
                     AppendFormatString(&State, "%S %S, %S", Op, Src, Dest);
-                }
-                else if((Instruction.Type == Instruction_Lea) ||
-                        (Instruction.Type == Instruction_Lds) ||
-                        (Instruction.Type == Instruction_Les))
-                {
-                    AppendFormatString(&State, "%S %S, %S", Op, Dest, Src);
                 }
                 else if((Instruction.Type == Instruction_Shl) ||
                         (Instruction.Type == Instruction_Shr) ||

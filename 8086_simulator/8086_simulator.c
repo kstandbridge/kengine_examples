@@ -4,7 +4,6 @@
 
 #include "kengine.h"
 
-
 inline string
 GetRegisterName(u32 Index, b32 IsWord)
 {
@@ -4168,8 +4167,8 @@ RunAllTests(memory_arena *Arena)
     // shl ah, 1            ; 0b11010000, 0b11100100
     // shl dh, 1            ; 0b11010000, 0b11100110
     
-    // shl word [bp + 5], 1 ; 0b11010001, 0b01100110, 0b00000101
-    // shl word [bp + 5], 2 ; 0b11000001, 0b01100110, 0b00000101, 0b00000010
+    // shl word [bp + 5], 1    ; 0b11010001, 0b01100110, 0b00000101
+    // shl word [bp + 6553], 1 ; 0b11010001, 0b10100110, 0b10011001, 0b00011001
 #if 1
     
 #if 1

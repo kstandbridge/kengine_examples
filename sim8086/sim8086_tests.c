@@ -1348,7 +1348,6 @@ RunDisassembleToAssemblyTests(memory_arena *Arena)
         AssertEqualString(String("test bx, cx"), StreamToAssembly(Arena, Op, sizeof(Op)));
     }
     
-#if 0
     {
         u8 Op[] = { 0b10000100, 0b10110110, 0b10000110, 0b00000001 };
         AssertEqualString(String("test dh, [bp + 390]"), StreamToAssembly(Arena, Op, sizeof(Op)));
@@ -1378,6 +1377,7 @@ RunDisassembleToAssemblyTests(memory_arena *Arena)
         u8 Op[] = { 0b00001000, 0b11100000 };
         AssertEqualString(String("or al, ah"), StreamToAssembly(Arena, Op, sizeof(Op)));
     }
+#if 0
     
     {
         u8 Op[] = { 0b00001000, 0b11001101 };
