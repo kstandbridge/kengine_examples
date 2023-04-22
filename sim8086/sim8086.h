@@ -44,6 +44,12 @@ typedef enum encoding_type
     
     Encoding_IP_INC8,
     
+    Encoding_IP_INC_LO,
+    Encoding_IP_INC_HI,
+    
+    Encoding_CS_LO,
+    Encoding_CS_HI,
+    
     Encoding_Count,
 } encoding_type;
 
@@ -186,6 +192,7 @@ typedef enum instruction_type
     Instruction_Mov,
     Instruction_MovImmediateMemory,
     Instruction_MovImmediate,
+    Instruction_MovRegisterSegment,
     
     Instruction_Push,
     Instruction_PushRegister,
@@ -313,10 +320,19 @@ typedef enum instruction_type
     Instruction_Stds,
     
     Instruction_Call,
+    Instruction_CallDirectIntersegment,
+    Instruction_CallDirectWithin,
+    Instruction_CallIndirect,
     
     Instruction_Jmp,
+    Instruction_JmpDirectIntersegment,
+    Instruction_JmpDirectWithin,
+    Instruction_JmpIndirect,
     
     Instruction_Ret,
+    
+    Instruction_Retf,
+    Instruction_RetfIntersegment,
     
     Instruction_Je,
     
@@ -400,6 +416,7 @@ InstructionToString(instruction_type Type)
     {
         case Instruction_MovImmediateMemory:
         case Instruction_MovImmediate:
+        case Instruction_MovRegisterSegment:
         case Instruction_Mov:  { Result = String("mov"); } break;
         
         case Instruction_PushRegister:
@@ -527,11 +544,20 @@ InstructionToString(instruction_type Type)
         
         case Instruction_Stds: { Result = String("stos"); } break;
         
+        case Instruction_CallDirectWithin:
+        case Instruction_CallDirectIntersegment:
+        case Instruction_CallIndirect:
         case Instruction_Call: { Result = String("call"); } break;
         
+        case Instruction_JmpDirectIntersegment:
+        case Instruction_JmpDirectWithin:
+        case Instruction_JmpIndirect:
         case Instruction_Jmp: { Result = String("jmp"); } break;
         
         case Instruction_Ret: { Result = String("ret"); } break;
+        
+        case Instruction_Retf:
+        case Instruction_RetfIntersegment: { Result = String("retf"); } break;
         
         case Instruction_Je: { Result = String("je"); } break;
         

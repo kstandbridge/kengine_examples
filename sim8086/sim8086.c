@@ -26,12 +26,19 @@
 
 #define IP_INC8 { Encoding_IP_INC8, 8 }
 
+#define IP_INC_LO { Encoding_IP_INC_LO, 8 }
+#define IP_INC_HI { Encoding_IP_INC_HI, 8 }
+
+#define CS_LO { Encoding_CS_LO, 8 }
+#define CS_HI { Encoding_CS_HI, 8 }
+
 global instruction_table_entry GlobalInstructionTable[] = 
 {
     { Instruction_Mov, 0b100010, 6, { D, W, MOD, REG, RM, DISP_LO, DISP_HI  } },
     { Instruction_MovImmediateMemory, 0b1100011, 7, { W, MOD, B(3, 0b000), RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
     { Instruction_MovImmediate, 0b1011, 4, { W, REG, DATA, DATA_IF_W } },
     { Instruction_Mov, 0b101000, 6, { D, W, ADDR_LO, ADDR_HI } },
+    { Instruction_MovRegisterSegment, 0b10001100, 8, { MOD, REG, RM, DISP_LO, DISP_HI } },
     
     { Instruction_Push, 0b1111111, 7, { W, MOD, B(3, 0b110), RM, DISP_LO, DISP_HI } },
     { Instruction_PushRegister, 0b01010, 5, { REG } },
@@ -163,11 +170,20 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Stds, 0b1010101, 7, { W } },
     
     { Instruction_Call, 0b11111111, 8, { MOD, B(3, 0b010), RM, DISP_LO, DISP_HI } },
+    { Instruction_CallDirectIntersegment, 0b10011010, 8, { IP_INC_LO, IP_INC_HI, CS_LO, CS_HI } },
+    { Instruction_CallDirectWithin,  0b11101000, 8, { IP_INC_LO, IP_INC_HI } },
+    { Instruction_CallIndirect, 0b11111111, 8, { MOD, B(3, 0b011), RM, DISP_LO, DISP_HI } },
     
     { Instruction_Jmp, 0b11111111, 8, { MOD, B(3, 0b100), RM, DISP_LO, DISP_HI } },
+    { Instruction_JmpDirectIntersegment,  0b11101010, 8, { IP_INC_LO, IP_INC_HI, CS_LO, CS_HI } },
+    { Instruction_JmpDirectWithin,  0b11101001, 8, { IP_INC_LO, IP_INC_HI } },
+    { Instruction_JmpIndirect, 0b11111111, 8, { MOD, B(3, 0b101), RM, DISP_LO, DISP_HI } },
     
     { Instruction_Ret, 0b11000010, 8, { DATA_LO, DATA_HI } },
     { Instruction_Ret, 0b11000011, 8, { 0 } },
+    
+    { Instruction_Retf, 0b11001011, 8, { 0 } },
+    { Instruction_RetfIntersegment, 0b11001010, 8, { DATA_LO, DATA_HI } },
     
     { Instruction_Je,     0b01110100, 8, { IP_INC8 } },
     { Instruction_Jl,     0b01111100, 8, { IP_INC8 } },
@@ -423,7 +439,8 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
 #endif
         
     }
-    else if((Instruction.Type == Instruction_Ret))
+    else if((Instruction.Type == Instruction_Ret) ||
+            (Instruction.Type == Instruction_RetfIntersegment))
     {
         u8 ValueLow = Instruction.Bits[Encoding_DATA_LO];
         u8 ValueHigh = Instruction.Bits[Encoding_DATA_HI];
@@ -431,6 +448,31 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
         s16 Value = *(s16 *)&ValueWide;
         
         AppendFormatString(&State, "%S %d", Op, Value);
+    }
+    else if((Instruction.Type == Instruction_JmpDirectWithin) ||
+            (Instruction.Type == Instruction_CallDirectWithin))
+    {
+        u8 ValueLow = Instruction.Bits[Encoding_IP_INC_LO];
+        u8 ValueHigh = Instruction.Bits[Encoding_IP_INC_HI];
+        u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+        
+        // NOTE(kstandbridge): We need to include the size of the op and encodings
+        ValueWide += 3;
+        
+        AppendFormatString(&State, "%S %u", Op, ValueWide);
+    }
+    else if((Instruction.Type == Instruction_CallDirectIntersegment) ||
+            (Instruction.Type == Instruction_JmpDirectIntersegment))
+    {
+        u8 ValueLow = Instruction.Bits[Encoding_IP_INC_LO];
+        u8 ValueHigh = Instruction.Bits[Encoding_IP_INC_HI];
+        u16 IPValue = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+        
+        ValueLow = Instruction.Bits[Encoding_CS_LO];
+        ValueHigh = Instruction.Bits[Encoding_CS_HI];
+        u16 CSValue = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+        
+        AppendFormatString(&State, "%S %u:%u", Op, CSValue, IPValue);
     }
     else if((Instruction.Type == Instruction_Aam) ||
             (Instruction.Type == Instruction_Aad) ||
@@ -799,6 +841,14 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                                 AppendFormatString(&State, "%S %S [%S], 1", Op, Size, Src);
                             }
                         }
+                        else if((Instruction.Type == Instruction_Jmp))
+                        {
+                            AppendFormatString(&State, "%S [%S]", Op, Src);
+                        }
+                        else if((Instruction.Type == Instruction_JmpIndirect))
+                        {
+                            AppendFormatString(&State, "%S far [%S]", Op, Src);
+                        }
                         else
                         {
                             AppendFormatString(&State, "%S %S [%S]", Op, Size, Src);
@@ -922,6 +972,16 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                 else if(Instruction.Type == Instruction_Call)
                 {
                     AppendFormatString(&State, "%S %S", Op, Src);
+                }
+                else if((Instruction.Type == Instruction_MovRegisterSegment))
+                {
+                    Dest = SegmentRegisterToString(Instruction.Bits[Encoding_REG]);
+                    AppendFormatString(&State, "%S %S, %S", Op, Src, Dest);
+                }
+                else if((Instruction.Type == Instruction_CallIndirect))
+                {
+                    // TODO(kstandbridge): why is this far?
+                    AppendFormatString(&State, "%S far %S", Op, Src);
                 }
                 else
                 {

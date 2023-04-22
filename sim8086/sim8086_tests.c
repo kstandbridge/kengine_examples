@@ -1841,7 +1841,6 @@ RunDisassembleToAssemblyTests(memory_arena *Arena)
         u8 Stream[] = { 0b10011010, 0b11001000, 0b00000001, 0b01111011, 0b00000000 };
         AssertEqualString(String("call 123:456"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
-#if 0
     
     {
         u8 Stream[] = { 0b11101010, 0b00100010, 0b00000000, 0b00010101, 0b00000011 };
@@ -1850,7 +1849,7 @@ RunDisassembleToAssemblyTests(memory_arena *Arena)
     
     {
         u8 Stream[] = { 0b10001100, 0b01000000, 0b00111011 };
-        AssertEqualString(String("mov [bx+si+59],es"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("mov [bx + si + 59], es"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
@@ -1885,12 +1884,12 @@ RunDisassembleToAssemblyTests(memory_arena *Arena)
     
     {
         u8 Stream[] = { 0b11111111, 0b01010010, 0b11000110 };
-        AssertEqualString(String("call [bp+si-0x3a]"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("call [bp + si - 58]"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b11111111, 0b01011010, 0b11000110 };
-        AssertEqualString(String("call far [bp+si-0x3a]"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("call far [bp + si - 58]"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
@@ -1907,8 +1906,6 @@ RunDisassembleToAssemblyTests(memory_arena *Arena)
         u8 Stream[] = { 0b11101010, 0b10001000, 0b01110111, 0b01100110, 0b01010101 };
         AssertEqualString(String("jmp 21862:30600"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
-#endif
-    
 }
 
 void
