@@ -285,19 +285,8 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Sti,                    0b11111011, 8, 0, 0, { 0 } },
     { Instruction_Cld,                    0b11111100, 8, 0, 0, { 0 } },
     { Instruction_Std,                    0b11111101, 8, 0, 0, { 0 } },
-    
-    { Instruction_Inc,                    0b11111110, 8, 0, 0, { MOD, B(3, 0b000), RM, DISP_LO, DISP_HI } },
-    { Instruction_Dec,                    0b11111110, 8, 0, 0, { MOD, B(3, 0b001), RM, DISP_LO, DISP_HI } },
-    { Instruction_Push,                   0b11111110, 8, 0, 0, { MOD, B(3, 0b110), RM, DISP_LO, DISP_HI } },
-    
-    { Instruction_Inc,                    0b11111111, 8, Flag_W | 0, 0, { MOD, B(3, 0b000), RM, DISP_LO, DISP_HI } },
-    { Instruction_Dec,                    0b11111111, 8, Flag_W | 0, 0, { MOD, B(3, 0b001), RM, DISP_LO, DISP_HI } },
-    { Instruction_Call,                   0b11111111, 8, 0, 0,          { MOD, B(3, 0b010), RM, DISP_LO, DISP_HI } },
-    { Instruction_CallIndirect,           0b11111111, 8, 0, 0,          { MOD, B(3, 0b011), RM, DISP_LO, DISP_HI } },
-    { Instruction_Jmp,                    0b11111111, 8, 0, 0,          { MOD, B(3, 0b100), RM, DISP_LO, DISP_HI } },
-    { Instruction_JmpIndirect,            0b11111111, 8, 0, 0,          { MOD, B(3, 0b101), RM, DISP_LO, DISP_HI } },
-    { Instruction_Push,                   0b11111111, 8, Flag_W | 0, 0, { MOD, B(3, 0b110), RM, DISP_LO, DISP_HI } },
-    
+    { Instruction_Control,                0b11111110, 8, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
+    { Instruction_Control,                0b11111111, 8, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
 };
 
 inline u8
@@ -493,6 +482,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
              (Instruction.Type != Instruction_PopRegister) &&
              (Instruction.Type != Instruction_XchgWithAccumulator) &&
              (Instruction.Type != Instruction_Inc) &&
+             (Instruction.Type != Instruction_Control) &&
              (Instruction.Type != Instruction_Dec)) &&
             (!Instruction.HasFieldData))
     {
@@ -715,6 +705,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                 {                
                     if((Instruction.Type == Instruction_Inc) ||
                        (Instruction.Type == Instruction_Arithmetic) ||
+                       (Instruction.Type == Instruction_Control) ||
                        (Instruction.Type == Instruction_Dec) ||
                        (Instruction.Type == Instruction_Neg) ||
                        (Instruction.Type == Instruction_Mul) ||
@@ -799,7 +790,10 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                         AppendFormatString(&State, "%S [%u], al", Op, ValueWide);
                     }
                     else if((Instruction.Type == Instruction_Call) ||
-                            (Instruction.Type == Instruction_Jmp))
+                            (Instruction.Type == Instruction_Jmp) ||
+                            ((Instruction.Type == Instruction_Control) &&
+                             ((Instruction.Bits[Encoding_Type]) == SubOp_Jmp) ||
+                             ((Instruction.Bits[Encoding_Type]) == SubOp_Call)))
                     {
                         AppendFormatString(&State, "%S [%u]", Op, ValueWide);
                     }
@@ -890,11 +884,13 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                                 AppendFormatString(&State, "%S %S [%S], 1", Op, Size, Src);
                             }
                         }
-                        else if((Instruction.Type == Instruction_Jmp))
+                        else if((Instruction.Type == Instruction_Control) &&
+                                (Instruction.Bits[Encoding_Type]) == SubOp_Jmp)
                         {
                             AppendFormatString(&State, "%S [%S]", Op, Src);
                         }
-                        else if((Instruction.Type == Instruction_JmpIndirect))
+                        else if((Instruction.Type == Instruction_Control) &&
+                                (Instruction.Bits[Encoding_Type]) == SubOp_IJmp)
                         {
                             AppendFormatString(&State, "%S far [%S]", Op, Src);
                         }
@@ -1010,7 +1006,9 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                     
                     AppendFormatString(&State, "%S %S %S, %u", Op, Size, Src, Data);
                 }
-                else if(Instruction.Type == Instruction_Call)
+                //else if((Instruction.Type == Instruction_Call))
+                else if((Instruction.Type == Instruction_Control) &&
+                        (Instruction.Bits[Encoding_Type]) == SubOp_Call)
                 {
                     AppendFormatString(&State, "%S %S", Op, Src);
                 }
@@ -1019,7 +1017,8 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                     Dest = SegmentRegisterToString(Instruction.Bits[Encoding_REG]);
                     AppendFormatString(&State, "%S %S, %S", Op, Src, Dest);
                 }
-                else if((Instruction.Type == Instruction_CallIndirect))
+                else if((Instruction.Type == Instruction_Control) &&
+                        (Instruction.Bits[Encoding_Type]) == SubOp_ICall)
                 {
                     // TODO(kstandbridge): why is this far?
                     AppendFormatString(&State, "%S far %S", Op, Src);

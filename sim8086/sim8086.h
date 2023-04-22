@@ -189,6 +189,7 @@ typedef enum instruction_type
     Instruction_Immediate,
     Instruction_Logic,
     Instruction_Arithmetic,
+    Instruction_Control,
     
     // NOTE(kstandbridge): Ops
     Instruction_Mov,
@@ -430,9 +431,19 @@ typedef enum sub_op_type
     SubOp_Not    = 0b010,
     SubOp_Neg    = 0b011,
     SubOp_Mul    = 0b100,
-    SubOp_Imul   = 0b101,
+    SubOp_IMul   = 0b101,
     SubOp_Div    = 0b110,
-    SubOp_Idiv   = 0b111,
+    SubOp_IDiv   = 0b111,
+    
+    // NOTE(kstandbridge): Control
+    SubOp_Inc    = 0b000,
+    SubOp_Dec    = 0b001,
+    SubOp_Call   = 0b010,
+    SubOp_ICall  = 0b011,
+    SubOp_Jmp    = 0b100,
+    SubOp_IJmp   = 0b101,
+    SubOp_Push   = 0b110,
+    //SubOp_     = 0b111,
     
 } sub_op_type;
 
@@ -518,12 +529,29 @@ InstructionToString(instruction Instruction)
                 case SubOp_Not:    { Result = String("not"); }; break;
                 case SubOp_Neg:    { Result = String("neg"); }; break;
                 case SubOp_Mul:    { Result = String("mul"); }; break;
-                case SubOp_Imul:   { Result = String("imul"); }; break;
+                case SubOp_IMul:   { Result = String("imul"); }; break;
                 case SubOp_Div:    { Result = String("div"); }; break;
-                case SubOp_Idiv:   { Result = String("idiv"); }; break;
+                case SubOp_IDiv:   { Result = String("idiv"); }; break;
                 default: { Result = String("; invalid encoding type"); } break;
             }
         } break;
+        
+        case Instruction_Control:
+        {
+            switch(Instruction.Bits[Encoding_Type])
+            {
+                case SubOp_Inc:   { Result = String("inc"); }; break;
+                case SubOp_Dec:   { Result = String("dec"); }; break;
+                case SubOp_Call:  { Result = String("call"); }; break;
+                case SubOp_ICall: { Result = String("call"); }; break;
+                case SubOp_Jmp:   { Result = String("jmp"); }; break;
+                case SubOp_IJmp:  { Result = String("jmp"); }; break;
+                case SubOp_Push:  { Result = String("push"); }; break;
+                //case SubOp_     = 0b111,
+                default: { Result = String("; invalid encoding type"); } break;
+            }
+        } break;
+        
         
         case Instruction_MovImmediateMemory:
         case Instruction_MovImmediate:
