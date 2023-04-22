@@ -23,8 +23,6 @@ typedef enum encoding_type
     Encoding_REG,
     Encoding_RM,
     
-    Encoding_W,
-    
     Encoding_DISP_LO,
     Encoding_DISP_HI,
     
@@ -51,14 +49,14 @@ typedef enum encoding_type
 
 typedef enum register_byte_type
 {
-    RegisterByte_AL,
-    RegisterByte_CL,
-    RegisterByte_DL,
-    RegisterByte_BL,
-    RegisterByte_AH,
-    RegisterByte_CH,
-    RegisterByte_DH,
-    RegisterByte_BH,
+    RegisterByte_AL = 0b000,
+    RegisterByte_CL = 0b001,
+    RegisterByte_DL = 0b010,
+    RegisterByte_BL = 0b011,
+    RegisterByte_AH = 0b100,
+    RegisterByte_CH = 0b101,
+    RegisterByte_DH = 0b110,
+    RegisterByte_BH = 0b111,
 } register_byte_type;
 
 inline string
@@ -82,14 +80,14 @@ RegisterByteToString(register_byte_type Type)
 
 typedef enum register_word_type
 {
-    RegisterWord_AX,
-    RegisterWord_CX,
-    RegisterWord_DX,
-    RegisterWord_BX,
-    RegisterWord_SP,
-    RegisterWord_BP,
-    RegisterWord_SI,
-    RegisterWord_DI,
+    RegisterWord_AX = 0b000,
+    RegisterWord_CX = 0b001,
+    RegisterWord_DX = 0b010,
+    RegisterWord_BX = 0b011,
+    RegisterWord_SP = 0b100,
+    RegisterWord_BP = 0b101,
+    RegisterWord_SI = 0b110,
+    RegisterWord_DI = 0b111,
 } register_word_type;
 
 inline string
@@ -648,6 +646,16 @@ typedef struct instruction
     
     instruction_flags Flags;
     
+    union
+    {    
+        u32 Generic;
+        
+        register_byte_type RegisterByte;
+        register_word_type RegisterWord;
+        segment_register_type SegmentRegister;
+    };
+    
+    b32 HasFieldData;
     u8 Bits[Encoding_Count];
     
 } instruction;
@@ -659,6 +667,15 @@ typedef struct instruction_table_entry
     u8 OpCodeSize;
     
     instruction_flags Flags;
+    
+    union
+    {    
+        u32 Generic;
+        
+        register_byte_type RegisterByte;
+        register_word_type RegisterWord;
+        segment_register_type SegmentRegister;
+    };
     
     encoding Fields[9];
 } instruction_table_entry;
