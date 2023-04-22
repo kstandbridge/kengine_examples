@@ -1,11 +1,8 @@
 #include "sim8086.h"
 
-#define B(Size, Bits) { Encoding_Bits, 3, Bits }
-
-#define TYPE { Encoding_Type, 3 }
-
 #define MOD { Encoding_MOD, 2 }
 #define REG { Encoding_REG, 3 }
+#define TYPE REG
 #define RM { Encoding_RM, 3 }
 
 #define DISP_LO { Encoding_DISP_LO, 8 }
@@ -14,16 +11,16 @@
 #define DATA { Encoding_DATA, 8 }
 #define DATA_IF_W { Encoding_DATA_IF_W, 8 }
 
-#define ADDR_LO { Encoding_ADDR_LO, 8 }
-#define ADDR_HI { Encoding_ADDR_HI, 8 }
+#define ADDR_LO { Encoding_DATA_LO, 8 }
+#define ADDR_HI { Encoding_DATA_HI, 8 }
 
 #define DATA_LO { Encoding_DATA_LO, 8 }
 #define DATA_HI { Encoding_DATA_HI, 8 }
 
 #define IP_INC8 { Encoding_IP_INC8, 8 }
 
-#define IP_INC_LO { Encoding_IP_INC_LO, 8 }
-#define IP_INC_HI { Encoding_IP_INC_HI, 8 }
+#define IP_INC_LO { Encoding_DATA_LO, 8 }
+#define IP_INC_HI { Encoding_DATA_HI, 8 }
 
 #define CS_LO { Encoding_CS_LO, 8 }
 #define CS_HI { Encoding_CS_HI, 8 }
@@ -172,8 +169,8 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Mov,                    0b10001011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI  } },
     { Instruction_MovRegisterSegment,     0b10001100, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Lea,                    0b10001101, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Pop,                    0b10001110, 0, 0, { MOD, B(3, 0b00), RM, DISP_LO, DISP_HI } },
-    { Instruction_Pop,                    0b10001111, Flag_W | 0, 0, { MOD, B(3, 0b00), RM, DISP_LO, DISP_HI } },
+    { Instruction_Pop,                    0b10001110, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
+    { Instruction_Pop,                    0b10001111, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
     { Instruction_XchgWithAccumulator,    0b10010000, 0, 0b000,      { 0 } },
     { Instruction_XchgWithAccumulator,    0b10010001, 0, 0b001,      { 0 } },
     { Instruction_XchgWithAccumulator,    0b10010010, 0, 0b010,      { 0 } },
@@ -228,8 +225,8 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Ret,                    0b11000011, 0, 0, { 0 } },
     { Instruction_Les,                    0b11000100, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Lds,                    0b11000101, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_MovImmediateMemory,     0b11000110, 0, 0, { MOD, B(3, 0b000), RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
-    { Instruction_MovImmediateMemory,     0b11000111, Flag_W | 0, 0, { MOD, B(3, 0b000), RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
+    { Instruction_MovImmediateMemory,     0b11000110, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
+    { Instruction_MovImmediateMemory,     0b11000111, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
     { Instruction_NOP,                    0b11001000, 0, 0, 0, { 0 } },
     { Instruction_NOP,                    0b11001001, 0, 0, 0, { 0 } },
     { Instruction_RetfIntersegment,       0b11001010, 0, 0, { DATA_LO, DATA_HI } },
@@ -502,8 +499,8 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
     else if((Instruction.Type == Instruction_JmpDirectWithin) ||
             (Instruction.Type == Instruction_CallDirectWithin))
     {
-        u8 ValueLow = Instruction.Bits[Encoding_IP_INC_LO];
-        u8 ValueHigh = Instruction.Bits[Encoding_IP_INC_HI];
+        u8 ValueLow = Instruction.Bits[Encoding_DATA_LO];
+        u8 ValueHigh = Instruction.Bits[Encoding_DATA_HI];
         u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
         
         // NOTE(kstandbridge): We need to include the size of the op and encodings
@@ -514,8 +511,8 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
     else if((Instruction.Type == Instruction_CallDirectIntersegment) ||
             (Instruction.Type == Instruction_JmpDirectIntersegment))
     {
-        u8 ValueLow = Instruction.Bits[Encoding_IP_INC_LO];
-        u8 ValueHigh = Instruction.Bits[Encoding_IP_INC_HI];
+        u8 ValueLow = Instruction.Bits[Encoding_DATA_LO];
+        u8 ValueHigh = Instruction.Bits[Encoding_DATA_HI];
         u16 IPValue = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
         
         ValueLow = Instruction.Bits[Encoding_CS_LO];
@@ -619,11 +616,11 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
     {
         AppendFormatString(&State, "%S ax, %S", Op, RegisterWordToString(Instruction.RegisterWord));
     }
-    else if((Instruction.Bits[Encoding_ADDR_HI] > 0) ||
-            (Instruction.Bits[Encoding_ADDR_LO] > 0))
+    else if((Instruction.Bits[Encoding_DATA_HI] > 0) ||
+            (Instruction.Bits[Encoding_DATA_LO] > 0))
     {
-        u8 ValueLow = Instruction.Bits[Encoding_ADDR_LO];
-        u8 ValueHigh = Instruction.Bits[Encoding_ADDR_HI];
+        u8 ValueLow = Instruction.Bits[Encoding_DATA_LO];
+        u8 ValueHigh = Instruction.Bits[Encoding_DATA_HI];
         u16 Value = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
         
         string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
@@ -651,7 +648,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                 if((Instruction.Type == Instruction_MovImmediate) ||
                    (Instruction.Type == Instruction_Immediate) ||
                    ((Instruction.Type == Instruction_Arithmetic) && 
-                    (Instruction.Bits[Encoding_Type] == SubOp_Test)))
+                    (Instruction.Bits[Encoding_REG] == SubOp_Test)))
                 {
                     s16 Value;
                     
@@ -749,8 +746,8 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                         AppendFormatString(&State, "%S [%u], al", Op, ValueWide);
                     }
                     else if((Instruction.Type == Instruction_Control) &&
-                            ((Instruction.Bits[Encoding_Type]) == SubOp_Jmp) ||
-                            ((Instruction.Bits[Encoding_Type]) == SubOp_Call))
+                            ((Instruction.Bits[Encoding_REG]) == SubOp_Jmp) ||
+                            ((Instruction.Bits[Encoding_REG]) == SubOp_Call))
                     {
                         AppendFormatString(&State, "%S [%u]", Op, ValueWide);
                     }
@@ -766,7 +763,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                     if((Instruction.Type == Instruction_MovImmediate) ||
                        (Instruction.Type == Instruction_Immediate) ||
                        ((Instruction.Type == Instruction_Arithmetic) && 
-                        (Instruction.Bits[Encoding_Type] == SubOp_Test)))
+                        (Instruction.Bits[Encoding_REG] == SubOp_Test)))
                     {
                         s16 Value;
                         
@@ -842,12 +839,12 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                             }
                         }
                         else if((Instruction.Type == Instruction_Control) &&
-                                (Instruction.Bits[Encoding_Type]) == SubOp_Jmp)
+                                (Instruction.Bits[Encoding_REG]) == SubOp_Jmp)
                         {
                             AppendFormatString(&State, "%S [%S]", Op, Src);
                         }
                         else if((Instruction.Type == Instruction_Control) &&
-                                (Instruction.Bits[Encoding_Type]) == SubOp_IJmp)
+                                (Instruction.Bits[Encoding_REG]) == SubOp_IJmp)
                         {
                             AppendFormatString(&State, "%S far [%S]", Op, Src);
                         }
@@ -947,7 +944,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                 }
                 else if((Instruction.Type == Instruction_Immediate) ||
                         ((Instruction.Type == Instruction_Arithmetic) && 
-                         (Instruction.Bits[Encoding_Type] == SubOp_Test)))
+                         (Instruction.Bits[Encoding_REG] == SubOp_Test)))
                 {
                     u16 Data;
                     if(Instruction.Flags && Flag_W)
@@ -964,7 +961,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                     AppendFormatString(&State, "%S %S %S, %u", Op, Size, Src, Data);
                 }
                 else if((Instruction.Type == Instruction_Control) &&
-                        (Instruction.Bits[Encoding_Type]) == SubOp_Call)
+                        (Instruction.Bits[Encoding_REG]) == SubOp_Call)
                 {
                     AppendFormatString(&State, "%S %S", Op, Src);
                 }
@@ -974,7 +971,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                     AppendFormatString(&State, "%S %S, %S", Op, Src, Dest);
                 }
                 else if((Instruction.Type == Instruction_Control) &&
-                        (Instruction.Bits[Encoding_Type]) == SubOp_ICall)
+                        (Instruction.Bits[Encoding_REG]) == SubOp_ICall)
                 {
                     // TODO(kstandbridge): why is this far?
                     AppendFormatString(&State, "%S far %S", Op, Src);

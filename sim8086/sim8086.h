@@ -17,10 +17,6 @@ typedef enum encoding_type
 {
     Encoding_None,
     
-    Encoding_Bits,
-    
-    Encoding_Type,
-    
     Encoding_MOD,
     Encoding_REG,
     Encoding_RM,
@@ -31,17 +27,10 @@ typedef enum encoding_type
     Encoding_DATA,
     Encoding_DATA_IF_W,
     
-    // TODO(kstandbridge): See above merging these LO and HI
-    Encoding_ADDR_LO,
-    Encoding_ADDR_HI,
-    
     Encoding_DATA_LO,
     Encoding_DATA_HI,
     
     Encoding_IP_INC8,
-    
-    Encoding_IP_INC_LO,
-    Encoding_IP_INC_HI,
     
     Encoding_CS_LO,
     Encoding_CS_HI,
@@ -454,7 +443,7 @@ InstructionToString(instruction Instruction)
         
         case Instruction_Immediate:
         {
-            switch(Instruction.Bits[Encoding_Type])
+            switch(Instruction.Bits[Encoding_REG])
             {
                 case SubOp_Add: { Result = String("add"); } break;
                 case SubOp_Or:  { Result = String("or");  } break;
@@ -471,7 +460,7 @@ InstructionToString(instruction Instruction)
         
         case Instruction_Logic:
         {
-            switch(Instruction.Bits[Encoding_Type])
+            switch(Instruction.Bits[Encoding_REG])
             {
                 case SubOp_Rol:    { Result = String("rol"); } break;
                 case SubOp_Ror:    { Result = String("ror"); } break;
@@ -488,7 +477,7 @@ InstructionToString(instruction Instruction)
         
         case Instruction_Arithmetic:
         {
-            switch(Instruction.Bits[Encoding_Type])
+            switch(Instruction.Bits[Encoding_REG])
             {
                 case SubOp_Test:   { Result = String("test"); }; break;
                 //case SubOp_:     { Result = String(""); } break;
@@ -504,7 +493,7 @@ InstructionToString(instruction Instruction)
         
         case Instruction_Control:
         {
-            switch(Instruction.Bits[Encoding_Type])
+            switch(Instruction.Bits[Encoding_REG])
             {
                 case SubOp_Inc:   { Result = String("inc"); }; break;
                 case SubOp_Dec:   { Result = String("dec"); }; break;
@@ -713,7 +702,7 @@ typedef struct instruction_table_entry
         segment_register_type SegmentRegister;
     };
     
-    encoding Fields[9];
+    encoding Fields[7];
 } instruction_table_entry;
 
 
