@@ -402,594 +402,613 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
         Context->IsNextOpSegment = false;
     }
     
-    if((Instruction.Type == Instruction_In) ||
-       (Instruction.Type == Instruction_Out))
-    {
-        string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
-        if((Instruction.Bits[Encoding_DATA] > 0))
+    switch(Instruction.Type)
+    {    
+        case Instruction_In:
+        case Instruction_Out:
         {
-            u8 Value = Instruction.Bits[Encoding_DATA];
-            if(Instruction.Type == Instruction_In)
+            string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
+            if((Instruction.Bits[Encoding_DATA] > 0))
             {
-                AppendFormatString(&State, "%S %S, %u", Op, Dest, Value);
+                u8 Value = Instruction.Bits[Encoding_DATA];
+                if(Instruction.Type == Instruction_In)
+                {
+                    AppendFormatString(&State, "%S %S, %u", Op, Dest, Value);
+                }
+                else
+                {
+                    AppendFormatString(&State, "%S %u, %S", Op, Value, Dest);
+                }
             }
             else
             {
-                AppendFormatString(&State, "%S %u, %S", Op, Value, Dest);
+                if(Instruction.Type == Instruction_In)
+                {
+                    AppendFormatString(&State, "%S %S, dx", Op, Dest);
+                }
+                else
+                {
+                    AppendFormatString(&State, "%S dx, %S", Op, Dest);
+                }
             }
-        }
-        else
+        } break;
+        
+        case Instruction_Rep:
         {
-            if(Instruction.Type == Instruction_In)
+            instruction SubInstruction = GetNextInstruction(Context);
+            if(SubInstruction.Type != Instruction_NOP)
             {
-                AppendFormatString(&State, "%S %S, dx", Op, Dest);
+                string SubOp = InstructionToString(SubInstruction);
+                string Suffix = (SubInstruction.Flags && Flag_W) ? String("w") : String("b");
+                AppendFormatString(&State, "%S %S%S", Op, SubOp, Suffix);
             }
             else
             {
-                AppendFormatString(&State, "%S dx, %S", Op, Dest);
+                AppendFormatString(&State, "%S ; ERROR expected sub instruction", Op);
             }
-        }
-    }
-    else if(Instruction.Type == Instruction_Rep)
-    {
-        instruction SubInstruction = GetNextInstruction(Context);
-        if(SubInstruction.Type != Instruction_NOP)
+        } break;
+        
+        case Instruction_Je:
+        case Instruction_Jl:
+        case Instruction_Jle:
+        case Instruction_Jb:
+        case Instruction_Jbe:
+        case Instruction_Jp:
+        case Instruction_Jo:
+        case Instruction_Js:
+        case Instruction_Jne:
+        case Instruction_Jnl:
+        case Instruction_Jg:
+        case Instruction_Jnb:
+        case Instruction_Ja:
+        case Instruction_Jnp:
+        case Instruction_Jno:
+        case Instruction_Jns:
+        case Instruction_Loop:
+        case Instruction_Loopz:
+        case Instruction_Loopnz:
+        case Instruction_Jcxz:
         {
-            string SubOp = InstructionToString(SubInstruction);
-            string Suffix = (SubInstruction.Flags && Flag_W) ? String("w") : String("b");
-            AppendFormatString(&State, "%S %S%S", Op, SubOp, Suffix);
-        }
-        else
-        {
-            AppendFormatString(&State, "%S ; ERROR expected sub instruction", Op);
-        }
-    }
-    else if((Instruction.Type == Instruction_Je) ||
-            (Instruction.Type == Instruction_Jl) ||
-            (Instruction.Type == Instruction_Jle) ||
-            (Instruction.Type == Instruction_Jb) ||
-            (Instruction.Type == Instruction_Jbe) ||
-            (Instruction.Type == Instruction_Jp) ||
-            (Instruction.Type == Instruction_Jo) ||
-            (Instruction.Type == Instruction_Js) ||
-            (Instruction.Type == Instruction_Jne) ||
-            (Instruction.Type == Instruction_Jnl) ||
-            (Instruction.Type == Instruction_Jg) ||
-            (Instruction.Type == Instruction_Jnb) ||
-            (Instruction.Type == Instruction_Ja) ||
-            (Instruction.Type == Instruction_Jnp) ||
-            (Instruction.Type == Instruction_Jno) ||
-            (Instruction.Type == Instruction_Jns) ||
-            (Instruction.Type == Instruction_Loop) ||
-            (Instruction.Type == Instruction_Loopz) ||
-            (Instruction.Type == Instruction_Loopnz) ||
-            (Instruction.Type == Instruction_Jcxz))
-    {
 #if 0
-        // NOTE(kstandbridge): We are just given an offset in the instruction stream to jmp
-        s8 Value = *(s8 *)&Instruction.Bits[Encoding_IP_INC8];
-        AppendFormatString(&State, "%S %d", Op, Value);
-#else
-        // TODO(kstandbridge): Better testing of jumps to go back to the correct offset
-        AppendFormatString(&State, "%S label", Op);
-#endif
-    }
-    else if((Instruction.Type == Instruction_Ret) ||
-            (Instruction.Type == Instruction_RetfIntersegment))
-    {
-        u8 ValueLow = Instruction.Bits[Encoding_DATA_LO];
-        u8 ValueHigh = Instruction.Bits[Encoding_DATA_HI];
-        u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-        s16 Value = *(s16 *)&ValueWide;
-        
-        if(Value)
-        {
+            // NOTE(kstandbridge): We are just given an offset in the instruction stream to jmp
+            s8 Value = *(s8 *)&Instruction.Bits[Encoding_IP_INC8];
             AppendFormatString(&State, "%S %d", Op, Value);
-        }
-        else
+#else
+            // TODO(kstandbridge): Better testing of jumps to go back to the correct offset
+            AppendFormatString(&State, "%S label", Op);
+#endif
+        } break;
+        
+        case Instruction_Ret:
+        case Instruction_RetfIntersegment:
         {
-            AppendFormatString(&State, "%S", Op);
-        }
-    }
-    else if((Instruction.Type == Instruction_JmpDirectWithin) ||
-            (Instruction.Type == Instruction_CallDirectWithin))
-    {
-        u8 ValueLow = Instruction.Bits[Encoding_DATA_LO];
-        u8 ValueHigh = Instruction.Bits[Encoding_DATA_HI];
-        u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-        
-        // NOTE(kstandbridge): We need to include the size of the op and encodings
-        ValueWide += 3;
-        
-        AppendFormatString(&State, "%S %u", Op, ValueWide);
-    }
-    else if((Instruction.Type == Instruction_CallDirectIntersegment) ||
-            (Instruction.Type == Instruction_JmpDirectIntersegment))
-    {
-        u8 ValueLow = Instruction.Bits[Encoding_DATA_LO];
-        u8 ValueHigh = Instruction.Bits[Encoding_DATA_HI];
-        u16 IPValue = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-        
-        ValueLow = Instruction.Bits[Encoding_CS_LO];
-        ValueHigh = Instruction.Bits[Encoding_CS_HI];
-        u16 CSValue = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-        
-        AppendFormatString(&State, "%S %u:%u", Op, CSValue, IPValue);
-    }
-    else if((Instruction.Type == Instruction_Aam) ||
-            (Instruction.Type == Instruction_Aad) ||
-            (Instruction.Type == Instruction_Int)) // TODO(kstandbridge): I have no tested int for this, also test int with value 3
-    {
-        // NOTE(kstandbridge): Reverse engineering I found the default is 10:
-        // amm 255 ; 0b11010100, 0b11111111
-        // aam     ; 0b11010100, 0b00001010
-        // aam 10  ; 0b11010100, 0b00001010
-        // aam 11  ; 0b11010100, 0b00001011
-        u8 Value = Instruction.Bits[Encoding_DATA];
-        if(Value == 10)
-        {
-            AppendFormatString(&State, "%S", Op);
-        }
-        else
-        {
-            AppendFormatString(&State, "%S %u", Op, Value);
-        }
-    }
-    else if(Instruction.Type == Instruction_MovImmediateMemory)
-    {
-        s16 Value;
-        
-        if(Instruction.Flags && Flag_W)
-        {
-            u8 ValueLow = Instruction.Bits[Encoding_DATA];
-            u8 ValueHigh = Instruction.Bits[Encoding_DATA_IF_W];
+            u8 ValueLow = Instruction.Bits[Encoding_DATA_LO];
+            u8 ValueHigh = Instruction.Bits[Encoding_DATA_HI];
             u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-            Value = *(s16 *)&ValueWide;
-        }
-        else
-        {
-            Value = *(s8 *)&Instruction.Bits[Encoding_DATA];
-        }
-        
-        s16 Displacement = 0;
-        
-        if(Instruction.Flags && Flag_W)
-        {        
-            u8 ValueLow = Instruction.Bits[Encoding_DISP_LO];
-            u8 ValueHigh = Instruction.Bits[Encoding_DISP_HI];
-            u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-            Displacement = *(s16 *)&ValueWide;
-        }
-        else
-        {
-            Displacement = *(s8 *)&Instruction.Bits[Encoding_DISP_LO];
-        }
-        
-        string Src = EffectiveAddressToString(Instruction.Bits[Encoding_RM]);
-        
-        if(Displacement > 0)
-        {
-            AppendFormatString(&State, "%S [%S + %d], %S %d", Op, Src, Displacement, Size, Value);
-        }
-        else
-        {
-            AppendFormatString(&State, "%S [%S], %S %d", Op, Src, Size, Value);
-        }
-    }
-    else if((Instruction.Type == Instruction_AddAccumulator) ||
-            (Instruction.Type == Instruction_AdcAccumulator) ||
-            (Instruction.Type == Instruction_SubAccumulator) ||
-            (Instruction.Type == Instruction_SbbAccumulator) ||
-            (Instruction.Type == Instruction_CmpAccumulator) ||
-            (Instruction.Type == Instruction_AndAccumulator) ||
-            (Instruction.Type == Instruction_TestAccumulator) ||
-            (Instruction.Type == Instruction_OrAccumulator) ||
-            (Instruction.Type == Instruction_XorAccumulator))
-    {
-        s16 Value;
-        
-        if(Instruction.Bits[Encoding_DATA_IF_W] > 0)
-        {
-            u8 ValueLow = Instruction.Bits[Encoding_DATA];
-            u8 ValueHigh = Instruction.Bits[Encoding_DATA_IF_W];
-            u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-            Value = *(s16 *)&ValueWide;
-        }
-        else
-        {
-            Value = *(s8 *)&Instruction.Bits[Encoding_DATA];
-        }
-        string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_RM]) : RegisterByteToString(Instruction.Bits[Encoding_RM]);
-        AppendFormatString(&State, "%S %S, %d", Op, Dest, Value);
-    } 
-    else if((Instruction.Type == Instruction_PushSegmentRegister) ||
-            (Instruction.Type == Instruction_PopSegmentRegister))
-    {
-        AppendFormatString(&State, "%S %S", Op, SegmentRegisterToString(Instruction.SegmentRegister));
-    }
-    else if(Instruction.Type == Instruction_XchgWithAccumulator)
-    {
-        AppendFormatString(&State, "%S ax, %S", Op, RegisterWordToString(Instruction.RegisterWord));
-    }
-    else if((Instruction.Bits[Encoding_DATA_HI] > 0) ||
-            (Instruction.Bits[Encoding_DATA_LO] > 0))
-    {
-        u8 ValueLow = Instruction.Bits[Encoding_DATA_LO];
-        u8 ValueHigh = Instruction.Bits[Encoding_DATA_HI];
-        u16 Value = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-        
-        string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
-        if(Instruction.Flags & Flag_D)
-        {
-            AppendFormatString(&State, "%S [%u], %S", Op, Value, Dest);
-        }
-        else
-        {
-            AppendFormatString(&State, "%S %S, [%u]", Op, Dest, Value);
-        }
-    }
-    else
-    {
-        switch(Instruction.Bits[Encoding_MOD])
-        {
+            s16 Value = *(s16 *)&ValueWide;
             
-            case Mod_RegisterMode:
+            if(Value)
             {
-                string Src = ((IsWord) || 
-                              (Instruction.Type == Instruction_Call) ||
-                              (Instruction.Type == Instruction_Jmp)) 
-                    ? RegisterWordToString(Instruction.Bits[Encoding_RM]) : RegisterByteToString(Instruction.Bits[Encoding_RM]);
+                AppendFormatString(&State, "%S %d", Op, Value);
+            }
+            else
+            {
+                AppendFormatString(&State, "%S", Op);
+            }
+        } break;
+        
+        case Instruction_JmpDirectWithin:
+        case Instruction_CallDirectWithin:
+        {
+            u8 ValueLow = Instruction.Bits[Encoding_DATA_LO];
+            u8 ValueHigh = Instruction.Bits[Encoding_DATA_HI];
+            u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+            
+            // NOTE(kstandbridge): We need to include the size of the op and encodings
+            ValueWide += 3;
+            
+            AppendFormatString(&State, "%S %u", Op, ValueWide);
+        } break;
+        
+        case Instruction_CallDirectIntersegment:
+        case Instruction_JmpDirectIntersegment:
+        {
+            u8 ValueLow = Instruction.Bits[Encoding_DATA_LO];
+            u8 ValueHigh = Instruction.Bits[Encoding_DATA_HI];
+            u16 IPValue = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+            
+            ValueLow = Instruction.Bits[Encoding_CS_LO];
+            ValueHigh = Instruction.Bits[Encoding_CS_HI];
+            u16 CSValue = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+            
+            AppendFormatString(&State, "%S %u:%u", Op, CSValue, IPValue);
+        } break;
+        
+        case Instruction_Aam:
+        case Instruction_Aad:
+        case Instruction_Int: // TODO(kstandbridge): I have no tested int for this, also test int with value 3
+        {
+            // NOTE(kstandbridge): Reverse engineering I found the default is 10:
+            // amm 255 ; 0b11010100, 0b11111111
+            // aam     ; 0b11010100, 0b00001010
+            // aam 10  ; 0b11010100, 0b00001010
+            // aam 11  ; 0b11010100, 0b00001011
+            u8 Value = Instruction.Bits[Encoding_DATA];
+            if(Value == 10)
+            {
+                AppendFormatString(&State, "%S", Op);
+            }
+            else
+            {
+                AppendFormatString(&State, "%S %u", Op, Value);
+            }
+        } break;
+        
+        case Instruction_MovImmediateMemory:
+        {
+            s16 Value;
+            
+            if(Instruction.Flags && Flag_W)
+            {
+                u8 ValueLow = Instruction.Bits[Encoding_DATA];
+                u8 ValueHigh = Instruction.Bits[Encoding_DATA_IF_W];
+                u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                Value = *(s16 *)&ValueWide;
+            }
+            else
+            {
+                Value = *(s8 *)&Instruction.Bits[Encoding_DATA];
+            }
+            
+            s16 Displacement = 0;
+            
+            if(Instruction.Flags && Flag_W)
+            {        
+                u8 ValueLow = Instruction.Bits[Encoding_DISP_LO];
+                u8 ValueHigh = Instruction.Bits[Encoding_DISP_HI];
+                u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                Displacement = *(s16 *)&ValueWide;
+            }
+            else
+            {
+                Displacement = *(s8 *)&Instruction.Bits[Encoding_DISP_LO];
+            }
+            
+            string Src = EffectiveAddressToString(Instruction.Bits[Encoding_RM]);
+            
+            if(Displacement > 0)
+            {
+                AppendFormatString(&State, "%S [%S + %d], %S %d", Op, Src, Displacement, Size, Value);
+            }
+            else
+            {
+                AppendFormatString(&State, "%S [%S], %S %d", Op, Src, Size, Value);
+            }
+        } break;
+        
+        case Instruction_AddAccumulator:
+        case Instruction_AdcAccumulator:
+        case Instruction_SubAccumulator:
+        case Instruction_SbbAccumulator:
+        case Instruction_CmpAccumulator:
+        case Instruction_AndAccumulator:
+        case Instruction_TestAccumulator:
+        case Instruction_OrAccumulator:
+        case Instruction_XorAccumulator:
+        {
+            s16 Value;
+            
+            if(Instruction.Bits[Encoding_DATA_IF_W] > 0)
+            {
+                u8 ValueLow = Instruction.Bits[Encoding_DATA];
+                u8 ValueHigh = Instruction.Bits[Encoding_DATA_IF_W];
+                u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                Value = *(s16 *)&ValueWide;
+            }
+            else
+            {
+                Value = *(s8 *)&Instruction.Bits[Encoding_DATA];
+            }
+            string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_RM]) : RegisterByteToString(Instruction.Bits[Encoding_RM]);
+            AppendFormatString(&State, "%S %S, %d", Op, Dest, Value);
+        }  break;
+        
+        case Instruction_PushSegmentRegister:
+        case Instruction_PopSegmentRegister:
+        {
+            AppendFormatString(&State, "%S %S", Op, SegmentRegisterToString(Instruction.SegmentRegister));
+        } break;
+        
+        case Instruction_XchgWithAccumulator:
+        {
+            AppendFormatString(&State, "%S ax, %S", Op, RegisterWordToString(Instruction.RegisterWord));
+        } break;
+        
+        default:
+        {
+            if((Instruction.Bits[Encoding_DATA_HI] > 0) ||
+               (Instruction.Bits[Encoding_DATA_LO] > 0))
+            {
+                u8 ValueLow = Instruction.Bits[Encoding_DATA_LO];
+                u8 ValueHigh = Instruction.Bits[Encoding_DATA_HI];
+                u16 Value = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
                 
-                if((Instruction.Type == Instruction_MovImmediate) ||
-                   (Instruction.Type == Instruction_Immediate) ||
-                   ((Instruction.Type == Instruction_Arithmetic) && 
-                    (Instruction.Bits[Encoding_REG] == SubOp_Test)))
+                string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
+                if(Instruction.Flags & Flag_D)
                 {
-                    s16 Value;
-                    
-                    if(Instruction.Bits[Encoding_DATA_IF_W] > 0)
-                    {
-                        u8 ValueLow = Instruction.Bits[Encoding_DATA];
-                        u8 ValueHigh = Instruction.Bits[Encoding_DATA_IF_W];
-                        u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-                        Value = *(s16 *)&ValueWide;
-                    }
-                    else
-                    {
-                        Value = *(s8 *)&Instruction.Bits[Encoding_DATA];
-                    }
-                    
-                    string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_RM]) : RegisterByteToString(Instruction.Bits[Encoding_RM]);
-                    AppendFormatString(&State, "%S %S, %d", Op, Dest, Value);
+                    AppendFormatString(&State, "%S [%u], %S", Op, Value, Dest);
                 }
                 else
-                {                
-                    if((Instruction.Type == Instruction_Arithmetic) ||
-                       (Instruction.Type == Instruction_Control))
-                    {
-                        AppendFormatString(&State, "%S %S", Op, Src);
-                    }
-                    else if(Instruction.Type == Instruction_Logic)
-                    {
-                        if(Instruction.Flags & Flag_Z)
-                        {
-                            // NOTE(kstandbridge): V = 1 Shift/rotate count is specified in CL register
-                            AppendFormatString(&State, "%S %S, cl", Op, Src);
-                        }
-                        else
-                        {
-                            // NOTE(kstandbridge): V = 0 Shift/rotate count is one
-                            AppendFormatString(&State, "%S %S, 1", Op, Src);
-                        }
-                    }
-                    else
-                    {
-                        string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
-                        
-                        // NOTE(kstandbridge): xchg requires the direction flip
-                        if(Instruction.Type == Instruction_Xchg)
-                        {
-                            string Temp = Dest;
-                            Dest = Src;
-                            Src = Temp;
-                        } 
-                        
-                        AppendFormatString(&State, "%S %S, %S", Op, Src, Dest);
-                    }
+                {
+                    AppendFormatString(&State, "%S %S, [%u]", Op, Dest, Value);
                 }
-            } break;
-            
-            case Mod_MemoryMode:
+            }
+            else
             {
-                if(Instruction.Bits[Encoding_RM] == EffectiveAddress_DirectAddress)
+                switch(Instruction.Bits[Encoding_MOD])
                 {
-                    // NOTE(kstandbridge): Except when R/M = 110, then 16-bit displacement follows
                     
-                    s16 Displacement = 0;
-                    
-                    u8 ValueLow = Instruction.Bits[Encoding_DISP_LO];
-                    u8 ValueHigh = Instruction.Bits[Encoding_DISP_HI];
-                    u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-                    Displacement = *(s16 *)&ValueWide;
-                    
-                    string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
-                    if((Instruction.Type == Instruction_Mov) ||
-                       (Instruction.Type == Instruction_And) ||
-                       (Instruction.Type == Instruction_Cmp) ||
-                       (Instruction.Type == Instruction_Or) ||
-                       (Instruction.Type == Instruction_Xor))
+                    case Mod_RegisterMode:
                     {
-                        AppendFormatString(&State, "%S %S, %S[%d]", Op, Dest, SegmentPrefix, Displacement);
-                    }
-                    else if(Instruction.Type == Instruction_Logic)
-                    {
-                        if(Instruction.Flags & Flag_Z)
+                        string Src = ((IsWord) || 
+                                      (Instruction.Type == Instruction_Call) ||
+                                      (Instruction.Type == Instruction_Jmp)) 
+                            ? RegisterWordToString(Instruction.Bits[Encoding_RM]) : RegisterByteToString(Instruction.Bits[Encoding_RM]);
+                        
+                        if((Instruction.Type == Instruction_MovImmediate) ||
+                           (Instruction.Type == Instruction_Immediate) ||
+                           ((Instruction.Type == Instruction_Arithmetic) && 
+                            (Instruction.Bits[Encoding_REG] == SubOp_Test)))
                         {
-                            // NOTE(kstandbridge): V = 1 Shift/rotate count is specified in CL register
-                            AppendFormatString(&State, "%S %S [%d], cl", Op, Size, Displacement);
+                            s16 Value;
+                            
+                            if(Instruction.Bits[Encoding_DATA_IF_W] > 0)
+                            {
+                                u8 ValueLow = Instruction.Bits[Encoding_DATA];
+                                u8 ValueHigh = Instruction.Bits[Encoding_DATA_IF_W];
+                                u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                                Value = *(s16 *)&ValueWide;
+                            }
+                            else
+                            {
+                                Value = *(s8 *)&Instruction.Bits[Encoding_DATA];
+                            }
+                            
+                            string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_RM]) : RegisterByteToString(Instruction.Bits[Encoding_RM]);
+                            AppendFormatString(&State, "%S %S, %d", Op, Dest, Value);
+                        }
+                        else
+                        {                
+                            if((Instruction.Type == Instruction_Arithmetic) ||
+                               (Instruction.Type == Instruction_Control))
+                            {
+                                AppendFormatString(&State, "%S %S", Op, Src);
+                            }
+                            else if(Instruction.Type == Instruction_Logic)
+                            {
+                                if(Instruction.Flags & Flag_Z)
+                                {
+                                    // NOTE(kstandbridge): V = 1 Shift/rotate count is specified in CL register
+                                    AppendFormatString(&State, "%S %S, cl", Op, Src);
+                                }
+                                else
+                                {
+                                    // NOTE(kstandbridge): V = 0 Shift/rotate count is one
+                                    AppendFormatString(&State, "%S %S, 1", Op, Src);
+                                }
+                            }
+                            else
+                            {
+                                string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
+                                
+                                // NOTE(kstandbridge): xchg requires the direction flip
+                                if(Instruction.Type == Instruction_Xchg)
+                                {
+                                    string Temp = Dest;
+                                    Dest = Src;
+                                    Src = Temp;
+                                } 
+                                
+                                AppendFormatString(&State, "%S %S, %S", Op, Src, Dest);
+                            }
+                        }
+                    } break;
+                    
+                    case Mod_MemoryMode:
+                    {
+                        if(Instruction.Bits[Encoding_RM] == EffectiveAddress_DirectAddress)
+                        {
+                            // NOTE(kstandbridge): Except when R/M = 110, then 16-bit displacement follows
+                            
+                            s16 Displacement = 0;
+                            
+                            u8 ValueLow = Instruction.Bits[Encoding_DISP_LO];
+                            u8 ValueHigh = Instruction.Bits[Encoding_DISP_HI];
+                            u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                            Displacement = *(s16 *)&ValueWide;
+                            
+                            string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
+                            if((Instruction.Type == Instruction_Mov) ||
+                               (Instruction.Type == Instruction_And) ||
+                               (Instruction.Type == Instruction_Cmp) ||
+                               (Instruction.Type == Instruction_Or) ||
+                               (Instruction.Type == Instruction_Xor))
+                            {
+                                AppendFormatString(&State, "%S %S, %S[%d]", Op, Dest, SegmentPrefix, Displacement);
+                            }
+                            else if(Instruction.Type == Instruction_Logic)
+                            {
+                                if(Instruction.Flags & Flag_Z)
+                                {
+                                    // NOTE(kstandbridge): V = 1 Shift/rotate count is specified in CL register
+                                    AppendFormatString(&State, "%S %S [%d], cl", Op, Size, Displacement);
+                                }
+                                else
+                                {
+                                    // NOTE(kstandbridge): V = 0 Shift/rotate count is one
+                                    AppendFormatString(&State, "%S %S [%d], 1", Op, Size, Displacement);
+                                }
+                                
+                            }
+                            else if((Instruction.Type == Instruction_Xchg))
+                            {
+                                // TODO(kstandbridge): Figure out why this needs the al suffix
+                                AppendFormatString(&State, "%S [%u], al", Op, ValueWide);
+                            }
+                            else if((Instruction.Type == Instruction_Control) &&
+                                    ((Instruction.Bits[Encoding_REG]) == SubOp_Jmp) ||
+                                    ((Instruction.Bits[Encoding_REG]) == SubOp_Call))
+                            {
+                                AppendFormatString(&State, "%S [%u]", Op, ValueWide);
+                            }
+                            else
+                            {
+                                AppendFormatString(&State, "%S %S [%d]", Op, Size, Displacement);
+                            }
                         }
                         else
                         {
-                            // NOTE(kstandbridge): V = 0 Shift/rotate count is one
-                            AppendFormatString(&State, "%S %S [%d], 1", Op, Size, Displacement);
+                            string Src = EffectiveAddressToString(Instruction.Bits[Encoding_RM]);
+                            
+                            if((Instruction.Type == Instruction_MovImmediate) ||
+                               (Instruction.Type == Instruction_Immediate) ||
+                               ((Instruction.Type == Instruction_Arithmetic) && 
+                                (Instruction.Bits[Encoding_REG] == SubOp_Test)))
+                            {
+                                s16 Value;
+                                
+                                if(Instruction.Bits[Encoding_DATA_IF_W] > 0)
+                                {
+                                    u8 ValueLow = Instruction.Bits[Encoding_DATA];
+                                    u8 ValueHigh = Instruction.Bits[Encoding_DATA_IF_W];
+                                    u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                                    Value = *(s16 *)&ValueWide;
+                                }
+                                else
+                                {
+                                    Value = *(s8 *)&Instruction.Bits[Encoding_DATA];
+                                }
+                                
+                                if(Instruction.Type == Instruction_MovImmediate)
+                                {
+                                    Src = (IsWord) ? RegisterWordToString(Instruction.RegisterWord) : RegisterByteToString(Instruction.RegisterByte);
+                                    AppendFormatString(&State, "%S %S, %d", Op, Src, Value);
+                                }
+                                else
+                                {
+                                    AppendFormatString(&State, "%S %S [%S], %d", Op, Size, Src, Value);
+                                }
+                            } 
+                            else if((Instruction.Type == Instruction_Mov) ||
+                                    (Instruction.Type == Instruction_Add) ||
+                                    (Instruction.Type == Instruction_Adc) ||
+                                    (Instruction.Type == Instruction_Sub) ||
+                                    (Instruction.Type == Instruction_Sbb) ||
+                                    (Instruction.Type == Instruction_Cmp))
+                            {                            
+                                string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
+                                if(Instruction.Flags & Flag_D)
+                                {
+                                    AppendFormatString(&State, "%S %S, %S[%S]", Op, Dest, SegmentPrefix, Src);
+                                }
+                                else
+                                {
+                                    AppendFormatString(&State, "%S [%S], %S", Op, Src, Dest);
+                                }
+                            }
+                            else
+                            {
+                                if((Instruction.Type == Instruction_PushRegister) ||
+                                   (Instruction.Type == Instruction_PopRegister) ||
+                                   (Instruction.Type == Instruction_Inc) ||
+                                   (Instruction.Type == Instruction_Dec))
+                                {
+                                    string Dest = RegisterWordToString(Instruction.RegisterWord);
+                                    AppendFormatString(&State, "%S %S", Op, Dest);
+                                }
+                                else if(Instruction.Type == Instruction_PushSegmentRegister)
+                                {
+                                    string Dest = SegmentRegisterToString(Instruction.SegmentRegister);
+                                    AppendFormatString(&State, "%S %S", Op, Dest);
+                                }
+                                else if(Instruction.Type == Instruction_Adc)
+                                {
+                                    AppendFormatString(&State, "%S dx, [%S]", Op, Src);
+                                }
+                                else if(Instruction.Type == Instruction_Logic)
+                                {
+                                    if(Instruction.Flags & Flag_Z)
+                                    {
+                                        // NOTE(kstandbridge): V = 1 Shift/rotate count is specified in CL register
+                                        AppendFormatString(&State, "%S %S [%S], cl", Op, Size, Src);
+                                    }
+                                    else
+                                    {
+                                        // NOTE(kstandbridge): V = 0 Shift/rotate count is one
+                                        AppendFormatString(&State, "%S %S [%S], 1", Op, Size, Src);
+                                    }
+                                }
+                                else if((Instruction.Type == Instruction_Control) &&
+                                        (Instruction.Bits[Encoding_REG]) == SubOp_Jmp)
+                                {
+                                    AppendFormatString(&State, "%S [%S]", Op, Src);
+                                }
+                                else if((Instruction.Type == Instruction_Control) &&
+                                        (Instruction.Bits[Encoding_REG]) == SubOp_IJmp)
+                                {
+                                    AppendFormatString(&State, "%S far [%S]", Op, Src);
+                                }
+                                else if((Instruction.Type == Instruction_Control) ||
+                                        (Instruction.Type == Instruction_Arithmetic) ||
+                                        (Instruction.Type == Instruction_Pop))
+                                {
+                                    AppendFormatString(&State, "%S %S [%S]", Op, Size, Src);
+                                }
+                                else
+                                {
+                                    AppendFormatString(&State, "%S", Op);
+                                }
+                            }
                         }
-                        
-                    }
-                    else if((Instruction.Type == Instruction_Xchg))
-                    {
-                        // TODO(kstandbridge): Figure out why this needs the al suffix
-                        AppendFormatString(&State, "%S [%u], al", Op, ValueWide);
-                    }
-                    else if((Instruction.Type == Instruction_Control) &&
-                            ((Instruction.Bits[Encoding_REG]) == SubOp_Jmp) ||
-                            ((Instruction.Bits[Encoding_REG]) == SubOp_Call))
-                    {
-                        AppendFormatString(&State, "%S [%u]", Op, ValueWide);
-                    }
-                    else
-                    {
-                        AppendFormatString(&State, "%S %S [%d]", Op, Size, Displacement);
-                    }
-                }
-                else
-                {
-                    string Src = EffectiveAddressToString(Instruction.Bits[Encoding_RM]);
+                    } break;
                     
-                    if((Instruction.Type == Instruction_MovImmediate) ||
-                       (Instruction.Type == Instruction_Immediate) ||
-                       ((Instruction.Type == Instruction_Arithmetic) && 
-                        (Instruction.Bits[Encoding_REG] == SubOp_Test)))
+                    case Mod_8BitDisplace:
+                    case Mod_16BitDisplace:
                     {
                         s16 Value;
-                        
-                        if(Instruction.Bits[Encoding_DATA_IF_W] > 0)
+                        if(Instruction.Bits[Encoding_MOD] == Mod_16BitDisplace)
                         {
-                            u8 ValueLow = Instruction.Bits[Encoding_DATA];
-                            u8 ValueHigh = Instruction.Bits[Encoding_DATA_IF_W];
+                            u8 ValueLow = Instruction.Bits[Encoding_DISP_LO];
+                            u8 ValueHigh = Instruction.Bits[Encoding_DISP_HI];
                             u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
                             Value = *(s16 *)&ValueWide;
                         }
                         else
                         {
-                            Value = *(s8 *)&Instruction.Bits[Encoding_DATA];
+                            Assert(Instruction.Bits[Encoding_MOD] == Mod_8BitDisplace);
+                            Value = *(s8 *)&Instruction.Bits[Encoding_DISP_LO];
                         }
                         
-                        if(Instruction.Type == Instruction_MovImmediate)
+                        string Src;
+                        if(Value > 0)
                         {
-                            Src = (IsWord) ? RegisterWordToString(Instruction.RegisterWord) : RegisterByteToString(Instruction.RegisterByte);
-                            AppendFormatString(&State, "%S %S, %d", Op, Src, Value);
+                            Src = FormatString(Arena, "%S[%S + %d]", SegmentPrefix, EffectiveAddressToString(Instruction.Bits[Encoding_RM]), Value);
+                        }
+                        else if(Value < 0)
+                        {
+                            Value *= -1;
+                            Src = FormatString(Arena, "%S[%S - %d]", SegmentPrefix, EffectiveAddressToString(Instruction.Bits[Encoding_RM]), Value);
                         }
                         else
                         {
-                            AppendFormatString(&State, "%S %S [%S], %d", Op, Size, Src, Value);
+                            Assert(Value == 0);
+                            Src = FormatString(Arena, "%S[%S]", SegmentPrefix, EffectiveAddressToString(Instruction.Bits[Encoding_RM]));
                         }
-                    } 
-                    else if((Instruction.Type == Instruction_Mov) ||
-                            (Instruction.Type == Instruction_Add) ||
-                            (Instruction.Type == Instruction_Adc) ||
-                            (Instruction.Type == Instruction_Sub) ||
-                            (Instruction.Type == Instruction_Sbb) ||
-                            (Instruction.Type == Instruction_Cmp))
-                    {                            
+                        
                         string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
-                        if(Instruction.Flags & Flag_D)
+                        
+                        
+                        // NOTE(kstandbridge): xchg and test seems to require this order on 16 bit displacements but not 8 bit??
+                        if(((Instruction.Type == Instruction_Xchg) || 
+                            (Instruction.Type == Instruction_Test)) &&
+                           (Instruction.Bits[Encoding_MOD] == Mod_16BitDisplace))
                         {
-                            AppendFormatString(&State, "%S %S, %S[%S]", Op, Dest, SegmentPrefix, Src);
+                            string Temp = Dest;
+                            Dest = Src;
+                            Src = Temp;
+                        } 
+                        else if((Instruction.Flags & Flag_D) ||
+                                (Instruction.Type == Instruction_Lea) ||
+                                (Instruction.Type == Instruction_Lds) ||
+                                (Instruction.Type == Instruction_Les))
+                        {
+                            string Temp = Dest;
+                            Dest = Src;
+                            Src = Temp;
                         }
-                        else
+                        
+                        if((Instruction.Type == Instruction_Mov) ||
+                           (Instruction.Type == Instruction_Xchg) ||
+                           (Instruction.Type == Instruction_Add) ||
+                           (Instruction.Type == Instruction_Adc) ||
+                           (Instruction.Type == Instruction_Sub) ||
+                           (Instruction.Type == Instruction_Sbb) ||
+                           (Instruction.Type == Instruction_Cmp) ||
+                           (Instruction.Type == Instruction_And) ||
+                           (Instruction.Type == Instruction_Lea) ||
+                           (Instruction.Type == Instruction_Lds) ||
+                           (Instruction.Type == Instruction_Les) ||
+                           (Instruction.Type == Instruction_Test) ||
+                           (Instruction.Type == Instruction_Or) ||
+                           (Instruction.Type == Instruction_Xor))
                         {
-                            AppendFormatString(&State, "%S [%S], %S", Op, Src, Dest);
-                        }
-                    }
-                    else
-                    {
-                        if((Instruction.Type == Instruction_PushRegister) ||
-                           (Instruction.Type == Instruction_PopRegister) ||
-                           (Instruction.Type == Instruction_Inc) ||
-                           (Instruction.Type == Instruction_Dec))
-                        {
-                            string Dest = RegisterWordToString(Instruction.RegisterWord);
-                            AppendFormatString(&State, "%S %S", Op, Dest);
-                        }
-                        else if(Instruction.Type == Instruction_PushSegmentRegister)
-                        {
-                            string Dest = SegmentRegisterToString(Instruction.SegmentRegister);
-                            AppendFormatString(&State, "%S %S", Op, Dest);
-                        }
-                        else if(Instruction.Type == Instruction_Adc)
-                        {
-                            AppendFormatString(&State, "%S dx, [%S]", Op, Src);
+                            AppendFormatString(&State, "%S %S, %S", Op, Src, Dest);
                         }
                         else if(Instruction.Type == Instruction_Logic)
                         {
+                            
                             if(Instruction.Flags & Flag_Z)
                             {
                                 // NOTE(kstandbridge): V = 1 Shift/rotate count is specified in CL register
-                                AppendFormatString(&State, "%S %S [%S], cl", Op, Size, Src);
+                                AppendFormatString(&State, "%S %S %S, cl", Op, Size, Src);
                             }
                             else
                             {
                                 // NOTE(kstandbridge): V = 0 Shift/rotate count is one
-                                AppendFormatString(&State, "%S %S [%S], 1", Op, Size, Src);
+                                AppendFormatString(&State, "%S %S %S, 1", Op, Size, Src);
                             }
                         }
-                        else if((Instruction.Type == Instruction_Control) &&
-                                (Instruction.Bits[Encoding_REG]) == SubOp_Jmp)
+                        else if((Instruction.Type == Instruction_Immediate) ||
+                                ((Instruction.Type == Instruction_Arithmetic) && 
+                                 (Instruction.Bits[Encoding_REG] == SubOp_Test)))
                         {
-                            AppendFormatString(&State, "%S [%S]", Op, Src);
+                            u16 Data;
+                            if(Instruction.Flags && Flag_W)
+                            {
+                                u8 ValueLow = Instruction.Bits[Encoding_DATA];
+                                u8 ValueHigh = Instruction.Bits[Encoding_DATA_IF_W];
+                                Data = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                            }
+                            else
+                            {
+                                Data = *(u8 *)&Instruction.Bits[Encoding_DATA];
+                            }
+                            
+                            AppendFormatString(&State, "%S %S %S, %u", Op, Size, Src, Data);
                         }
                         else if((Instruction.Type == Instruction_Control) &&
-                                (Instruction.Bits[Encoding_REG]) == SubOp_IJmp)
+                                (Instruction.Bits[Encoding_REG]) == SubOp_Call)
                         {
-                            AppendFormatString(&State, "%S far [%S]", Op, Src);
+                            AppendFormatString(&State, "%S %S", Op, Src);
                         }
-                        else if((Instruction.Type == Instruction_Control) ||
-                                (Instruction.Type == Instruction_Arithmetic) ||
-                                (Instruction.Type == Instruction_Pop))
+                        else if((Instruction.Type == Instruction_MovRegisterSegment))
                         {
-                            AppendFormatString(&State, "%S %S [%S]", Op, Size, Src);
+                            Dest = SegmentRegisterToString(Instruction.Bits[Encoding_REG]);
+                            AppendFormatString(&State, "%S %S, %S", Op, Src, Dest);
+                        }
+                        else if((Instruction.Type == Instruction_Control) &&
+                                (Instruction.Bits[Encoding_REG]) == SubOp_ICall)
+                        {
+                            // TODO(kstandbridge): why is this far?
+                            AppendFormatString(&State, "%S far %S", Op, Src);
                         }
                         else
                         {
-                            AppendFormatString(&State, "%S", Op);
+                            AppendFormatString(&State, "%S %S %S", Op, Size, Src);
                         }
-                    }
-                }
-            } break;
-            
-            case Mod_8BitDisplace:
-            case Mod_16BitDisplace:
-            {
-                s16 Value;
-                if(Instruction.Bits[Encoding_MOD] == Mod_16BitDisplace)
-                {
-                    u8 ValueLow = Instruction.Bits[Encoding_DISP_LO];
-                    u8 ValueHigh = Instruction.Bits[Encoding_DISP_HI];
-                    u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-                    Value = *(s16 *)&ValueWide;
-                }
-                else
-                {
-                    Assert(Instruction.Bits[Encoding_MOD] == Mod_8BitDisplace);
-                    Value = *(s8 *)&Instruction.Bits[Encoding_DISP_LO];
-                }
-                
-                string Src;
-                if(Value > 0)
-                {
-                    Src = FormatString(Arena, "%S[%S + %d]", SegmentPrefix, EffectiveAddressToString(Instruction.Bits[Encoding_RM]), Value);
-                }
-                else if(Value < 0)
-                {
-                    Value *= -1;
-                    Src = FormatString(Arena, "%S[%S - %d]", SegmentPrefix, EffectiveAddressToString(Instruction.Bits[Encoding_RM]), Value);
-                }
-                else
-                {
-                    Assert(Value == 0);
-                    Src = FormatString(Arena, "%S[%S]", SegmentPrefix, EffectiveAddressToString(Instruction.Bits[Encoding_RM]));
-                }
-                
-                string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
-                
-                
-                // NOTE(kstandbridge): xchg and test seems to require this order on 16 bit displacements but not 8 bit??
-                if(((Instruction.Type == Instruction_Xchg) || 
-                    (Instruction.Type == Instruction_Test)) &&
-                   (Instruction.Bits[Encoding_MOD] == Mod_16BitDisplace))
-                {
-                    string Temp = Dest;
-                    Dest = Src;
-                    Src = Temp;
-                } 
-                else if((Instruction.Flags & Flag_D) ||
-                        (Instruction.Type == Instruction_Lea) ||
-                        (Instruction.Type == Instruction_Lds) ||
-                        (Instruction.Type == Instruction_Les))
-                {
-                    string Temp = Dest;
-                    Dest = Src;
-                    Src = Temp;
-                }
-                
-                if((Instruction.Type == Instruction_Mov) ||
-                   (Instruction.Type == Instruction_Xchg) ||
-                   (Instruction.Type == Instruction_Add) ||
-                   (Instruction.Type == Instruction_Adc) ||
-                   (Instruction.Type == Instruction_Sub) ||
-                   (Instruction.Type == Instruction_Sbb) ||
-                   (Instruction.Type == Instruction_Cmp) ||
-                   (Instruction.Type == Instruction_And) ||
-                   (Instruction.Type == Instruction_Lea) ||
-                   (Instruction.Type == Instruction_Lds) ||
-                   (Instruction.Type == Instruction_Les) ||
-                   (Instruction.Type == Instruction_Test) ||
-                   (Instruction.Type == Instruction_Or) ||
-                   (Instruction.Type == Instruction_Xor))
-                {
-                    AppendFormatString(&State, "%S %S, %S", Op, Src, Dest);
-                }
-                else if(Instruction.Type == Instruction_Logic)
-                {
+                        
+                    } break;
                     
-                    if(Instruction.Flags & Flag_Z)
+                    default:
                     {
-                        // NOTE(kstandbridge): V = 1 Shift/rotate count is specified in CL register
-                        AppendFormatString(&State, "%S %S %S, cl", Op, Size, Src);
-                    }
-                    else
-                    {
-                        // NOTE(kstandbridge): V = 0 Shift/rotate count is one
-                        AppendFormatString(&State, "%S %S %S, 1", Op, Size, Src);
-                    }
-                }
-                else if((Instruction.Type == Instruction_Immediate) ||
-                        ((Instruction.Type == Instruction_Arithmetic) && 
-                         (Instruction.Bits[Encoding_REG] == SubOp_Test)))
-                {
-                    u16 Data;
-                    if(Instruction.Flags && Flag_W)
-                    {
-                        u8 ValueLow = Instruction.Bits[Encoding_DATA];
-                        u8 ValueHigh = Instruction.Bits[Encoding_DATA_IF_W];
-                        Data = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-                    }
-                    else
-                    {
-                        Data = *(u8 *)&Instruction.Bits[Encoding_DATA];
-                    }
+                        AppendFormatString(&State, "Invalid MOD");
+                    } break;
                     
-                    AppendFormatString(&State, "%S %S %S, %u", Op, Size, Src, Data);
-                }
-                else if((Instruction.Type == Instruction_Control) &&
-                        (Instruction.Bits[Encoding_REG]) == SubOp_Call)
-                {
-                    AppendFormatString(&State, "%S %S", Op, Src);
-                }
-                else if((Instruction.Type == Instruction_MovRegisterSegment))
-                {
-                    Dest = SegmentRegisterToString(Instruction.Bits[Encoding_REG]);
-                    AppendFormatString(&State, "%S %S, %S", Op, Src, Dest);
-                }
-                else if((Instruction.Type == Instruction_Control) &&
-                        (Instruction.Bits[Encoding_REG]) == SubOp_ICall)
-                {
-                    // TODO(kstandbridge): why is this far?
-                    AppendFormatString(&State, "%S far %S", Op, Src);
-                }
-                else
-                {
-                    AppendFormatString(&State, "%S %S %S", Op, Size, Src);
                 }
                 
-            } break;
-            
-            default:
-            {
-                AppendFormatString(&State, "Invalid MOD");
-            } break;
-            
-        }
+            }
+        } break;
+        
     }
     
     
