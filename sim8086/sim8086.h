@@ -19,6 +19,8 @@ typedef enum encoding_type
     
     Encoding_Bits,
     
+    Encoding_Type,
+    
     Encoding_MOD,
     Encoding_REG,
     Encoding_RM,
@@ -219,12 +221,12 @@ typedef enum instruction_type
     
     Instruction_Popf,
     
+    Instruction_Immediate,
+    
     Instruction_Add,
-    Instruction_AddImmediate,
     Instruction_AddAccumulator,
     
     Instruction_Adc,
-    Instruction_AdcImmediate,
     Instruction_AdcAccumulator,
     
     Instruction_Inc,
@@ -234,11 +236,9 @@ typedef enum instruction_type
     Instruction_Daa,
     
     Instruction_Sub,
-    Instruction_SubImmediate,
     Instruction_SubAccumulator,
     
     Instruction_Sbb,
-    Instruction_SbbImmediate,
     Instruction_SbbAccumulator,
     
     Instruction_Dec,
@@ -246,7 +246,6 @@ typedef enum instruction_type
     Instruction_Neg,
     
     Instruction_Cmp,
-    Instruction_CmpImmediate,
     Instruction_CmpAccumulator,
     
     Instruction_Aas,
@@ -286,7 +285,6 @@ typedef enum instruction_type
     Instruction_Rcr,
     
     Instruction_And,
-    Instruction_AndImmediate,
     Instruction_AndAccumulator,
     
     Instruction_Test,
@@ -294,11 +292,9 @@ typedef enum instruction_type
     Instruction_TestAccumulator,
     
     Instruction_Or,
-    Instruction_OrImmediate,
     Instruction_OrAccumulator,
     
     Instruction_Xor,
-    Instruction_XorImmediate,
     Instruction_XorAccumulator,
     
     Instruction_Rep,
@@ -402,11 +398,55 @@ typedef enum instruction_type
     
 } instruction_type;
 
+typedef enum sub_op_type
+{
+    SubOp_Add = 0b000,
+    SubOp_Or =  0b001,
+    SubOp_Adc = 0b010,
+    SubOp_Sbb = 0b011,
+    SubOp_And = 0b100,
+    SubOp_Sub = 0b101,
+    SubOp_Xor = 0b110,
+    SubOp_Cmp = 0b111,
+} sub_op_type;
+
+typedef enum instruction_flags
+{
+    Flag_S = (1 << 0),
+    Flag_W = (1 << 1),
+    Flag_D = (1 << 2),
+    Flag_V = (1 << 3),
+    Flag_Z = (1 << 4),
+    
+} instruction_flags;
+
+typedef struct instruction
+{
+    instruction_type Type;
+    u8 OpCode;
+    u8 OpCodeSize;
+    
+    instruction_flags Flags;
+    
+    union
+    {    
+        u32 Generic;
+        
+        register_byte_type RegisterByte;
+        register_word_type RegisterWord;
+        segment_register_type SegmentRegister;
+    };
+    
+    b32 HasFieldData;
+    u8 Bits[Encoding_Count];
+    
+} instruction;
+
 inline string
-InstructionToString(instruction_type Type)
+InstructionToString(instruction Instruction)
 {
     string Result;
-    switch(Type)
+    switch(Instruction.Type)
     {
         case Instruction_MovImmediateMemory:
         case Instruction_MovImmediate:
@@ -444,11 +484,26 @@ InstructionToString(instruction_type Type)
         
         case Instruction_Popf: { Result = String("popf"); } break;
         
-        case Instruction_AddImmediate:
+        case Instruction_Immediate:
+        {
+            switch(Instruction.Bits[Encoding_Type])
+            {
+                case SubOp_Add: { Result = String("add"); } break;
+                case SubOp_Or:  { Result = String("or"); } break;
+                case SubOp_Adc: { Result = String("adc"); } break;
+                case SubOp_Sbb: { Result = String("sbb"); } break;
+                case SubOp_And: { Result = String("and"); } break;
+                case SubOp_Sub: { Result = String("sub"); } break;
+                case SubOp_Xor: { Result = String("xor"); } break;
+                case SubOp_Cmp: { Result = String("cmp"); } break;
+                default: { Result = String("; invalid encoding type"); } break;
+            }
+            
+        } break;
+        
         case Instruction_AddAccumulator:
         case Instruction_Add: { Result = String("add"); } break;
         
-        case Instruction_AdcImmediate:
         case Instruction_AdcAccumulator:
         case Instruction_Adc: { Result = String("adc"); } break;
         
@@ -458,11 +513,9 @@ InstructionToString(instruction_type Type)
         
         case Instruction_Daa: { Result = String("daa"); } break;
         
-        case Instruction_SubImmediate:
         case Instruction_SubAccumulator:
         case Instruction_Sub: { Result = String("sub"); } break;
         
-        case Instruction_SbbImmediate:
         case Instruction_SbbAccumulator:
         case Instruction_Sbb: { Result = String("sbb"); } break;
         
@@ -470,7 +523,6 @@ InstructionToString(instruction_type Type)
         
         case Instruction_Neg: { Result = String("neg"); } break;
         
-        case Instruction_CmpImmediate:
         case Instruction_CmpAccumulator:
         case Instruction_Cmp: { Result = String("cmp"); } break;
         
@@ -510,7 +562,6 @@ InstructionToString(instruction_type Type)
         
         case Instruction_Rcr: { Result = String("rcr"); } break;
         
-        case Instruction_AndImmediate:
         case Instruction_AndAccumulator:
         case Instruction_And: { Result = String("and"); } break;
         
@@ -518,11 +569,9 @@ InstructionToString(instruction_type Type)
         case Instruction_TestAccumulator:
         case Instruction_Test: { Result = String("test"); } break;
         
-        case Instruction_OrImmediate:
         case Instruction_OrAccumulator:
         case Instruction_Or: { Result = String("or"); } break;
         
-        case Instruction_XorImmediate:
         case Instruction_XorAccumulator:
         case Instruction_Xor: { Result = String("xor"); } break;
         
@@ -621,44 +670,10 @@ InstructionToString(instruction_type Type)
         
         case Instruction_Wait: { Result = String("wait"); } break;
         
-        case Instruction_Lock: { Result = String("lock"); } break;
-        
         default: { Result = String("; Invalid instruction"); } break;
     }
     return Result;
 }
-
-typedef enum instruction_flags
-{
-    Flag_S = (1 << 0),
-    Flag_W = (1 << 1),
-    Flag_D = (1 << 2),
-    Flag_V = (1 << 3),
-    Flag_Z = (1 << 4),
-    
-} instruction_flags;
-
-typedef struct instruction
-{
-    instruction_type Type;
-    u8 OpCode;
-    u8 OpCodeSize;
-    
-    instruction_flags Flags;
-    
-    union
-    {    
-        u32 Generic;
-        
-        register_byte_type RegisterByte;
-        register_word_type RegisterWord;
-        segment_register_type SegmentRegister;
-    };
-    
-    b32 HasFieldData;
-    u8 Bits[Encoding_Count];
-    
-} instruction;
 
 typedef struct instruction_table_entry
 {
