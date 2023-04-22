@@ -28,67 +28,67 @@
 global instruction_table_entry GlobalInstructionTable[] =
 {
     { Instruction_Add,                    0b00000000, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Add,                    0b00000001, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Add,                    0b00000001, Flag_W, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Add,                    0b00000010, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Add,                    0b00000011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_AddAccumulator,         0b00000100, 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_AddAccumulator,         0b00000101, Flag_W | 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_AddAccumulator,         0b00000101, Flag_W, 0, { DATA, DATA_IF_W } },
     { Instruction_PushSegmentRegister,    0b00000110, 0, 0b00, { 0 } },
     { Instruction_PopSegmentRegister,     0b00000111, 0, 0b00, { 0 } },
     { Instruction_Or,                     0b00001000, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Or,                     0b00001001, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Or,                     0b00001001, Flag_W, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Or,                     0b00001010, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Or,                     0b00001011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_OrAccumulator,          0b00001100, 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_OrAccumulator,          0b00001101, Flag_W | 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_OrAccumulator,          0b00001101, Flag_W, 0, { DATA, DATA_IF_W } },
     { Instruction_PushSegmentRegister,    0b00001110, 0, 0b01, { 0 } },
     { Instruction_PopSegmentRegister,     0b00001111, 0, 0b01, { 0 } },
     { Instruction_Adc,                    0b00010000, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Adc,                    0b00010001, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Adc,                    0b00010001, Flag_W, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Adc,                    0b00010010, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Adc,                    0b00010011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_AdcAccumulator,         0b00010100, 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_AdcAccumulator,         0b00010101, Flag_W | 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_AdcAccumulator,         0b00010101, Flag_W, 0, { DATA, DATA_IF_W } },
     { Instruction_PushSegmentRegister,    0b00010110, 0, 0b10, { 0 } },
     { Instruction_PopSegmentRegister,     0b00010111, 0, 0b10, { 0 } },
     { Instruction_Sbb,                    0b00011000, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Sbb,                    0b00011001, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Sbb,                    0b00011001, Flag_W, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Sbb,                    0b00011010, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Sbb,                    0b00011011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_SbbAccumulator,         0b00011100, 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_SbbAccumulator,         0b00011101, Flag_W | 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_SbbAccumulator,         0b00011101, Flag_W, 0, { DATA, DATA_IF_W } },
     { Instruction_PushSegmentRegister,    0b00011110, 0, 0b11, { 0 } },
     { Instruction_PopSegmentRegister,     0b00011111, 0, 0b11, { 0 } },
     { Instruction_And,                    0b00100000, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_And,                    0b00100001, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_And,                    0b00100001, Flag_W, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_And,                    0b00100010, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_And,                    0b00100011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_AndAccumulator,         0b00100100, 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_AndAccumulator,         0b00100101, Flag_W | 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_AndAccumulator,         0b00100101, Flag_W, 0, { DATA, DATA_IF_W } },
     { Instruction_Segment,                0b00100110, 0, 0b00, { 0 } },
     { Instruction_Daa,                    0b00100111, 0, 0, { 0 } },
     { Instruction_Sub,                    0b00101000, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Sub,                    0b00101001, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Sub,                    0b00101001, Flag_W, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Sub,                    0b00101010, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Sub,                    0b00101011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_SubAccumulator,         0b00101100, 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_SubAccumulator,         0b00101101, Flag_W | 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_SubAccumulator,         0b00101101, Flag_W, 0, { DATA, DATA_IF_W } },
     { Instruction_Segment,                0b00101110, 0, 0b01, { 0 } },
     { Instruction_Das,                    0b00101111, 0, 0, { 0 } },
     { Instruction_Xor,                    0b00110000, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Xor,                    0b00110001, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Xor,                    0b00110001, Flag_W, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Xor,                    0b00110010, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Xor,                    0b00110011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_XorAccumulator,         0b00110100, 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_XorAccumulator,         0b00110101, Flag_W | 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_XorAccumulator,         0b00110101, Flag_W, 0, { DATA, DATA_IF_W } },
     { Instruction_Segment,                0b00110110, 0, 0b10, { 0 } },
     { Instruction_Aaa,                    0b00110111, 0, 0, { 0 } },
     { Instruction_Cmp,                    0b00111000, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Cmp,                    0b00111001, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Cmp,                    0b00111001, Flag_W, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Cmp,                    0b00111010, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Cmp,                    0b00111011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_CmpAccumulator,         0b00111100, 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_CmpAccumulator,         0b00111101, Flag_W | 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_CmpAccumulator,         0b00111101, Flag_W, 0, { DATA, DATA_IF_W } },
     { Instruction_Segment,                0b00111110, 0, 0b11, { 0 } },
     { Instruction_Aas,                    0b00111111, 0, 0, { 0 } },
     { Instruction_Inc,                    0b01000000, 0, 0b000,      { 0 } },
@@ -156,21 +156,21 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Jle,                    0b01111110, 0, 0, { IP_INC8 } },
     { Instruction_Jg,                     0b01111111, 0, 0, { IP_INC8 } },
     { Instruction_Immediate,              0b10000000, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
-    { Instruction_Immediate,              0b10000001, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
+    { Instruction_Immediate,              0b10000001, Flag_W, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
     { Instruction_Immediate,              0b10000010, Flag_S, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
     { Instruction_Immediate,              0b10000011, Flag_W | Flag_S, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
     { Instruction_Test,                   0b10000100, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Test,                   0b10000101, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Test,                   0b10000101, Flag_W, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Xchg,                   0b10000110, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Xchg,                   0b10000111, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Xchg,                   0b10000111, Flag_W, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Mov,                    0b10001000, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI  } },
-    { Instruction_Mov,                    0b10001001, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI  } },
+    { Instruction_Mov,                    0b10001001, Flag_W, 0, { MOD, REG, RM, DISP_LO, DISP_HI  } },
     { Instruction_Mov,                    0b10001010, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI  } },
     { Instruction_Mov,                    0b10001011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI  } },
     { Instruction_MovRegisterSegment,     0b10001100, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Lea,                    0b10001101, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Pop,                    0b10001110, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
-    { Instruction_Pop,                    0b10001111, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
+    { Instruction_Pop,                    0b10001111, Flag_W, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
     { Instruction_XchgWithAccumulator,    0b10010000, 0, 0b000,      { 0 } },
     { Instruction_XchgWithAccumulator,    0b10010001, 0, 0b001,      { 0 } },
     { Instruction_XchgWithAccumulator,    0b10010010, 0, 0b010,      { 0 } },
@@ -188,21 +188,21 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Sahf,                   0b10011110, 0, 0, { 0 } },
     { Instruction_Lahf,                   0b10011111, 0, 0, { 0 } },
     { Instruction_Mov,                    0b10100000, 0, 0, { ADDR_LO, ADDR_HI } },
-    { Instruction_Mov,                    0b10100001, Flag_W | 0, 0, { ADDR_LO, ADDR_HI } },
+    { Instruction_Mov,                    0b10100001, Flag_W, 0, { ADDR_LO, ADDR_HI } },
     { Instruction_Mov,                    0b10100010, Flag_D, 0, { ADDR_LO, ADDR_HI } },
     { Instruction_Mov,                    0b10100011, Flag_W | Flag_D, 0, { ADDR_LO, ADDR_HI } },
     { Instruction_Movs,                   0b10100100, 0, 0, { 0 } },
-    { Instruction_Movs,                   0b10100101, Flag_W | 0, 0, { 0 } },
+    { Instruction_Movs,                   0b10100101, Flag_W, 0, { 0 } },
     { Instruction_Cmps,                   0b10100110, 0, 0, { 0 } },
-    { Instruction_Cmps,                   0b10100111, Flag_W | 0, 0, { 0 } },
+    { Instruction_Cmps,                   0b10100111, Flag_W, 0, { 0 } },
     { Instruction_TestAccumulator,        0b10101000, 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_TestAccumulator,        0b10101001, Flag_W | 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_TestAccumulator,        0b10101001, Flag_W, 0, { DATA, DATA_IF_W } },
     { Instruction_Stds,                   0b10101010, 0, 0, { 0 } },
-    { Instruction_Stds,                   0b10101011, Flag_W | 0, 0, { 0 } },
+    { Instruction_Stds,                   0b10101011, Flag_W, 0, { 0 } },
     { Instruction_Lods,                   0b10101100, 0, 0, { 0 } },
-    { Instruction_Lods,                   0b10101101, Flag_W | 0, 0, { 0 } },
+    { Instruction_Lods,                   0b10101101, Flag_W, 0, { 0 } },
     { Instruction_Scas,                   0b10101110, 0, 0, { 0 } },
-    { Instruction_Scas,                   0b10101111, Flag_W | 0, 0, { 0 } },
+    { Instruction_Scas,                   0b10101111, Flag_W, 0, { 0 } },
     { Instruction_NOP,                    0b10110000, 0, 0, 0, { 0} },
     { Instruction_MovImmediate,           0b10110001, 0, 0b001,      { DATA, DATA_IF_W } },
     { Instruction_MovImmediate,           0b10110010, 0, 0b010,      { DATA, DATA_IF_W } },
@@ -226,7 +226,7 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Les,                    0b11000100, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Lds,                    0b11000101, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_MovImmediateMemory,     0b11000110, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
-    { Instruction_MovImmediateMemory,     0b11000111, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
+    { Instruction_MovImmediateMemory,     0b11000111, Flag_W, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
     { Instruction_NOP,                    0b11001000, 0, 0, 0, { 0 } },
     { Instruction_NOP,                    0b11001001, 0, 0, 0, { 0 } },
     { Instruction_RetfIntersegment,       0b11001010, 0, 0, { DATA_LO, DATA_HI } },
@@ -236,9 +236,9 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Into,                   0b11001110, 0, 0, { 0 } },
     { Instruction_Iret,                   0b11001111, 0, 0, { 0 } },
     { Instruction_Logic,                  0b11010000, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
-    { Instruction_Logic,                  0b11010001, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
-    { Instruction_Logic,                  0b11010010, Flag_Z, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
-    { Instruction_Logic,                  0b11010011, Flag_W | Flag_Z, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
+    { Instruction_Logic,                  0b11010001, Flag_W, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
+    { Instruction_Logic,                  0b11010010, Flag_V, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
+    { Instruction_Logic,                  0b11010011, Flag_W | Flag_V, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
     { Instruction_Aam,                    0b11010100, 0, 0, { DATA } },
     { Instruction_Aad,                    0b11010101, 0, 0, { DATA } },
     { Instruction_NOP,                    0b11010110, 0, 0, 0, { 0 } },
@@ -256,25 +256,25 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Loop,                   0b11100010, 0, 0, { IP_INC8 } },
     { Instruction_Jcxz,                   0b11100011, 0, 0, { IP_INC8 } },
     { Instruction_In,                     0b11100100, 0, 0, { DATA } },
-    { Instruction_In,                     0b11100101, Flag_W | 0, 0, { DATA } },
+    { Instruction_In,                     0b11100101, Flag_W, 0, { DATA } },
     { Instruction_Out,                    0b11100110, 0, 0, { DATA } },
-    { Instruction_Out,                    0b11100111, Flag_W | 0, 0, { DATA } },
+    { Instruction_Out,                    0b11100111, Flag_W, 0, { DATA } },
     { Instruction_CallDirectWithin,       0b11101000, 0, 0, { IP_INC_LO, IP_INC_HI } },
     { Instruction_JmpDirectWithin,        0b11101001, 0, 0, { IP_INC_LO, IP_INC_HI } },
     { Instruction_JmpDirectIntersegment,  0b11101010, 0, 0, { IP_INC_LO, IP_INC_HI, CS_LO, CS_HI } },
     { Instruction_NOP,                    0b11101011, 0, 0, 0, { 0 } },
     { Instruction_In,                     0b11101100, 0, 0, { 0 } },
-    { Instruction_In,                     0b11101101, Flag_W | 0, 0, { 0 } },
+    { Instruction_In,                     0b11101101, Flag_W, 0, { 0 } },
     { Instruction_Out,                    0b11101110, 0, 0, { 0 } },
-    { Instruction_Out,                    0b11101111, Flag_W | 0, 0, { 0 } },
+    { Instruction_Out,                    0b11101111, Flag_W, 0, { 0 } },
     { Instruction_Lock,                   0b11110000, 0, 0, { 0 } },
     { Instruction_NOP,                    0b11110001, 0, 0, 0, { 0 } },
     { Instruction_Rep,                    0b11110010, 0, 0, { 0 } },
-    { Instruction_Rep,                    0b11110011, Flag_Z, 0, { 0 } },
+    { Instruction_Rep,                    0b11110011, Flag_V, 0, { 0 } },
     { Instruction_Hlt,                    0b11110100, 0, 0, { 0 } },
     { Instruction_Cmc,                    0b11110101, 0, 0, { 0 } },
     { Instruction_Arithmetic,             0b11110110, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
-    { Instruction_Arithmetic,             0b11110111, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
+    { Instruction_Arithmetic,             0b11110111, Flag_W, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
     { Instruction_Clc,                    0b11111000, 0, 0, { 0 } },
     { Instruction_Stc,                    0b11111001, 0, 0, { 0 } },
     { Instruction_Cli,                    0b11111010, 0, 0, { 0 } },
@@ -282,7 +282,7 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Cld,                    0b11111100, 0, 0, { 0 } },
     { Instruction_Std,                    0b11111101, 0, 0, { 0 } },
     { Instruction_Control,                0b11111110, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
-    { Instruction_Control,                0b11111111, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
+    { Instruction_Control,                0b11111111, Flag_W, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
 };
 
 inline u8
@@ -390,7 +390,6 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
     
     if(Context->IsNextOpLock)
     {
-        // TODO(kstandbridge): Do I want to hardcode this?
         AppendFormatString(&State, "lock ");
         Context->IsNextOpLock = false;
     }
@@ -526,7 +525,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
         
         case Instruction_Aam:
         case Instruction_Aad:
-        case Instruction_Int: // TODO(kstandbridge): I have no tested int for this, also test int with value 3
+        case Instruction_Int: // TODO(kstandbridge): I have not tested int for this, also test int with value 3
         {
             // NOTE(kstandbridge): Reverse engineering I found the default is 10:
             // amm 255 ; 0b11010100, 0b11111111
@@ -686,7 +685,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                             }
                             else if(Instruction.Type == Instruction_Logic)
                             {
-                                if(Instruction.Flags & Flag_Z)
+                                if(Instruction.Flags & Flag_V)
                                 {
                                     // NOTE(kstandbridge): V = 1 Shift/rotate count is specified in CL register
                                     AppendFormatString(&State, "%S %S, cl", Op, Src);
@@ -738,7 +737,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                             }
                             else if(Instruction.Type == Instruction_Logic)
                             {
-                                if(Instruction.Flags & Flag_Z)
+                                if(Instruction.Flags & Flag_V)
                                 {
                                     // NOTE(kstandbridge): V = 1 Shift/rotate count is specified in CL register
                                     AppendFormatString(&State, "%S %S [%d], cl", Op, Size, Displacement);
@@ -837,7 +836,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                                 }
                                 else if(Instruction.Type == Instruction_Logic)
                                 {
-                                    if(Instruction.Flags & Flag_Z)
+                                    if(Instruction.Flags & Flag_V)
                                     {
                                         // NOTE(kstandbridge): V = 1 Shift/rotate count is specified in CL register
                                         AppendFormatString(&State, "%S %S [%S], cl", Op, Size, Src);
@@ -907,7 +906,6 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                         
                         string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
                         
-                        
                         // NOTE(kstandbridge): xchg and test seems to require this order on 16 bit displacements but not 8 bit??
                         if(((Instruction.Type == Instruction_Xchg) || 
                             (Instruction.Type == Instruction_Test)) &&
@@ -946,8 +944,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                         }
                         else if(Instruction.Type == Instruction_Logic)
                         {
-                            
-                            if(Instruction.Flags & Flag_Z)
+                            if(Instruction.Flags & Flag_V)
                             {
                                 // NOTE(kstandbridge): V = 1 Shift/rotate count is specified in CL register
                                 AppendFormatString(&State, "%S %S %S, cl", Op, Size, Src);
@@ -989,7 +986,6 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                         else if((Instruction.Type == Instruction_Control) &&
                                 (Instruction.Bits[Encoding_REG]) == SubOp_ICall)
                         {
-                            // TODO(kstandbridge): why is this far?
                             AppendFormatString(&State, "%S far %S", Op, Src);
                         }
                         else
@@ -1010,8 +1006,6 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
         } break;
         
     }
-    
-    
     
     Result = EndFormatString(&State, Arena);
     return Result;
@@ -1035,8 +1029,6 @@ StreamToAssembly(memory_arena *Arena, u8 *Buffer, umm Size)
     {
         instruction Instruction = GetNextInstruction(&Context);
         
-        
-        // TODO(kstandbridge): Update the context with this instruction
         if(Instruction.Type == Instruction_Lock)
         {
             Context.IsNextOpLock = true;
