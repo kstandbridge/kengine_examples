@@ -402,30 +402,32 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
         Context->IsNextOpSegment = false;
     }
     
-    if(Instruction.Type == Instruction_In)
+    if((Instruction.Type == Instruction_In) ||
+       (Instruction.Type == Instruction_Out))
     {
         string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
         if((Instruction.Bits[Encoding_DATA] > 0))
         {
             u8 Value = Instruction.Bits[Encoding_DATA];
-            AppendFormatString(&State, "%S %S, %u", Op, Dest, Value);
+            if(Instruction.Type == Instruction_In)
+            {
+                AppendFormatString(&State, "%S %S, %u", Op, Dest, Value);
+            }
+            else
+            {
+                AppendFormatString(&State, "%S %u, %S", Op, Value, Dest);
+            }
         }
         else
         {
-            AppendFormatString(&State, "%S %S, dx", Op, Dest);
-        }
-    }
-    else if(Instruction.Type == Instruction_Out)
-    {
-        string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
-        if((Instruction.Bits[Encoding_DATA] > 0))
-        {
-            u8 Value = Instruction.Bits[Encoding_DATA];
-            AppendFormatString(&State, "%S %u, %S", Op, Value, Dest);
-        }
-        else
-        {
-            AppendFormatString(&State, "%S dx, %S", Op, Dest);
+            if(Instruction.Type == Instruction_In)
+            {
+                AppendFormatString(&State, "%S %S, dx", Op, Dest);
+            }
+            else
+            {
+                AppendFormatString(&State, "%S dx, %S", Op, Dest);
+            }
         }
     }
     else if(Instruction.Type == Instruction_Rep)
@@ -441,18 +443,6 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
         {
             AppendFormatString(&State, "%S ; ERROR expected sub instruction", Op);
         }
-    }
-    else if(((Instruction.Type != Instruction_PushSegmentRegister) &&
-             (Instruction.Type != Instruction_PopSegmentRegister) &&
-             (Instruction.Type != Instruction_PushRegister) &&
-             (Instruction.Type != Instruction_PopRegister) &&
-             (Instruction.Type != Instruction_XchgWithAccumulator) &&
-             (Instruction.Type != Instruction_Inc) &&
-             (Instruction.Type != Instruction_Control) &&
-             (Instruction.Type != Instruction_Dec)) &&
-            (!Instruction.HasFieldData))
-    {
-        AppendFormatString(&State, "%S", Op);
     }
     else if((Instruction.Type == Instruction_Je) ||
             (Instruction.Type == Instruction_Jl) ||
@@ -475,7 +465,6 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
             (Instruction.Type == Instruction_Loopnz) ||
             (Instruction.Type == Instruction_Jcxz))
     {
-        
 #if 0
         // NOTE(kstandbridge): We are just given an offset in the instruction stream to jmp
         s8 Value = *(s8 *)&Instruction.Bits[Encoding_IP_INC8];
@@ -484,7 +473,6 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
         // TODO(kstandbridge): Better testing of jumps to go back to the correct offset
         AppendFormatString(&State, "%S label", Op);
 #endif
-        
     }
     else if((Instruction.Type == Instruction_Ret) ||
             (Instruction.Type == Instruction_RetfIntersegment))
@@ -494,7 +482,14 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
         u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
         s16 Value = *(s16 *)&ValueWide;
         
-        AppendFormatString(&State, "%S %d", Op, Value);
+        if(Value)
+        {
+            AppendFormatString(&State, "%S %d", Op, Value);
+        }
+        else
+        {
+            AppendFormatString(&State, "%S", Op);
+        }
     }
     else if((Instruction.Type == Instruction_JmpDirectWithin) ||
             (Instruction.Type == Instruction_CallDirectWithin))
@@ -848,9 +843,15 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                         {
                             AppendFormatString(&State, "%S far [%S]", Op, Src);
                         }
-                        else
+                        else if((Instruction.Type == Instruction_Control) ||
+                                (Instruction.Type == Instruction_Arithmetic) ||
+                                (Instruction.Type == Instruction_Pop))
                         {
                             AppendFormatString(&State, "%S %S [%S]", Op, Size, Src);
+                        }
+                        else
+                        {
+                            AppendFormatString(&State, "%S", Op);
                         }
                     }
                 }
