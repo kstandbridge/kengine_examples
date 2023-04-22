@@ -239,38 +239,10 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Int,                    0b11001101, 8, 0, 0, { DATA } },
     { Instruction_Into,                   0b11001110, 8, 0, 0, { 0 } },
     { Instruction_Iret,                   0b11001111, 8, 0, 0, { 0 } },
-    
-    { Instruction_Rol,                    0b11010000, 8, 0, 0, { MOD, B(3, 0b000), RM, DISP_LO, DISP_HI } },
-    { Instruction_Ror,                    0b11010000, 8, 0, 0, { MOD, B(3, 0b001), RM, DISP_LO, DISP_HI } },
-    { Instruction_Rcl,                    0b11010000, 8, 0, 0, { MOD, B(3, 0b010), RM, DISP_LO, DISP_HI } },
-    { Instruction_Rcr,                    0b11010000, 8, 0, 0, { MOD, B(3, 0b011), RM, DISP_LO, DISP_HI } },
-    { Instruction_Shl,                    0b11010000, 8, 0, 0, { MOD, B(3, 0b100), RM, DISP_LO, DISP_HI } },
-    { Instruction_Shr,                    0b11010000, 8, 0, 0, { MOD, B(3, 0b101), RM, DISP_LO, DISP_HI } },
-    { Instruction_Sar,                    0b11010000, 8, 0, 0, { MOD, B(3, 0b111), RM, DISP_LO, DISP_HI } },
-    
-    { Instruction_Rol,                    0b11010001, 8, Flag_W | 0, 0, { MOD, B(3, 0b000), RM, DISP_LO, DISP_HI } },
-    { Instruction_Ror,                    0b11010001, 8, Flag_W | 0, 0, { MOD, B(3, 0b001), RM, DISP_LO, DISP_HI } },
-    { Instruction_Rcl,                    0b11010001, 8, Flag_W | 0, 0, { MOD, B(3, 0b010), RM, DISP_LO, DISP_HI } },
-    { Instruction_Rcr,                    0b11010001, 8, Flag_W | 0, 0, { MOD, B(3, 0b011), RM, DISP_LO, DISP_HI } },
-    { Instruction_Shl,                    0b11010001, 8, Flag_W | 0, 0, { MOD, B(3, 0b100), RM, DISP_LO, DISP_HI } },
-    { Instruction_Shr,                    0b11010001, 8, Flag_W | 0, 0, { MOD, B(3, 0b101), RM, DISP_LO, DISP_HI } },
-    { Instruction_Sar,                    0b11010001, 8, Flag_W | 0, 0, { MOD, B(3, 0b111), RM, DISP_LO, DISP_HI } },
-    
-    { Instruction_Rol,                    0b11010010, 8, Flag_Z, 0, { MOD, B(3, 0b000), RM, DISP_LO, DISP_HI } },
-    { Instruction_Ror,                    0b11010010, 8, Flag_Z, 0, { MOD, B(3, 0b001), RM, DISP_LO, DISP_HI } },
-    { Instruction_Rcl,                    0b11010010, 8, Flag_Z, 0, { MOD, B(3, 0b010), RM, DISP_LO, DISP_HI } },
-    { Instruction_Rcr,                    0b11010010, 8, Flag_Z, 0, { MOD, B(3, 0b011), RM, DISP_LO, DISP_HI } },
-    { Instruction_Shl,                    0b11010010, 8, Flag_Z, 0, { MOD, B(3, 0b100), RM, DISP_LO, DISP_HI } },
-    { Instruction_Shr,                    0b11010010, 8, Flag_Z, 0, { MOD, B(3, 0b101), RM, DISP_LO, DISP_HI } },
-    { Instruction_Sar,                    0b11010010, 8, Flag_Z, 0, { MOD, B(3, 0b111), RM, DISP_LO, DISP_HI } },
-    
-    { Instruction_Rol,                    0b11010011, 8, Flag_W | Flag_Z, 0, { MOD, B(3, 0b000), RM, DISP_LO, DISP_HI } },
-    { Instruction_Ror,                    0b11010011, 8, Flag_W | Flag_Z, 0, { MOD, B(3, 0b001), RM, DISP_LO, DISP_HI } },
-    { Instruction_Rcl,                    0b11010011, 8, Flag_W | Flag_Z, 0, { MOD, B(3, 0b010), RM, DISP_LO, DISP_HI } },
-    { Instruction_Rcr,                    0b11010011, 8, Flag_W | Flag_Z, 0, { MOD, B(3, 0b011), RM, DISP_LO, DISP_HI } },
-    { Instruction_Shl,                    0b11010011, 8, Flag_W | Flag_Z, 0, { MOD, B(3, 0b100), RM, DISP_LO, DISP_HI } },
-    { Instruction_Shr,                    0b11010011, 8, Flag_W | Flag_Z, 0, { MOD, B(3, 0b101), RM, DISP_LO, DISP_HI } },
-    { Instruction_Sar,                    0b11010011, 8, Flag_W | Flag_Z, 0, { MOD, B(3, 0b111), RM, DISP_LO, DISP_HI } },
+    { Instruction_Logic,                  0b11010000, 8, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
+    { Instruction_Logic,                  0b11010001, 8, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
+    { Instruction_Logic,                  0b11010010, 8, Flag_Z, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
+    { Instruction_Logic,                  0b11010011, 8, Flag_W | Flag_Z, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
     
     { Instruction_Aam,                    0b11010100, 8, 0, 0, { DATA } },
     { Instruction_Aad,                    0b11010101, 8, 0, 0, { DATA } },
@@ -769,13 +741,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                     {
                         AppendFormatString(&State, "%S %S", Op, Src);
                     }
-                    else if((Instruction.Type == Instruction_Shl) ||
-                            (Instruction.Type == Instruction_Shr) ||
-                            (Instruction.Type == Instruction_Sar) ||
-                            (Instruction.Type == Instruction_Rol) ||
-                            (Instruction.Type == Instruction_Ror) ||
-                            (Instruction.Type == Instruction_Rcl) ||
-                            (Instruction.Type == Instruction_Rcr))
+                    else if(Instruction.Type == Instruction_Logic)
                     {
                         if(Instruction.Flags & Flag_Z)
                         {
@@ -827,13 +793,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                     {
                         AppendFormatString(&State, "%S %S, %S[%d]", Op, Dest, SegmentPrefix, Displacement);
                     }
-                    else if((Instruction.Type == Instruction_Shl) ||
-                            (Instruction.Type == Instruction_Shr) ||
-                            (Instruction.Type == Instruction_Sar) ||
-                            (Instruction.Type == Instruction_Rol) ||
-                            (Instruction.Type == Instruction_Ror) ||
-                            (Instruction.Type == Instruction_Rcl) ||
-                            (Instruction.Type == Instruction_Rcr))
+                    else if(Instruction.Type == Instruction_Logic)
                     {
                         if(Instruction.Flags & Flag_Z)
                         {
@@ -930,13 +890,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                         {
                             AppendFormatString(&State, "%S dx, [%S]", Op, Src);
                         }
-                        else if((Instruction.Type == Instruction_Shl) ||
-                                (Instruction.Type == Instruction_Shr) ||
-                                (Instruction.Type == Instruction_Sar) ||
-                                (Instruction.Type == Instruction_Rol) ||
-                                (Instruction.Type == Instruction_Ror) ||
-                                (Instruction.Type == Instruction_Rcl) ||
-                                (Instruction.Type == Instruction_Rcr))
+                        else if(Instruction.Type == Instruction_Logic)
                         {
                             if(Instruction.Flags & Flag_Z)
                             {
@@ -1037,13 +991,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                 {
                     AppendFormatString(&State, "%S %S, %S", Op, Src, Dest);
                 }
-                else if((Instruction.Type == Instruction_Shl) ||
-                        (Instruction.Type == Instruction_Shr) ||
-                        (Instruction.Type == Instruction_Sar) ||
-                        (Instruction.Type == Instruction_Rol) ||
-                        (Instruction.Type == Instruction_Ror) ||
-                        (Instruction.Type == Instruction_Rcl) ||
-                        (Instruction.Type == Instruction_Rcr))
+                else if(Instruction.Type == Instruction_Logic)
                 {
                     
                     if(Instruction.Flags & Flag_Z)

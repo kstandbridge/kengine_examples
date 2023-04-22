@@ -185,6 +185,11 @@ typedef enum instruction_type
 {
     Instruction_NOP,
     
+    // NOTE(kstandbridge): Categories
+    Instruction_Immediate,
+    Instruction_Logic,
+    
+    // NOTE(kstandbridge): Ops
     Instruction_Mov,
     Instruction_MovImmediateMemory,
     Instruction_MovImmediate,
@@ -220,8 +225,6 @@ typedef enum instruction_type
     Instruction_Pushf,
     
     Instruction_Popf,
-    
-    Instruction_Immediate,
     
     Instruction_Add,
     Instruction_AddAccumulator,
@@ -400,14 +403,26 @@ typedef enum instruction_type
 
 typedef enum sub_op_type
 {
+    // NOTE(kstandbridge): Immediate
     SubOp_Add = 0b000,
-    SubOp_Or =  0b001,
+    SubOp_Or  = 0b001,
     SubOp_Adc = 0b010,
     SubOp_Sbb = 0b011,
     SubOp_And = 0b100,
     SubOp_Sub = 0b101,
     SubOp_Xor = 0b110,
     SubOp_Cmp = 0b111,
+    
+    // NOTE(kstandbridge): Logic
+    SubOp_Rol    = 0b000,
+    SubOp_Ror    = 0b001,
+    SubOp_Rcl    = 0b010,
+    SubOp_Rcr    = 0b011,
+    SubOp_Shl    = 0b100,
+    SubOp_Shr    = 0b101,
+    SubOp_Unused = 0b110,
+    SubOp_Sar    = 0b111,
+    
 } sub_op_type;
 
 typedef enum instruction_flags
@@ -448,6 +463,42 @@ InstructionToString(instruction Instruction)
     string Result;
     switch(Instruction.Type)
     {
+        
+        case Instruction_Immediate:
+        {
+            switch(Instruction.Bits[Encoding_Type])
+            {
+                case SubOp_Add: { Result = String("add"); } break;
+                case SubOp_Or:  { Result = String("or");  } break;
+                case SubOp_Adc: { Result = String("adc"); } break;
+                case SubOp_Sbb: { Result = String("sbb"); } break;
+                case SubOp_And: { Result = String("and"); } break;
+                case SubOp_Sub: { Result = String("sub"); } break;
+                case SubOp_Xor: { Result = String("xor"); } break;
+                case SubOp_Cmp: { Result = String("cmp"); } break;
+                default: { Result = String("; invalid encoding type"); } break;
+            }
+            
+        } break;
+        
+        case Instruction_Logic:
+        {
+            switch(Instruction.Bits[Encoding_Type])
+            {
+                case SubOp_Rol:    { Result = String("rol"); } break;
+                case SubOp_Ror:    { Result = String("ror"); } break;
+                case SubOp_Rcl:    { Result = String("rcl"); } break;
+                case SubOp_Rcr:    { Result = String("rcr"); } break;
+                case SubOp_Shl:    { Result = String("shl"); } break;
+                case SubOp_Shr:    { Result = String("shr"); } break;
+                case SubOp_Unused: { Result = String("; unused encoding type"); } break;
+                case SubOp_Sar:    { Result = String("sar"); } break;
+                default: { Result = String("; invalid encoding type"); } break;
+            }
+            
+        } break;
+        
+        
         case Instruction_MovImmediateMemory:
         case Instruction_MovImmediate:
         case Instruction_MovRegisterSegment:
@@ -483,23 +534,6 @@ InstructionToString(instruction Instruction)
         case Instruction_Pushf: { Result = String("pushf"); } break;
         
         case Instruction_Popf: { Result = String("popf"); } break;
-        
-        case Instruction_Immediate:
-        {
-            switch(Instruction.Bits[Encoding_Type])
-            {
-                case SubOp_Add: { Result = String("add"); } break;
-                case SubOp_Or:  { Result = String("or"); } break;
-                case SubOp_Adc: { Result = String("adc"); } break;
-                case SubOp_Sbb: { Result = String("sbb"); } break;
-                case SubOp_And: { Result = String("and"); } break;
-                case SubOp_Sub: { Result = String("sub"); } break;
-                case SubOp_Xor: { Result = String("xor"); } break;
-                case SubOp_Cmp: { Result = String("cmp"); } break;
-                default: { Result = String("; invalid encoding type"); } break;
-            }
-            
-        } break;
         
         case Instruction_AddAccumulator:
         case Instruction_Add: { Result = String("add"); } break;
