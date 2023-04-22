@@ -681,8 +681,8 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                 
                 if((Instruction.Type == Instruction_MovImmediate) ||
                    (Instruction.Type == Instruction_Immediate) ||
-                   ((Instruction.Type == Instruction_Arithmetic) && (Instruction.Bits[Encoding_Type] == SubOp_Test)) ||
-                   (Instruction.Type == Instruction_TestImmediate))
+                   ((Instruction.Type == Instruction_Arithmetic) && 
+                    (Instruction.Bits[Encoding_Type] == SubOp_Test)))
                 {
                     s16 Value;
                     
@@ -703,18 +703,8 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                 }
                 else
                 {                
-                    if((Instruction.Type == Instruction_Inc) ||
-                       (Instruction.Type == Instruction_Arithmetic) ||
-                       (Instruction.Type == Instruction_Control) ||
-                       (Instruction.Type == Instruction_Dec) ||
-                       (Instruction.Type == Instruction_Neg) ||
-                       (Instruction.Type == Instruction_Mul) ||
-                       (Instruction.Type == Instruction_Imul) ||
-                       (Instruction.Type == Instruction_Div) ||
-                       (Instruction.Type == Instruction_Idiv) ||
-                       (Instruction.Type == Instruction_Not) ||
-                       (Instruction.Type == Instruction_Call) ||
-                       (Instruction.Type == Instruction_Jmp))
+                    if((Instruction.Type == Instruction_Arithmetic) ||
+                       (Instruction.Type == Instruction_Control))
                     {
                         AppendFormatString(&State, "%S %S", Op, Src);
                     }
@@ -789,11 +779,9 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                         // TODO(kstandbridge): Figure out why this needs the al suffix
                         AppendFormatString(&State, "%S [%u], al", Op, ValueWide);
                     }
-                    else if((Instruction.Type == Instruction_Call) ||
-                            (Instruction.Type == Instruction_Jmp) ||
-                            ((Instruction.Type == Instruction_Control) &&
-                             ((Instruction.Bits[Encoding_Type]) == SubOp_Jmp) ||
-                             ((Instruction.Bits[Encoding_Type]) == SubOp_Call)))
+                    else if((Instruction.Type == Instruction_Control) &&
+                            ((Instruction.Bits[Encoding_Type]) == SubOp_Jmp) ||
+                            ((Instruction.Bits[Encoding_Type]) == SubOp_Call))
                     {
                         AppendFormatString(&State, "%S [%u]", Op, ValueWide);
                     }
@@ -808,8 +796,8 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                     
                     if((Instruction.Type == Instruction_MovImmediate) ||
                        (Instruction.Type == Instruction_Immediate) ||
-                       ((Instruction.Type == Instruction_Arithmetic) && (Instruction.Bits[Encoding_Type] == SubOp_Test)) ||
-                       (Instruction.Type == Instruction_TestImmediate))
+                       ((Instruction.Type == Instruction_Arithmetic) && 
+                        (Instruction.Bits[Encoding_Type] == SubOp_Test)))
                     {
                         s16 Value;
                         
@@ -989,8 +977,8 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                     }
                 }
                 else if((Instruction.Type == Instruction_Immediate) ||
-                        ((Instruction.Type == Instruction_Arithmetic) && (Instruction.Bits[Encoding_Type] == SubOp_Test)) ||
-                        (Instruction.Type == Instruction_TestImmediate))
+                        ((Instruction.Type == Instruction_Arithmetic) && 
+                         (Instruction.Bits[Encoding_Type] == SubOp_Test)))
                 {
                     u16 Data;
                     if(Instruction.Flags && Flag_W)
@@ -1006,7 +994,6 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                     
                     AppendFormatString(&State, "%S %S %S, %u", Op, Size, Src, Data);
                 }
-                //else if((Instruction.Type == Instruction_Call))
                 else if((Instruction.Type == Instruction_Control) &&
                         (Instruction.Bits[Encoding_Type]) == SubOp_Call)
                 {

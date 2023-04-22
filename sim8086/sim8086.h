@@ -197,7 +197,6 @@ typedef enum instruction_type
     Instruction_MovImmediate,
     Instruction_MovRegisterSegment,
     
-    Instruction_Push,
     Instruction_PushRegister,
     Instruction_PushSegmentRegister,
     
@@ -248,8 +247,6 @@ typedef enum instruction_type
     
     Instruction_Dec,
     
-    Instruction_Neg,
-    
     Instruction_Cmp,
     Instruction_CmpAccumulator,
     
@@ -257,15 +254,7 @@ typedef enum instruction_type
     
     Instruction_Das,
     
-    Instruction_Mul,
-    
-    Instruction_Imul,
-    
     Instruction_Aam,
-    
-    Instruction_Div,
-    
-    Instruction_Idiv,
     
     Instruction_Aad,
     
@@ -273,27 +262,10 @@ typedef enum instruction_type
     
     Instruction_Cwd,
     
-    Instruction_Not,
-    
-    Instruction_Shl,
-    
-    Instruction_Shr,
-    
-    Instruction_Sar,
-    
-    Instruction_Rol,
-    
-    Instruction_Ror,
-    
-    Instruction_Rcl,
-    
-    Instruction_Rcr,
-    
     Instruction_And,
     Instruction_AndAccumulator,
     
     Instruction_Test,
-    Instruction_TestImmediate,
     Instruction_TestAccumulator,
     
     Instruction_Or,
@@ -317,12 +289,10 @@ typedef enum instruction_type
     Instruction_Call,
     Instruction_CallDirectIntersegment,
     Instruction_CallDirectWithin,
-    Instruction_CallIndirect,
     
     Instruction_Jmp,
     Instruction_JmpDirectIntersegment,
     Instruction_JmpDirectWithin,
-    Instruction_JmpIndirect,
     
     Instruction_Ret,
     
@@ -366,8 +336,6 @@ typedef enum instruction_type
     Instruction_Loopz,
     
     Instruction_Loopnz,
-    
-    Instruction_Jc,
     
     Instruction_Jcxz,
     
@@ -559,8 +527,7 @@ InstructionToString(instruction Instruction)
         case Instruction_Mov:  { Result = String("mov"); } break;
         
         case Instruction_PushRegister:
-        case Instruction_PushSegmentRegister:
-        case Instruction_Push: { Result = String("push"); } break;
+        case Instruction_PushSegmentRegister: { Result = String("push"); } break;
         
         case Instruction_PopRegister:
         case Instruction_PopSegmentRegister:
@@ -609,8 +576,6 @@ InstructionToString(instruction Instruction)
         
         case Instruction_Dec: { Result = String("dec"); } break;
         
-        case Instruction_Neg: { Result = String("neg"); } break;
-        
         case Instruction_CmpAccumulator:
         case Instruction_Cmp: { Result = String("cmp"); } break;
         
@@ -618,15 +583,7 @@ InstructionToString(instruction Instruction)
         
         case Instruction_Das: { Result = String("das"); } break;
         
-        case Instruction_Mul: { Result = String("mul"); } break;
-        
-        case Instruction_Imul: { Result = String("imul"); } break;
-        
         case Instruction_Aam: { Result = String("aam"); } break;
-        
-        case Instruction_Div: { Result = String("div"); } break;
-        
-        case Instruction_Idiv: { Result = String("idiv"); } break;
         
         case Instruction_Aad: { Result = String("aad"); } break;
         
@@ -634,26 +591,9 @@ InstructionToString(instruction Instruction)
         
         case Instruction_Cwd: { Result = String("cwd"); } break;
         
-        case Instruction_Not: { Result = String("not"); } break;
-        
-        case Instruction_Shl: { Result = String("shl"); } break;
-        
-        case Instruction_Shr: { Result = String("shr"); } break;
-        
-        case Instruction_Sar: { Result = String("sar"); } break;
-        
-        case Instruction_Rol: { Result = String("rol"); } break;
-        
-        case Instruction_Ror: { Result = String("ror"); } break;
-        
-        case Instruction_Rcl: { Result = String("rcl"); } break;
-        
-        case Instruction_Rcr: { Result = String("rcr"); } break;
-        
         case Instruction_AndAccumulator:
         case Instruction_And: { Result = String("and"); } break;
         
-        case Instruction_TestImmediate:
         case Instruction_TestAccumulator:
         case Instruction_Test: { Result = String("test"); } break;
         
@@ -677,12 +617,10 @@ InstructionToString(instruction Instruction)
         
         case Instruction_CallDirectWithin:
         case Instruction_CallDirectIntersegment:
-        case Instruction_CallIndirect:
         case Instruction_Call: { Result = String("call"); } break;
         
         case Instruction_JmpDirectIntersegment:
         case Instruction_JmpDirectWithin:
-        case Instruction_JmpIndirect:
         case Instruction_Jmp: { Result = String("jmp"); } break;
         
         case Instruction_Ret: { Result = String("ret"); } break;
@@ -727,8 +665,6 @@ InstructionToString(instruction Instruction)
         case Instruction_Loopz: { Result = String("loopz"); } break;
         
         case Instruction_Loopnz: { Result = String("loopnz"); } break;
-        
-        case Instruction_Jc: { Result = String("jc"); } break;
         
         case Instruction_Jcxz: { Result = String("jcxz"); } break;
         
