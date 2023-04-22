@@ -8,7 +8,7 @@
 #include "sim8086.c"
 
 inline void
-RunGetBitsTest(memory_arena *Arena)
+RunGetBitsTests(memory_arena *Arena)
 {
     Arena; 
     {
@@ -62,6 +62,20 @@ RunGetBitsTest(memory_arena *Arena)
 }
 
 inline void
+RunInstructionTableTests(memory_arena *Arena)
+{
+    Arena;
+    
+    for(s32 TableIndex = 0;
+        TableIndex < ArrayCount(GlobalInstructionTable);
+        ++TableIndex)
+    {
+        instruction_table_entry TestEntry = GlobalInstructionTable[TableIndex];
+        AssertEqualBits(TableIndex, TestEntry.OpCode);
+    }
+}
+
+inline void
 RunDisassembleTests(memory_arena *Arena)
 {
     Arena;
@@ -77,7 +91,6 @@ RunDisassembleTests(memory_arena *Arena)
         };
         instruction Instruction = GetNextInstruction(&Context);
         AssertEqualU32(Instruction_Mov, Instruction.Type);
-        AssertEqualBits(0b10001001, Instruction.OpCode);
         AssertEqualBits(0b11, Instruction.Bits[Encoding_MOD]);
         AssertEqualBits(0b011, Instruction.Bits[Encoding_REG]);
         AssertEqualBits(0b110, Instruction.Bits[Encoding_RM]);
@@ -93,7 +106,6 @@ RunDisassembleTests(memory_arena *Arena)
             .InstructionStreamSize = sizeof(Buffer)
         };
         instruction Instruction = GetNextInstruction(&Context);
-        AssertEqualBits(0b10110001, Instruction.OpCode);
         AssertEqualBits(0b00001100, Instruction.Bits[Encoding_DATA]);
     }
     
@@ -108,7 +120,6 @@ RunDisassembleTests(memory_arena *Arena)
         };
         instruction Instruction = GetNextInstruction(&Context);
         AssertEqualU32(Instruction_PushSegmentRegister, Instruction.Type);
-        AssertEqualBits(0b00001110, Instruction.OpCode);
     }
     
     {
@@ -122,7 +133,6 @@ RunDisassembleTests(memory_arena *Arena)
         };
         instruction Instruction = GetNextInstruction(&Context);
         AssertEqualU32(Instruction_PopSegmentRegister, Instruction.Type);
-        AssertEqualBits(0b00011111, Instruction.OpCode);
     }
     
 }
@@ -1902,7 +1912,8 @@ RunDisassembleToAssemblyTests(memory_arena *Arena)
 void
 RunAllTests(memory_arena *Arena)
 {
-    RunGetBitsTest(Arena);
+    RunGetBitsTests(Arena);
+    RunInstructionTableTests(Arena);
     RunDisassembleTests(Arena);
     RunDisassembleToAssemblyTests(Arena);
 }

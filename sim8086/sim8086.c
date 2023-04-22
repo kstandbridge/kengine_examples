@@ -28,265 +28,264 @@
 #define CS_LO { Encoding_CS_LO, 8 }
 #define CS_HI { Encoding_CS_HI, 8 }
 
-global instruction_table_entry GlobalInstructionTable[] = 
+global instruction_table_entry GlobalInstructionTable[] =
 {
-    { Instruction_Add,                    0b00000000, 8, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Add,                    0b00000001, 8, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Add,                    0b00000010, 8, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Add,                    0b00000011, 8, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_AddAccumulator,         0b00000100, 8, 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_AddAccumulator,         0b00000101, 8, Flag_W | 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_PushSegmentRegister,    0b00000110, 8, 0, 0b00, { 0 } },
-    { Instruction_PopSegmentRegister,     0b00000111, 8, 0, 0b00, { 0 } },
-    { Instruction_Or,                     0b00001000, 8, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Or,                     0b00001001, 8, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Or,                     0b00001010, 8, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Or,                     0b00001011, 8, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_OrAccumulator,          0b00001100, 8, 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_OrAccumulator,          0b00001101, 8, Flag_W | 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_PushSegmentRegister,    0b00001110, 8, 0, 0b01, { 0 } },
-    { Instruction_PopSegmentRegister,     0b00001111, 8, 0, 0b01, { 0 } },
-    { Instruction_Adc,                    0b00010000, 8, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Adc,                    0b00010001, 8, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Adc,                    0b00010010, 8, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Adc,                    0b00010011, 8, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_AdcAccumulator,         0b00010100, 8, 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_AdcAccumulator,         0b00010101, 8, Flag_W | 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_PushSegmentRegister,    0b00010110, 8, 0, 0b10, { 0 } },
-    { Instruction_PopSegmentRegister,     0b00010111, 8, 0, 0b10, { 0 } },
-    { Instruction_Sbb,                    0b00011000, 8, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Sbb,                    0b00011001, 8, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Sbb,                    0b00011010, 8, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Sbb,                    0b00011011, 8, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_SbbAccumulator,         0b00011100, 8, 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_SbbAccumulator,         0b00011101, 8, Flag_W | 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_PushSegmentRegister,    0b00011110, 8, 0, 0b11, { 0 } },
-    { Instruction_PopSegmentRegister,     0b00011111, 8, 0, 0b11, { 0 } },
-    { Instruction_And,                    0b00100000, 8, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_And,                    0b00100001, 8, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_And,                    0b00100010, 8, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_And,                    0b00100011, 8, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_AndAccumulator,         0b00100100, 8, 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_AndAccumulator,         0b00100101, 8, Flag_W | 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_Segment,                0b00100110, 8, 0, 0b00, { 0 } },
-    { Instruction_Daa,                    0b00100111, 8, 0, 0, { 0 } },
-    { Instruction_Sub,                    0b00101000, 8, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Sub,                    0b00101001, 8, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Sub,                    0b00101010, 8, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Sub,                    0b00101011, 8, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_SubAccumulator,         0b00101100, 8, 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_SubAccumulator,         0b00101101, 8, Flag_W | 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_Segment,                0b00101110, 8, 0, 0b01, { 0 } },
-    { Instruction_Das,                    0b00101111, 8, 0, 0, { 0 } },
-    { Instruction_Xor,                    0b00110000, 8, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Xor,                    0b00110001, 8, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Xor,                    0b00110010, 8, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Xor,                    0b00110011, 8, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_XorAccumulator,         0b00110100, 8, 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_XorAccumulator,         0b00110101, 8, Flag_W | 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_Segment,                0b00110110, 8, 0, 0b10, { 0 } },
-    { Instruction_Aaa,                    0b00110111, 8, 0, 0, { 0 } },
-    { Instruction_Cmp,                    0b00111000, 8, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Cmp,                    0b00111001, 8, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Cmp,                    0b00111010, 8, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Cmp,                    0b00111011, 8, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_CmpAccumulator,         0b00111100, 8, 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_CmpAccumulator,         0b00111101, 8, Flag_W | 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_Segment,                0b00111110, 8, 0, 0b11, { 0 } },
-    { Instruction_Aas,                    0b00111111, 8, 0, 0, { 0 } },
-    { Instruction_Inc,                    0b01000000, 8, 0, 0b000,      { 0 } },
-    { Instruction_Inc,                    0b01000001, 8, 0, 0b001,      { 0 } },
-    { Instruction_Inc,                    0b01000010, 8, 0, 0b010,      { 0 } },
-    { Instruction_Inc,                    0b01000011, 8, 0, 0b011,      { 0 } },
-    { Instruction_Inc,                    0b01000100, 8, 0, 0b100,      { 0 } },
-    { Instruction_Inc,                    0b01000101, 8, 0, 0b101,      { 0 } },
-    { Instruction_Inc,                    0b01000110, 8, 0, 0b110,      { 0 } },
-    { Instruction_Inc,                    0b01000111, 8, 0, 0b111,      { 0 } },
-    { Instruction_Dec,                    0b01001000, 8, 0, 0b000,      { 0 } },
-    { Instruction_Dec,                    0b01001001, 8, 0, 0b001,      { 0 } },
-    { Instruction_Dec,                    0b01001010, 8, 0, 0b010,      { 0 } },
-    { Instruction_Dec,                    0b01001011, 8, 0, 0b011,      { 0 } },
-    { Instruction_Dec,                    0b01001100, 8, 0, 0b100,      { 0 } },
-    { Instruction_Dec,                    0b01001101, 8, 0, 0b101,      { 0 } },
-    { Instruction_Dec,                    0b01001110, 8, 0, 0b110,      { 0 } },
-    { Instruction_Dec,                    0b01001111, 8, 0, 0b111,      { 0 } },
-    { Instruction_PushRegister,           0b01010000, 8, 0, 0b000,      { 0 } },
-    { Instruction_PushRegister,           0b01010001, 8, 0, 0b001,      { 0 } },
-    { Instruction_PushRegister,           0b01010010, 8, 0, 0b010,      { 0 } },
-    { Instruction_PushRegister,           0b01010011, 8, 0, 0b011,      { 0 } },
-    { Instruction_PushRegister,           0b01010100, 8, 0, 0b100,      { 0 } },
-    { Instruction_PushRegister,           0b01010101, 8, 0, 0b101,      { 0 } },
-    { Instruction_PushRegister,           0b01010110, 8, 0, 0b110,      { 0 } },
-    { Instruction_PushRegister,           0b01010111, 8, 0, 0b111,      { 0 } },
-    { Instruction_PopRegister,            0b01011000, 8, 0, 0b000,      { 0 } },
-    { Instruction_PopRegister,            0b01011001, 8, 0, 0b001,      { 0 } },
-    { Instruction_PopRegister,            0b01011010, 8, 0, 0b010,      { 0 } },
-    { Instruction_PopRegister,            0b01011011, 8, 0, 0b011,      { 0 } },
-    { Instruction_PopRegister,            0b01011100, 8, 0, 0b100,      { 0 } },
-    { Instruction_PopRegister,            0b01011101, 8, 0, 0b101,      { 0 } },
-    { Instruction_PopRegister,            0b01011110, 8, 0, 0b110,      { 0 } },
-    { Instruction_PopRegister,            0b01011111, 8, 0, 0b111,      { 0 } },
-    // 0b01100000
-    // 0b01100001
-    // 0b01100010
-    // 0b01100011
-    // 0b01100100
-    // 0b01100101
-    // 0b01100110
-    // 0b01100111
-    // 0b01101000
-    // 0b01101001
-    // 0b01101010
-    // 0b01101011
-    // 0b01101100
-    // 0b01101101
-    // 0b01101110
-    // 0b01101111
-    { Instruction_Jo,                     0b01110000, 8, 0, 0, { IP_INC8 } },
-    { Instruction_Jno,                    0b01110001, 8, 0, 0, { IP_INC8 } },
-    { Instruction_Jb,                     0b01110010, 8, 0, 0, { IP_INC8 } },
-    { Instruction_Jnb,                    0b01110011, 8, 0, 0, { IP_INC8 } },
-    { Instruction_Je,                     0b01110100, 8, 0, 0, { IP_INC8 } },
-    { Instruction_Jne,                    0b01110101, 8, 0, 0, { IP_INC8 } },
-    { Instruction_Jbe,                    0b01110110, 8, 0, 0, { IP_INC8 } },
-    { Instruction_Ja,                     0b01110111, 8, 0, 0, { IP_INC8 } },
-    { Instruction_Js,                     0b01111000, 8, 0, 0, { IP_INC8 } },
-    { Instruction_Jns,                    0b01111001, 8, 0, 0, { IP_INC8 } },
-    { Instruction_Jp,                     0b01111010, 8, 0, 0, { IP_INC8 } },
-    { Instruction_Jnp,                    0b01111011, 8, 0, 0, { IP_INC8 } },
-    { Instruction_Jl,                     0b01111100, 8, 0, 0, { IP_INC8 } },
-    { Instruction_Jnl,                    0b01111101, 8, 0, 0, { IP_INC8 } },
-    { Instruction_Jle,                    0b01111110, 8, 0, 0, { IP_INC8 } },
-    { Instruction_Jg,                     0b01111111, 8, 0, 0, { IP_INC8 } },
-    { Instruction_Immediate,              0b10000000, 8, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
-    { Instruction_Immediate,              0b10000001, 8, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
-    { Instruction_Immediate,              0b10000010, 8, Flag_S, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
-    { Instruction_Immediate,              0b10000011, 8, Flag_W | Flag_S, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
-    { Instruction_Test,                   0b10000100, 8, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Test,                   0b10000101, 8, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Xchg,                   0b10000110, 8, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Xchg,                   0b10000111, 8, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Mov,                    0b10001000, 8, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI  } },
-    { Instruction_Mov,                    0b10001001, 8, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI  } },
-    { Instruction_Mov,                    0b10001010, 8, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI  } },
-    { Instruction_Mov,                    0b10001011, 8, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI  } },
-    { Instruction_MovRegisterSegment,     0b10001100, 8, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Lea,                    0b10001101, 8, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Pop,                    0b10001110, 8, 0, 0, { MOD, B(3, 0b00), RM, DISP_LO, DISP_HI } },
-    { Instruction_Pop,                    0b10001111, 8, Flag_W | 0, 0, { MOD, B(3, 0b00), RM, DISP_LO, DISP_HI } },
-    { Instruction_XchgWithAccumulator,    0b10010000, 8, 0, 0b000,      { 0 } },
-    { Instruction_XchgWithAccumulator,    0b10010001, 8, 0, 0b001,      { 0 } },
-    { Instruction_XchgWithAccumulator,    0b10010010, 8, 0, 0b010,      { 0 } },
-    { Instruction_XchgWithAccumulator,    0b10010011, 8, 0, 0b011,      { 0 } },
-    { Instruction_XchgWithAccumulator,    0b10010100, 8, 0, 0b100,      { 0 } },
-    { Instruction_XchgWithAccumulator,    0b10010101, 8, 0, 0b101,      { 0 } },
-    { Instruction_XchgWithAccumulator,    0b10010110, 8, 0, 0b110,      { 0 } },
-    { Instruction_XchgWithAccumulator,    0b10010111, 8, 0, 0b111,      { 0 } },
-    { Instruction_Cbw,                    0b10011000, 8, 0, 0, { 0 } },
-    { Instruction_Cwd,                    0b10011001, 8, 0, 0, { 0 } },
-    { Instruction_CallDirectIntersegment, 0b10011010, 8, 0, 0, { IP_INC_LO, IP_INC_HI, CS_LO, CS_HI } },
-    { Instruction_Wait,                   0b10011011, 8, 0, 0, { 0 } },
-    { Instruction_Pushf,                  0b10011100, 8, 0, 0, { 0 } },
-    { Instruction_Popf,                   0b10011101, 8, 0, 0, { 0 } },
-    { Instruction_Sahf,                   0b10011110, 8, 0, 0, { 0 } },
-    { Instruction_Lahf,                   0b10011111, 8, 0, 0, { 0 } },
-    { Instruction_Mov,                    0b10100000, 8, 0, 0, { ADDR_LO, ADDR_HI } },
-    { Instruction_Mov,                    0b10100001, 8, Flag_W | 0, 0, { ADDR_LO, ADDR_HI } },
-    { Instruction_Mov,                    0b10100010, 8, Flag_D, 0, { ADDR_LO, ADDR_HI } },
-    { Instruction_Mov,                    0b10100011, 8, Flag_W | Flag_D, 0, { ADDR_LO, ADDR_HI } },
-    { Instruction_Movs,                   0b10100100, 8, 0, 0, { 0 } },
-    { Instruction_Movs,                   0b10100101, 8, Flag_W | 0, 0, { 0 } },
-    { Instruction_Cmps,                   0b10100110, 8, 0, 0, { 0 } },
-    { Instruction_Cmps,                   0b10100111, 8, Flag_W | 0, 0, { 0 } },
-    { Instruction_TestAccumulator,        0b10101000, 8, 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_TestAccumulator,        0b10101001, 8, Flag_W | 0, 0, { DATA, DATA_IF_W } },
-    { Instruction_Stds,                   0b10101010, 8, 0, 0, { 0 } },
-    { Instruction_Stds,                   0b10101011, 8, Flag_W | 0, 0, { 0 } },
-    { Instruction_Lods,                   0b10101100, 8, 0, 0, { 0 } },
-    { Instruction_Lods,                   0b10101101, 8, Flag_W | 0, 0, { 0 } },
-    { Instruction_Scas,                   0b10101110, 8, 0, 0, { 0 } },
-    { Instruction_Scas,                   0b10101111, 8, Flag_W | 0, 0, { 0 } },
-    { Instruction_MovImmediate,           0b10110000, 8, 0, 0b000,      { DATA, DATA_IF_W } },
-    { Instruction_MovImmediate,           0b10110000, 8, 0, 0b000,      { DATA, DATA_IF_W } },
-    { Instruction_MovImmediate,           0b10110001, 8, 0, 0b001,      { DATA, DATA_IF_W } },
-    { Instruction_MovImmediate,           0b10110010, 8, 0, 0b010,      { DATA, DATA_IF_W } },
-    { Instruction_MovImmediate,           0b10110011, 8, 0, 0b011,      { DATA, DATA_IF_W } },
-    { Instruction_MovImmediate,           0b10110100, 8, 0, 0b100,      { DATA, DATA_IF_W } },
-    { Instruction_MovImmediate,           0b10110101, 8, 0, 0b101,      { DATA, DATA_IF_W } },
-    { Instruction_MovImmediate,           0b10110110, 8, 0, 0b110,      { DATA, DATA_IF_W } },
-    { Instruction_MovImmediate,           0b10110111, 8, 0, 0b111,      { DATA, DATA_IF_W } },
-    { Instruction_MovImmediate,           0b10111000, 8, Flag_W, 0b000, { DATA, DATA_IF_W } },
-    { Instruction_MovImmediate,           0b10111001, 8, Flag_W, 0b001, { DATA, DATA_IF_W } },
-    { Instruction_MovImmediate,           0b10111010, 8, Flag_W, 0b010, { DATA, DATA_IF_W } },
-    { Instruction_MovImmediate,           0b10111011, 8, Flag_W, 0b011, { DATA, DATA_IF_W } },
-    { Instruction_MovImmediate,           0b10111100, 8, Flag_W, 0b100, { DATA, DATA_IF_W } },
-    { Instruction_MovImmediate,           0b10111101, 8, Flag_W, 0b101, { DATA, DATA_IF_W } },
-    { Instruction_MovImmediate,           0b10111110, 8, Flag_W, 0b110, { DATA, DATA_IF_W } },
-    { Instruction_MovImmediate,           0b10111111, 8, Flag_W, 0b111, { DATA, DATA_IF_W } },
-    // 0b11000000
-    // 0b11000001
-    { Instruction_Ret,                    0b11000010, 8, 0, 0, { DATA_LO, DATA_HI } },
-    { Instruction_Ret,                    0b11000011, 8, 0, 0, { 0 } },
-    { Instruction_Les,                    0b11000100, 8, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Lds,                    0b11000101, 8, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_MovImmediateMemory,     0b11000110, 8, 0, 0, { MOD, B(3, 0b000), RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
-    { Instruction_MovImmediateMemory,     0b11000111, 8, Flag_W | 0, 0, { MOD, B(3, 0b000), RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
-    // 0b11001000
-    // 0b11001001
-    { Instruction_RetfIntersegment,       0b11001010, 8, 0, 0, { DATA_LO, DATA_HI } },
-    { Instruction_Retf,                   0b11001011, 8, 0, 0, { 0 } },
-    { Instruction_Int3,                   0b11001100, 8, 0, 0, { 0 } },
-    { Instruction_Int,                    0b11001101, 8, 0, 0, { DATA } },
-    { Instruction_Into,                   0b11001110, 8, 0, 0, { 0 } },
-    { Instruction_Iret,                   0b11001111, 8, 0, 0, { 0 } },
-    { Instruction_Logic,                  0b11010000, 8, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
-    { Instruction_Logic,                  0b11010001, 8, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
-    { Instruction_Logic,                  0b11010010, 8, Flag_Z, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
-    { Instruction_Logic,                  0b11010011, 8, Flag_W | Flag_Z, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
-    { Instruction_Aam,                    0b11010100, 8, 0, 0, { DATA } },
-    { Instruction_Aad,                    0b11010101, 8, 0, 0, { DATA } },
-    // 0b11010110
-    { Instruction_Xlat,                   0b11010111, 8, 0, 0, { 0 } },
-    // 0b11011000
-    // 0b11011001
-    // 0b11011010
-    // 0b11011011
-    // 0b11011100
-    // 0b11011101
-    // 0b11011110
-    // 0b11011111
-    { Instruction_Loopnz,                 0b11100000, 8, 0, 0, { IP_INC8 } },
-    { Instruction_Loopz,                  0b11100001, 8, 0, 0, { IP_INC8 } },
-    { Instruction_Loop,                   0b11100010, 8, 0, 0, { IP_INC8 } },
-    { Instruction_Jcxz,                   0b11100011, 8, 0, 0, { IP_INC8 } },
-    { Instruction_In,                     0b11100100, 8, 0, 0, { DATA } },
-    { Instruction_In,                     0b11100101, 8, Flag_W | 0, 0, { DATA } },
-    { Instruction_Out,                    0b11100110, 8, 0, 0, { DATA } },
-    { Instruction_Out,                    0b11100111, 8, Flag_W | 0, 0, { DATA } },
-    { Instruction_CallDirectWithin,       0b11101000, 8, 0, 0, { IP_INC_LO, IP_INC_HI } },
-    { Instruction_JmpDirectWithin,        0b11101001, 8, 0, 0, { IP_INC_LO, IP_INC_HI } },
-    { Instruction_JmpDirectIntersegment,  0b11101010, 8, 0, 0, { IP_INC_LO, IP_INC_HI, CS_LO, CS_HI } },
-    // 0b11101011
-    { Instruction_In,                     0b11101100, 8, 0, 0, { 0 } },
-    { Instruction_In,                     0b11101101, 8, Flag_W | 0, 0, { 0 } },
-    { Instruction_Out,                    0b11101110, 8, 0, 0, { 0 } },
-    { Instruction_Out,                    0b11101111, 8, Flag_W | 0, 0, { 0 } },
-    { Instruction_Lock,                   0b11110000, 8, 0, 0, { 0 } },
-    // 0b11110001
-    { Instruction_Rep,                    0b11110010, 8, 0, 0, { 0 } },
-    { Instruction_Rep,                    0b11110011, 8, Flag_Z, 0, { 0 } },
-    { Instruction_Hlt,                    0b11110100, 8, 0, 0, { 0 } },
-    { Instruction_Cmc,                    0b11110101, 8, 0, 0, { 0 } },
-    { Instruction_Arithmetic,             0b11110110, 8, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
-    { Instruction_Arithmetic,             0b11110111, 8, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
-    { Instruction_Clc,                    0b11111000, 8, 0, 0, { 0 } },
-    { Instruction_Stc,                    0b11111001, 8, 0, 0, { 0 } },
-    { Instruction_Cli,                    0b11111010, 8, 0, 0, { 0 } },
-    { Instruction_Sti,                    0b11111011, 8, 0, 0, { 0 } },
-    { Instruction_Cld,                    0b11111100, 8, 0, 0, { 0 } },
-    { Instruction_Std,                    0b11111101, 8, 0, 0, { 0 } },
-    { Instruction_Control,                0b11111110, 8, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
-    { Instruction_Control,                0b11111111, 8, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
+    { Instruction_Add,                    0b00000000, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Add,                    0b00000001, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Add,                    0b00000010, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Add,                    0b00000011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_AddAccumulator,         0b00000100, 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_AddAccumulator,         0b00000101, Flag_W | 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_PushSegmentRegister,    0b00000110, 0, 0b00, { 0 } },
+    { Instruction_PopSegmentRegister,     0b00000111, 0, 0b00, { 0 } },
+    { Instruction_Or,                     0b00001000, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Or,                     0b00001001, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Or,                     0b00001010, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Or,                     0b00001011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_OrAccumulator,          0b00001100, 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_OrAccumulator,          0b00001101, Flag_W | 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_PushSegmentRegister,    0b00001110, 0, 0b01, { 0 } },
+    { Instruction_PopSegmentRegister,     0b00001111, 0, 0b01, { 0 } },
+    { Instruction_Adc,                    0b00010000, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Adc,                    0b00010001, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Adc,                    0b00010010, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Adc,                    0b00010011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_AdcAccumulator,         0b00010100, 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_AdcAccumulator,         0b00010101, Flag_W | 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_PushSegmentRegister,    0b00010110, 0, 0b10, { 0 } },
+    { Instruction_PopSegmentRegister,     0b00010111, 0, 0b10, { 0 } },
+    { Instruction_Sbb,                    0b00011000, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Sbb,                    0b00011001, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Sbb,                    0b00011010, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Sbb,                    0b00011011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_SbbAccumulator,         0b00011100, 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_SbbAccumulator,         0b00011101, Flag_W | 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_PushSegmentRegister,    0b00011110, 0, 0b11, { 0 } },
+    { Instruction_PopSegmentRegister,     0b00011111, 0, 0b11, { 0 } },
+    { Instruction_And,                    0b00100000, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_And,                    0b00100001, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_And,                    0b00100010, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_And,                    0b00100011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_AndAccumulator,         0b00100100, 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_AndAccumulator,         0b00100101, Flag_W | 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_Segment,                0b00100110, 0, 0b00, { 0 } },
+    { Instruction_Daa,                    0b00100111, 0, 0, { 0 } },
+    { Instruction_Sub,                    0b00101000, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Sub,                    0b00101001, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Sub,                    0b00101010, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Sub,                    0b00101011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_SubAccumulator,         0b00101100, 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_SubAccumulator,         0b00101101, Flag_W | 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_Segment,                0b00101110, 0, 0b01, { 0 } },
+    { Instruction_Das,                    0b00101111, 0, 0, { 0 } },
+    { Instruction_Xor,                    0b00110000, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Xor,                    0b00110001, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Xor,                    0b00110010, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Xor,                    0b00110011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_XorAccumulator,         0b00110100, 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_XorAccumulator,         0b00110101, Flag_W | 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_Segment,                0b00110110, 0, 0b10, { 0 } },
+    { Instruction_Aaa,                    0b00110111, 0, 0, { 0 } },
+    { Instruction_Cmp,                    0b00111000, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Cmp,                    0b00111001, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Cmp,                    0b00111010, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Cmp,                    0b00111011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_CmpAccumulator,         0b00111100, 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_CmpAccumulator,         0b00111101, Flag_W | 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_Segment,                0b00111110, 0, 0b11, { 0 } },
+    { Instruction_Aas,                    0b00111111, 0, 0, { 0 } },
+    { Instruction_Inc,                    0b01000000, 0, 0b000,      { 0 } },
+    { Instruction_Inc,                    0b01000001, 0, 0b001,      { 0 } },
+    { Instruction_Inc,                    0b01000010, 0, 0b010,      { 0 } },
+    { Instruction_Inc,                    0b01000011, 0, 0b011,      { 0 } },
+    { Instruction_Inc,                    0b01000100, 0, 0b100,      { 0 } },
+    { Instruction_Inc,                    0b01000101, 0, 0b101,      { 0 } },
+    { Instruction_Inc,                    0b01000110, 0, 0b110,      { 0 } },
+    { Instruction_Inc,                    0b01000111, 0, 0b111,      { 0 } },
+    { Instruction_Dec,                    0b01001000, 0, 0b000,      { 0 } },
+    { Instruction_Dec,                    0b01001001, 0, 0b001,      { 0 } },
+    { Instruction_Dec,                    0b01001010, 0, 0b010,      { 0 } },
+    { Instruction_Dec,                    0b01001011, 0, 0b011,      { 0 } },
+    { Instruction_Dec,                    0b01001100, 0, 0b100,      { 0 } },
+    { Instruction_Dec,                    0b01001101, 0, 0b101,      { 0 } },
+    { Instruction_Dec,                    0b01001110, 0, 0b110,      { 0 } },
+    { Instruction_Dec,                    0b01001111, 0, 0b111,      { 0 } },
+    { Instruction_PushRegister,           0b01010000, 0, 0b000,      { 0 } },
+    { Instruction_PushRegister,           0b01010001, 0, 0b001,      { 0 } },
+    { Instruction_PushRegister,           0b01010010, 0, 0b010,      { 0 } },
+    { Instruction_PushRegister,           0b01010011, 0, 0b011,      { 0 } },
+    { Instruction_PushRegister,           0b01010100, 0, 0b100,      { 0 } },
+    { Instruction_PushRegister,           0b01010101, 0, 0b101,      { 0 } },
+    { Instruction_PushRegister,           0b01010110, 0, 0b110,      { 0 } },
+    { Instruction_PushRegister,           0b01010111, 0, 0b111,      { 0 } },
+    { Instruction_PopRegister,            0b01011000, 0, 0b000,      { 0 } },
+    { Instruction_PopRegister,            0b01011001, 0, 0b001,      { 0 } },
+    { Instruction_PopRegister,            0b01011010, 0, 0b010,      { 0 } },
+    { Instruction_PopRegister,            0b01011011, 0, 0b011,      { 0 } },
+    { Instruction_PopRegister,            0b01011100, 0, 0b100,      { 0 } },
+    { Instruction_PopRegister,            0b01011101, 0, 0b101,      { 0 } },
+    { Instruction_PopRegister,            0b01011110, 0, 0b110,      { 0 } },
+    { Instruction_PopRegister,            0b01011111, 0, 0b111,      { 0 } },
+    { Instruction_NOP,                    0b01100000, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01100001, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01100010, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01100011, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01100100, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01100101, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01100110, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01100111, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01101000, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01101001, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01101010, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01101011, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01101100, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01101101, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01101110, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01101111, 0, 0, 0, { 0 } },
+    { Instruction_Jo,                     0b01110000, 0, 0, { IP_INC8 } },
+    { Instruction_Jno,                    0b01110001, 0, 0, { IP_INC8 } },
+    { Instruction_Jb,                     0b01110010, 0, 0, { IP_INC8 } },
+    { Instruction_Jnb,                    0b01110011, 0, 0, { IP_INC8 } },
+    { Instruction_Je,                     0b01110100, 0, 0, { IP_INC8 } },
+    { Instruction_Jne,                    0b01110101, 0, 0, { IP_INC8 } },
+    { Instruction_Jbe,                    0b01110110, 0, 0, { IP_INC8 } },
+    { Instruction_Ja,                     0b01110111, 0, 0, { IP_INC8 } },
+    { Instruction_Js,                     0b01111000, 0, 0, { IP_INC8 } },
+    { Instruction_Jns,                    0b01111001, 0, 0, { IP_INC8 } },
+    { Instruction_Jp,                     0b01111010, 0, 0, { IP_INC8 } },
+    { Instruction_Jnp,                    0b01111011, 0, 0, { IP_INC8 } },
+    { Instruction_Jl,                     0b01111100, 0, 0, { IP_INC8 } },
+    { Instruction_Jnl,                    0b01111101, 0, 0, { IP_INC8 } },
+    { Instruction_Jle,                    0b01111110, 0, 0, { IP_INC8 } },
+    { Instruction_Jg,                     0b01111111, 0, 0, { IP_INC8 } },
+    { Instruction_Immediate,              0b10000000, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
+    { Instruction_Immediate,              0b10000001, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
+    { Instruction_Immediate,              0b10000010, Flag_S, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
+    { Instruction_Immediate,              0b10000011, Flag_W | Flag_S, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
+    { Instruction_Test,                   0b10000100, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Test,                   0b10000101, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Xchg,                   0b10000110, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Xchg,                   0b10000111, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Mov,                    0b10001000, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI  } },
+    { Instruction_Mov,                    0b10001001, Flag_W | 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI  } },
+    { Instruction_Mov,                    0b10001010, Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI  } },
+    { Instruction_Mov,                    0b10001011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI  } },
+    { Instruction_MovRegisterSegment,     0b10001100, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Lea,                    0b10001101, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Pop,                    0b10001110, 0, 0, { MOD, B(3, 0b00), RM, DISP_LO, DISP_HI } },
+    { Instruction_Pop,                    0b10001111, Flag_W | 0, 0, { MOD, B(3, 0b00), RM, DISP_LO, DISP_HI } },
+    { Instruction_XchgWithAccumulator,    0b10010000, 0, 0b000,      { 0 } },
+    { Instruction_XchgWithAccumulator,    0b10010001, 0, 0b001,      { 0 } },
+    { Instruction_XchgWithAccumulator,    0b10010010, 0, 0b010,      { 0 } },
+    { Instruction_XchgWithAccumulator,    0b10010011, 0, 0b011,      { 0 } },
+    { Instruction_XchgWithAccumulator,    0b10010100, 0, 0b100,      { 0 } },
+    { Instruction_XchgWithAccumulator,    0b10010101, 0, 0b101,      { 0 } },
+    { Instruction_XchgWithAccumulator,    0b10010110, 0, 0b110,      { 0 } },
+    { Instruction_XchgWithAccumulator,    0b10010111, 0, 0b111,      { 0 } },
+    { Instruction_Cbw,                    0b10011000, 0, 0, { 0 } },
+    { Instruction_Cwd,                    0b10011001, 0, 0, { 0 } },
+    { Instruction_CallDirectIntersegment, 0b10011010, 0, 0, { IP_INC_LO, IP_INC_HI, CS_LO, CS_HI } },
+    { Instruction_Wait,                   0b10011011, 0, 0, { 0 } },
+    { Instruction_Pushf,                  0b10011100, 0, 0, { 0 } },
+    { Instruction_Popf,                   0b10011101, 0, 0, { 0 } },
+    { Instruction_Sahf,                   0b10011110, 0, 0, { 0 } },
+    { Instruction_Lahf,                   0b10011111, 0, 0, { 0 } },
+    { Instruction_Mov,                    0b10100000, 0, 0, { ADDR_LO, ADDR_HI } },
+    { Instruction_Mov,                    0b10100001, Flag_W | 0, 0, { ADDR_LO, ADDR_HI } },
+    { Instruction_Mov,                    0b10100010, Flag_D, 0, { ADDR_LO, ADDR_HI } },
+    { Instruction_Mov,                    0b10100011, Flag_W | Flag_D, 0, { ADDR_LO, ADDR_HI } },
+    { Instruction_Movs,                   0b10100100, 0, 0, { 0 } },
+    { Instruction_Movs,                   0b10100101, Flag_W | 0, 0, { 0 } },
+    { Instruction_Cmps,                   0b10100110, 0, 0, { 0 } },
+    { Instruction_Cmps,                   0b10100111, Flag_W | 0, 0, { 0 } },
+    { Instruction_TestAccumulator,        0b10101000, 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_TestAccumulator,        0b10101001, Flag_W | 0, 0, { DATA, DATA_IF_W } },
+    { Instruction_Stds,                   0b10101010, 0, 0, { 0 } },
+    { Instruction_Stds,                   0b10101011, Flag_W | 0, 0, { 0 } },
+    { Instruction_Lods,                   0b10101100, 0, 0, { 0 } },
+    { Instruction_Lods,                   0b10101101, Flag_W | 0, 0, { 0 } },
+    { Instruction_Scas,                   0b10101110, 0, 0, { 0 } },
+    { Instruction_Scas,                   0b10101111, Flag_W | 0, 0, { 0 } },
+    { Instruction_NOP,                    0b10110000, 0, 0, 0, { 0} },
+    { Instruction_MovImmediate,           0b10110001, 0, 0b001,      { DATA, DATA_IF_W } },
+    { Instruction_MovImmediate,           0b10110010, 0, 0b010,      { DATA, DATA_IF_W } },
+    { Instruction_MovImmediate,           0b10110011, 0, 0b011,      { DATA, DATA_IF_W } },
+    { Instruction_MovImmediate,           0b10110100, 0, 0b100,      { DATA, DATA_IF_W } },
+    { Instruction_MovImmediate,           0b10110101, 0, 0b101,      { DATA, DATA_IF_W } },
+    { Instruction_MovImmediate,           0b10110110, 0, 0b110,      { DATA, DATA_IF_W } },
+    { Instruction_MovImmediate,           0b10110111, 0, 0b111,      { DATA, DATA_IF_W } },
+    { Instruction_MovImmediate,           0b10111000, Flag_W, 0b000, { DATA, DATA_IF_W } },
+    { Instruction_MovImmediate,           0b10111001, Flag_W, 0b001, { DATA, DATA_IF_W } },
+    { Instruction_MovImmediate,           0b10111010, Flag_W, 0b010, { DATA, DATA_IF_W } },
+    { Instruction_MovImmediate,           0b10111011, Flag_W, 0b011, { DATA, DATA_IF_W } },
+    { Instruction_MovImmediate,           0b10111100, Flag_W, 0b100, { DATA, DATA_IF_W } },
+    { Instruction_MovImmediate,           0b10111101, Flag_W, 0b101, { DATA, DATA_IF_W } },
+    { Instruction_MovImmediate,           0b10111110, Flag_W, 0b110, { DATA, DATA_IF_W } },
+    { Instruction_MovImmediate,           0b10111111, Flag_W, 0b111, { DATA, DATA_IF_W } },
+    { Instruction_NOP,                    0b11000000, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11000001, 0, 0, 0, { 0 } },
+    { Instruction_Ret,                    0b11000010, 0, 0, { DATA_LO, DATA_HI } },
+    { Instruction_Ret,                    0b11000011, 0, 0, { 0 } },
+    { Instruction_Les,                    0b11000100, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_Lds,                    0b11000101, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_MovImmediateMemory,     0b11000110, 0, 0, { MOD, B(3, 0b000), RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
+    { Instruction_MovImmediateMemory,     0b11000111, Flag_W | 0, 0, { MOD, B(3, 0b000), RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
+    { Instruction_NOP,                    0b11001000, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11001001, 0, 0, 0, { 0 } },
+    { Instruction_RetfIntersegment,       0b11001010, 0, 0, { DATA_LO, DATA_HI } },
+    { Instruction_Retf,                   0b11001011, 0, 0, { 0 } },
+    { Instruction_Int3,                   0b11001100, 0, 0, { 0 } },
+    { Instruction_Int,                    0b11001101, 0, 0, { DATA } },
+    { Instruction_Into,                   0b11001110, 0, 0, { 0 } },
+    { Instruction_Iret,                   0b11001111, 0, 0, { 0 } },
+    { Instruction_Logic,                  0b11010000, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
+    { Instruction_Logic,                  0b11010001, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
+    { Instruction_Logic,                  0b11010010, Flag_Z, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
+    { Instruction_Logic,                  0b11010011, Flag_W | Flag_Z, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
+    { Instruction_Aam,                    0b11010100, 0, 0, { DATA } },
+    { Instruction_Aad,                    0b11010101, 0, 0, { DATA } },
+    { Instruction_NOP,                    0b11010110, 0, 0, 0, { 0 } },
+    { Instruction_Xlat,                   0b11010111, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11011000, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11011001, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11011010, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11011011, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11011100, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11011101, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11011110, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11011111, 0, 0, 0, { 0 } },
+    { Instruction_Loopnz,                 0b11100000, 0, 0, { IP_INC8 } },
+    { Instruction_Loopz,                  0b11100001, 0, 0, { IP_INC8 } },
+    { Instruction_Loop,                   0b11100010, 0, 0, { IP_INC8 } },
+    { Instruction_Jcxz,                   0b11100011, 0, 0, { IP_INC8 } },
+    { Instruction_In,                     0b11100100, 0, 0, { DATA } },
+    { Instruction_In,                     0b11100101, Flag_W | 0, 0, { DATA } },
+    { Instruction_Out,                    0b11100110, 0, 0, { DATA } },
+    { Instruction_Out,                    0b11100111, Flag_W | 0, 0, { DATA } },
+    { Instruction_CallDirectWithin,       0b11101000, 0, 0, { IP_INC_LO, IP_INC_HI } },
+    { Instruction_JmpDirectWithin,        0b11101001, 0, 0, { IP_INC_LO, IP_INC_HI } },
+    { Instruction_JmpDirectIntersegment,  0b11101010, 0, 0, { IP_INC_LO, IP_INC_HI, CS_LO, CS_HI } },
+    { Instruction_NOP,                    0b11101011, 0, 0, 0, { 0 } },
+    { Instruction_In,                     0b11101100, 0, 0, { 0 } },
+    { Instruction_In,                     0b11101101, Flag_W | 0, 0, { 0 } },
+    { Instruction_Out,                    0b11101110, 0, 0, { 0 } },
+    { Instruction_Out,                    0b11101111, Flag_W | 0, 0, { 0 } },
+    { Instruction_Lock,                   0b11110000, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11110001, 0, 0, 0, { 0 } },
+    { Instruction_Rep,                    0b11110010, 0, 0, { 0 } },
+    { Instruction_Rep,                    0b11110011, Flag_Z, 0, { 0 } },
+    { Instruction_Hlt,                    0b11110100, 0, 0, { 0 } },
+    { Instruction_Cmc,                    0b11110101, 0, 0, { 0 } },
+    { Instruction_Arithmetic,             0b11110110, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
+    { Instruction_Arithmetic,             0b11110111, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
+    { Instruction_Clc,                    0b11111000, 0, 0, { 0 } },
+    { Instruction_Stc,                    0b11111001, 0, 0, { 0 } },
+    { Instruction_Cli,                    0b11111010, 0, 0, { 0 } },
+    { Instruction_Sti,                    0b11111011, 0, 0, { 0 } },
+    { Instruction_Cld,                    0b11111100, 0, 0, { 0 } },
+    { Instruction_Std,                    0b11111101, 0, 0, { 0 } },
+    { Instruction_Control,                0b11111110, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
+    { Instruction_Control,                0b11111111, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
 };
 
 inline u8
@@ -303,107 +302,77 @@ GetNextInstruction(simulator_context *Context)
     instruction Result = {0};
     if(Context->InstructionStreamAt < Context->InstructionStreamSize)
     {
-        umm StartingAt = Context->InstructionStreamAt;
-        for(s32 TableIndex = ArrayCount(GlobalInstructionTable);
-            TableIndex >= 0;
-            --TableIndex)
+        u8 Op0 = Context->InstructionStream[Context->InstructionStreamAt++];
+        
+        instruction_table_entry TestEntry = GlobalInstructionTable[Op0];
+        
+        s8 BitsAt = -1;
+        Result.Type = TestEntry.Type;
+        Result.Flags = TestEntry.Flags;
+        Result.Generic = TestEntry.Generic;
+        Result.HasFieldData = false;
+        
+        for(u32 FieldIndex = 0;
+            FieldIndex < ArrayCount(TestEntry.Fields);
+            ++FieldIndex)
         {
-            u8 Op0 = Context->InstructionStream[Context->InstructionStreamAt++];
-            
-            s8 BitsAt = 7;
-            instruction_table_entry TestEntry = GlobalInstructionTable[TableIndex];
-            
-            if((Op0 >> (8 - TestEntry.OpCodeSize)) != TestEntry.OpCode)
+            encoding Field = TestEntry.Fields[FieldIndex];
+            if(Field.Type == Encoding_None)
             {
-                Context->InstructionStreamAt = StartingAt;
-                continue;
-            }
-            
-            BitsAt -= TestEntry.OpCodeSize;
-            Result.Type = TestEntry.Type;
-            Result.OpCode = TestEntry.OpCode;
-            Result.OpCodeSize = TestEntry.OpCodeSize;
-            Result.Flags = TestEntry.Flags;
-            Result.Generic = TestEntry.Generic;
-            Result.HasFieldData = false;
-            for(u32 FieldIndex = 0;
-                FieldIndex < ArrayCount(TestEntry.Fields);
-                ++FieldIndex)
-            {
-                encoding Field = TestEntry.Fields[FieldIndex];
-                if(Field.Type == Encoding_None)
-                {
-                    // NOTE(kstandbridge): No more fields
-                    break;
-                }
-                Result.HasFieldData = true;
-                
-                if(BitsAt < 0)
-                {
-                    BitsAt = 7;
-                    if(Context->InstructionStreamAt < Context->InstructionStreamSize)
-                    {
-                        Op0 = Context->InstructionStream[Context->InstructionStreamAt++];
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                if(Field.Type == Encoding_DATA_IF_W)
-                {
-                    if((Result.Flags & Flag_W) == 0)
-                    {
-                        // NOTE(kstandbridge): We are at the next op
-                        break;
-                    }
-                }
-                else if(Field.Type == Encoding_DISP_LO)
-                {
-                    if((Result.Bits[Encoding_MOD] == Mod_MemoryMode) && 
-                       (Result.Bits[Encoding_RM] == EffectiveAddress_DirectAddress))
-                    {
-                        // NOTE(kstandbridge): Except when R/M = 110, then 16-bit displacement follows
-                    }
-                    else if((Result.Bits[Encoding_MOD] != Mod_8BitDisplace) &&
-                            (Result.Bits[Encoding_MOD] != Mod_16BitDisplace))
-                    {
-                        continue;
-                    }
-                }
-                else if(Field.Type == Encoding_DISP_HI)
-                {
-                    if((Result.Bits[Encoding_MOD] == Mod_MemoryMode) && 
-                       (Result.Bits[Encoding_RM] == EffectiveAddress_DirectAddress))
-                    {
-                        // NOTE(kstandbridge): Except when R/M = 110, then 16-bit displacement follows
-                    }
-                    else if(Result.Bits[Encoding_MOD] != Mod_16BitDisplace)
-                    {
-                        continue;
-                    }
-                }
-                u8 Bits = GetBits(Op0, BitsAt, Field.Size);
-                Result.Bits[Field.Type] = Bits;
-                BitsAt -= Field.Size;
-                
-                if(Field.Type == Encoding_Bits)
-                {
-                    if(Result.Bits[Field.Type] != Field.Value)
-                    {
-                        Result.Type = Instruction_NOP;
-                        break;
-                    }
-                }
-            }
-            
-            if(Result.Type != Instruction_NOP)
-            {
+                // NOTE(kstandbridge): No more fields
                 break;
             }
-            Context->InstructionStreamAt = StartingAt;
+            Result.HasFieldData = true;
+            
+            if(BitsAt < 0)
+            {
+                BitsAt = 7;
+                if(Context->InstructionStreamAt < Context->InstructionStreamSize)
+                {
+                    Op0 = Context->InstructionStream[Context->InstructionStreamAt++];
+                }
+                else
+                {
+                    break;
+                }
+            }
+            if(Field.Type == Encoding_DATA_IF_W)
+            {
+                if((Result.Flags & Flag_W) == 0)
+                {
+                    // NOTE(kstandbridge): We are at the next op
+                    break;
+                }
+            }
+            else if(Field.Type == Encoding_DISP_LO)
+            {
+                if((Result.Bits[Encoding_MOD] == Mod_MemoryMode) && 
+                   (Result.Bits[Encoding_RM] == EffectiveAddress_DirectAddress))
+                {
+                    // NOTE(kstandbridge): Except when R/M = 110, then 16-bit displacement follows
+                }
+                else if((Result.Bits[Encoding_MOD] != Mod_8BitDisplace) &&
+                        (Result.Bits[Encoding_MOD] != Mod_16BitDisplace))
+                {
+                    continue;
+                }
+            }
+            else if(Field.Type == Encoding_DISP_HI)
+            {
+                if((Result.Bits[Encoding_MOD] == Mod_MemoryMode) && 
+                   (Result.Bits[Encoding_RM] == EffectiveAddress_DirectAddress))
+                {
+                    // NOTE(kstandbridge): Except when R/M = 110, then 16-bit displacement follows
+                }
+                else if(Result.Bits[Encoding_MOD] != Mod_16BitDisplace)
+                {
+                    continue;
+                }
+            }
+            u8 Bits = GetBits(Op0, BitsAt, Field.Size);
+            Result.Bits[Field.Type] = Bits;
+            BitsAt -= Field.Size;
         }
-        
     }
     
     return Result;

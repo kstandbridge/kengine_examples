@@ -428,8 +428,6 @@ typedef enum instruction_flags
 typedef struct instruction
 {
     instruction_type Type;
-    u8 OpCode;
-    u8 OpCodeSize;
     
     instruction_flags Flags;
     
@@ -688,9 +686,9 @@ InstructionToString(instruction Instruction)
         
         case Instruction_Cli: { Result = String("cli"); } break;
         
-        case Instruction_Sti: { Result = String("sti"); } break;
+        case Instruction_Sti:  { Result = String("sti"); } break;
         
-        case Instruction_Hlt: { Result = String("hlt"); } break;
+        case Instruction_Hlt:  { Result = String("hlt"); } break;
         
         case Instruction_Wait: { Result = String("wait"); } break;
         
@@ -703,7 +701,6 @@ typedef struct instruction_table_entry
 {
     instruction_type Type;
     u8 OpCode;
-    u8 OpCodeSize;
     
     instruction_flags Flags;
     
