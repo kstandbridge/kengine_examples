@@ -188,6 +188,7 @@ typedef enum instruction_type
     // NOTE(kstandbridge): Categories
     Instruction_Immediate,
     Instruction_Logic,
+    Instruction_Arithmetic,
     
     // NOTE(kstandbridge): Ops
     Instruction_Mov,
@@ -420,8 +421,18 @@ typedef enum sub_op_type
     SubOp_Rcr    = 0b011,
     SubOp_Shl    = 0b100,
     SubOp_Shr    = 0b101,
-    SubOp_Unused = 0b110,
+    //SubOp_     = 0b110,
     SubOp_Sar    = 0b111,
+    
+    // NOTE(kstandbridge): Arithmetic
+    SubOp_Test   = 0b000,
+    //SubOp_     = 0b001,
+    SubOp_Not    = 0b010,
+    SubOp_Neg    = 0b011,
+    SubOp_Mul    = 0b100,
+    SubOp_Imul   = 0b101,
+    SubOp_Div    = 0b110,
+    SubOp_Idiv   = 0b111,
     
 } sub_op_type;
 
@@ -491,13 +502,28 @@ InstructionToString(instruction Instruction)
                 case SubOp_Rcr:    { Result = String("rcr"); } break;
                 case SubOp_Shl:    { Result = String("shl"); } break;
                 case SubOp_Shr:    { Result = String("shr"); } break;
-                case SubOp_Unused: { Result = String("; unused encoding type"); } break;
+                //case SubOp_:     { Result = String(""); } break;
                 case SubOp_Sar:    { Result = String("sar"); } break;
                 default: { Result = String("; invalid encoding type"); } break;
             }
             
         } break;
         
+        case Instruction_Arithmetic:
+        {
+            switch(Instruction.Bits[Encoding_Type])
+            {
+                case SubOp_Test:   { Result = String("test"); }; break;
+                //case SubOp_:     { Result = String(""); } break;
+                case SubOp_Not:    { Result = String("not"); }; break;
+                case SubOp_Neg:    { Result = String("neg"); }; break;
+                case SubOp_Mul:    { Result = String("mul"); }; break;
+                case SubOp_Imul:   { Result = String("imul"); }; break;
+                case SubOp_Div:    { Result = String("div"); }; break;
+                case SubOp_Idiv:   { Result = String("idiv"); }; break;
+                default: { Result = String("; invalid encoding type"); } break;
+            }
+        } break;
         
         case Instruction_MovImmediateMemory:
         case Instruction_MovImmediate:

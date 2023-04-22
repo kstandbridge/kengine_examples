@@ -243,7 +243,6 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Logic,                  0b11010001, 8, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
     { Instruction_Logic,                  0b11010010, 8, Flag_Z, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
     { Instruction_Logic,                  0b11010011, 8, Flag_W | Flag_Z, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
-    
     { Instruction_Aam,                    0b11010100, 8, 0, 0, { DATA } },
     { Instruction_Aad,                    0b11010101, 8, 0, 0, { DATA } },
     // 0b11010110
@@ -278,23 +277,8 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Rep,                    0b11110011, 8, Flag_Z, 0, { 0 } },
     { Instruction_Hlt,                    0b11110100, 8, 0, 0, { 0 } },
     { Instruction_Cmc,                    0b11110101, 8, 0, 0, { 0 } },
-    
-    { Instruction_TestImmediate,          0b11110110, 8, 0, 0, { MOD, B(3, 0b000), RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
-    { Instruction_Not,                    0b11110110, 8, 0, 0, { MOD, B(3, 0b010), RM, DISP_LO, DISP_HI } },
-    { Instruction_Neg,                    0b11110110, 8, 0, 0, { MOD, B(3, 0b011), RM, DISP_LO, DISP_HI } },
-    { Instruction_Mul,                    0b11110110, 8, 0, 0, { MOD, B(3, 0b100), RM, DISP_LO, DISP_HI } },
-    { Instruction_Imul,                   0b11110110, 8, 0, 0, { MOD, B(3, 0b101), RM, DISP_LO, DISP_HI } },
-    { Instruction_Div,                    0b11110110, 8, 0, 0, { MOD, B(3, 0b110), RM, DISP_LO, DISP_HI } },
-    { Instruction_Idiv,                   0b11110110, 8, 0, 0, { MOD, B(3, 0b111), RM, DISP_LO, DISP_HI } },
-    
-    { Instruction_TestImmediate,          0b11110111, 8, Flag_W | 0, 0, { MOD, B(3, 0b000), RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
-    { Instruction_Not,                    0b11110111, 8, Flag_W | 0, 0, { MOD, B(3, 0b010), RM, DISP_LO, DISP_HI } },
-    { Instruction_Neg,                    0b11110111, 8, Flag_W | 0, 0, { MOD, B(3, 0b011), RM, DISP_LO, DISP_HI } },
-    { Instruction_Mul,                    0b11110111, 8, Flag_W | 0, 0, { MOD, B(3, 0b100), RM, DISP_LO, DISP_HI } },
-    { Instruction_Imul,                   0b11110111, 8, Flag_W | 0, 0, { MOD, B(3, 0b101), RM, DISP_LO, DISP_HI } },
-    { Instruction_Div,                    0b11110111, 8, Flag_W | 0, 0, { MOD, B(3, 0b110), RM, DISP_LO, DISP_HI } },
-    { Instruction_Idiv,                   0b11110111, 8, Flag_W | 0, 0, { MOD, B(3, 0b111), RM, DISP_LO, DISP_HI } },
-    
+    { Instruction_Arithmetic,             0b11110110, 8, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
+    { Instruction_Arithmetic,             0b11110111, 8, Flag_W | 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
     { Instruction_Clc,                    0b11111000, 8, 0, 0, { 0 } },
     { Instruction_Stc,                    0b11111001, 8, 0, 0, { 0 } },
     { Instruction_Cli,                    0b11111010, 8, 0, 0, { 0 } },
@@ -707,6 +691,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                 
                 if((Instruction.Type == Instruction_MovImmediate) ||
                    (Instruction.Type == Instruction_Immediate) ||
+                   ((Instruction.Type == Instruction_Arithmetic) && (Instruction.Bits[Encoding_Type] == SubOp_Test)) ||
                    (Instruction.Type == Instruction_TestImmediate))
                 {
                     s16 Value;
@@ -729,6 +714,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                 else
                 {                
                     if((Instruction.Type == Instruction_Inc) ||
+                       (Instruction.Type == Instruction_Arithmetic) ||
                        (Instruction.Type == Instruction_Dec) ||
                        (Instruction.Type == Instruction_Neg) ||
                        (Instruction.Type == Instruction_Mul) ||
@@ -828,6 +814,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                     
                     if((Instruction.Type == Instruction_MovImmediate) ||
                        (Instruction.Type == Instruction_Immediate) ||
+                       ((Instruction.Type == Instruction_Arithmetic) && (Instruction.Bits[Encoding_Type] == SubOp_Test)) ||
                        (Instruction.Type == Instruction_TestImmediate))
                     {
                         s16 Value;
@@ -1006,6 +993,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                     }
                 }
                 else if((Instruction.Type == Instruction_Immediate) ||
+                        ((Instruction.Type == Instruction_Arithmetic) && (Instruction.Bits[Encoding_Type] == SubOp_Test)) ||
                         (Instruction.Type == Instruction_TestImmediate))
                 {
                     u16 Data;
