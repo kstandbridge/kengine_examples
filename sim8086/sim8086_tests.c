@@ -77,13 +77,10 @@ RunDisassembleTests(memory_arena *Arena)
         };
         instruction Instruction = GetNextInstruction(&Context);
         AssertEqualU32(Instruction_Mov, Instruction.Type);
-        AssertEqualBits(0b100010, Instruction.OpCode);
-        AssertEqualBits(0b0, Instruction.Bits[Encoding_D]);
-        AssertEqualBits(0b1, Instruction.Bits[Encoding_W]);
+        AssertEqualBits(0b1000100, Instruction.OpCode);
         AssertEqualBits(0b11, Instruction.Bits[Encoding_MOD]);
         AssertEqualBits(0b011, Instruction.Bits[Encoding_REG]);
         AssertEqualBits(0b110, Instruction.Bits[Encoding_RM]);
-        
     }
     
     {
@@ -97,7 +94,6 @@ RunDisassembleTests(memory_arena *Arena)
         };
         instruction Instruction = GetNextInstruction(&Context);
         AssertEqualBits(0b1011, Instruction.OpCode);
-        AssertEqualBits(0b0, Instruction.Bits[Encoding_W]);
         AssertEqualBits(0b001, Instruction.Bits[Encoding_REG]);
         AssertEqualBits(0b00001100, Instruction.Bits[Encoding_DATA]);
     }

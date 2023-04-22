@@ -23,11 +23,7 @@ typedef enum encoding_type
     Encoding_REG,
     Encoding_RM,
     
-    Encoding_S,
     Encoding_W,
-    Encoding_D,
-    Encoding_V,
-    Encoding_Z,
     
     Encoding_DISP_LO,
     Encoding_DISP_HI,
@@ -634,11 +630,24 @@ InstructionToString(instruction_type Type)
     return Result;
 }
 
+typedef enum instruction_flags
+{
+    Flag_S = (1 << 0),
+    Flag_W = (1 << 1),
+    Flag_D = (1 << 2),
+    Flag_V = (1 << 3),
+    Flag_Z = (1 << 4),
+    
+} instruction_flags;
+
 typedef struct instruction
 {
     instruction_type Type;
     u8 OpCode;
     u8 OpCodeSize;
+    
+    instruction_flags Flags;
+    
     u8 Bits[Encoding_Count];
     
 } instruction;
@@ -648,6 +657,9 @@ typedef struct instruction_table_entry
     instruction_type Type;
     u8 OpCode;
     u8 OpCodeSize;
+    
+    instruction_flags Flags;
+    
     encoding Fields[9];
 } instruction_table_entry;
 
