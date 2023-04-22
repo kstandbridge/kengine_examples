@@ -3,6 +3,10 @@
 
 typedef struct simulator_context
 {
+    b32 IsNextOpLock;
+    b32 IsNextOpSegment;
+    u8 NextOpSegment;
+    
     u8 *InstructionStream;
     umm InstructionStreamAt;
     umm InstructionStreamSize;
@@ -23,6 +27,7 @@ typedef enum encoding_type
     Encoding_W,
     Encoding_D,
     Encoding_V,
+    Encoding_Z,
     
     Encoding_DISP_LO,
     Encoding_DISP_HI,
@@ -30,8 +35,14 @@ typedef enum encoding_type
     Encoding_DATA,
     Encoding_DATA_IF_W,
     
+    // TODO(kstandbridge): See above merging these LO and HI
     Encoding_ADDR_LO,
     Encoding_ADDR_HI,
+    
+    Encoding_DATA_LO,
+    Encoding_DATA_HI,
+    
+    Encoding_IP_INC8,
     
     Encoding_Count,
 } encoding_type;
@@ -279,8 +290,106 @@ typedef enum instruction_type
     
     Instruction_Test,
     Instruction_TestImmediate,
-    Instruction_TestAccumulator
-        
+    Instruction_TestAccumulator,
+    
+    Instruction_Or,
+    Instruction_OrImmediate,
+    Instruction_OrAccumulator,
+    
+    Instruction_Xor,
+    Instruction_XorImmediate,
+    Instruction_XorAccumulator,
+    
+    Instruction_Rep,
+    
+    Instruction_Movs,
+    
+    Instruction_Cmps,
+    
+    Instruction_Scas,
+    
+    Instruction_Lods,
+    
+    Instruction_Stds,
+    
+    Instruction_Call,
+    
+    Instruction_Jmp,
+    
+    Instruction_Ret,
+    
+    Instruction_Je,
+    
+    Instruction_Jl,
+    
+    Instruction_Jle,
+    
+    Instruction_Jb,
+    
+    Instruction_Jbe,
+    
+    Instruction_Jp,
+    
+    Instruction_Jo,
+    
+    Instruction_Js,
+    
+    Instruction_Jne,
+    
+    Instruction_Jnl,
+    
+    Instruction_Jg,
+    
+    Instruction_Jnb,
+    
+    Instruction_Ja,
+    
+    Instruction_Jnp,
+    
+    Instruction_Jno,
+    
+    Instruction_Jns,
+    
+    Instruction_Loop,
+    
+    Instruction_Loopz,
+    
+    Instruction_Loopnz,
+    
+    Instruction_Jc,
+    
+    Instruction_Jcxz,
+    
+    Instruction_Int,
+    
+    Instruction_Int3,
+    
+    Instruction_Into,
+    
+    Instruction_Iret,
+    
+    Instruction_Clc,
+    
+    Instruction_Cmc,
+    
+    Instruction_Stc,
+    
+    Instruction_Cld,
+    
+    Instruction_Std,
+    
+    Instruction_Cli,
+    
+    Instruction_Sti,
+    
+    Instruction_Hlt,
+    
+    Instruction_Wait,
+    
+    Instruction_Lock,
+    
+    Instruction_Segment,
+    
 } instruction_type;
 
 inline string
@@ -397,6 +506,102 @@ InstructionToString(instruction_type Type)
         case Instruction_TestImmediate:
         case Instruction_TestAccumulator:
         case Instruction_Test: { Result = String("test"); } break;
+        
+        case Instruction_OrImmediate:
+        case Instruction_OrAccumulator:
+        case Instruction_Or: { Result = String("or"); } break;
+        
+        case Instruction_XorImmediate:
+        case Instruction_XorAccumulator:
+        case Instruction_Xor: { Result = String("xor"); } break;
+        
+        case Instruction_Rep: { Result = String("rep"); } break;
+        
+        case Instruction_Movs: { Result = String("movs"); } break;
+        
+        case Instruction_Cmps: { Result = String("cmps"); } break;
+        
+        case Instruction_Scas: { Result = String("scas"); } break;
+        
+        case Instruction_Lods: { Result = String("lods"); } break;
+        
+        case Instruction_Stds: { Result = String("stos"); } break;
+        
+        case Instruction_Call: { Result = String("call"); } break;
+        
+        case Instruction_Jmp: { Result = String("jmp"); } break;
+        
+        case Instruction_Ret: { Result = String("ret"); } break;
+        
+        case Instruction_Je: { Result = String("je"); } break;
+        
+        case Instruction_Jl: { Result = String("jl"); } break;
+        
+        case Instruction_Jle: { Result = String("jle"); } break;
+        
+        case Instruction_Jb: { Result = String("jb"); } break;
+        
+        case Instruction_Jbe: { Result = String("jbe"); } break;
+        
+        case Instruction_Jp: { Result = String("jp"); } break;
+        
+        case Instruction_Jo: { Result = String("jo"); } break;
+        
+        case Instruction_Js: { Result = String("js"); } break;
+        
+        case Instruction_Jne: { Result = String("jne"); } break;
+        
+        case Instruction_Jnl: { Result = String("jnl"); } break;
+        
+        case Instruction_Jg: { Result = String("jg"); } break;
+        
+        case Instruction_Jnb: { Result = String("jnb"); } break;
+        
+        case Instruction_Ja: { Result = String("ja"); } break;
+        
+        case Instruction_Jnp: { Result = String("jnp"); } break;
+        
+        case Instruction_Jno: { Result = String("jno"); } break;
+        
+        case Instruction_Jns: { Result = String("jns"); } break;
+        
+        case Instruction_Loop: { Result = String("loop"); } break;
+        
+        case Instruction_Loopz: { Result = String("loopz"); } break;
+        
+        case Instruction_Loopnz: { Result = String("loopnz"); } break;
+        
+        case Instruction_Jc: { Result = String("jc"); } break;
+        
+        case Instruction_Jcxz: { Result = String("jcxz"); } break;
+        
+        case Instruction_Int: { Result = String("int"); } break;
+        
+        case Instruction_Int3: { Result = String("int3"); } break;
+        
+        case Instruction_Into: { Result = String("into"); } break;
+        
+        case Instruction_Iret: { Result = String("iret"); } break;
+        
+        case Instruction_Clc: { Result = String("clc"); } break;
+        
+        case Instruction_Cmc: { Result = String("cmc"); } break;
+        
+        case Instruction_Stc: { Result = String("stc"); } break;
+        
+        case Instruction_Cld: { Result = String("cld"); } break;
+        
+        case Instruction_Std: { Result = String("std"); } break;
+        
+        case Instruction_Cli: { Result = String("cli"); } break;
+        
+        case Instruction_Sti: { Result = String("sti"); } break;
+        
+        case Instruction_Hlt: { Result = String("hlt"); } break;
+        
+        case Instruction_Wait: { Result = String("wait"); } break;
+        
+        case Instruction_Lock: { Result = String("lock"); } break;
         
         default: { Result = String("; Invalid instruction"); } break;
     }

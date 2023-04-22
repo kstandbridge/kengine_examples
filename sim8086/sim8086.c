@@ -10,6 +10,7 @@
 #define W { Encoding_W, 1 }
 #define D { Encoding_D, 1 }
 #define V { Encoding_V, 1 }
+#define Z { Encoding_Z, 1 }
 
 #define DISP_LO { Encoding_DISP_LO, 8 }
 #define DISP_HI { Encoding_DISP_HI, 8 }
@@ -19,6 +20,11 @@
 
 #define ADDR_LO { Encoding_ADDR_LO, 8 }
 #define ADDR_HI { Encoding_ADDR_HI, 8 }
+
+#define DATA_LO { Encoding_DATA_LO, 8 }
+#define DATA_HI { Encoding_DATA_HI, 8 }
+
+#define IP_INC8 { Encoding_IP_INC8, 8 }
 
 global instruction_table_entry GlobalInstructionTable[] = 
 {
@@ -134,6 +140,79 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Test, 0b1000010, 7, { W, MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_TestImmediate, 0b1111011, 7, { W, MOD, B(3, 0b000), RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
     { Instruction_TestAccumulator, 0b1010100, 7, { W, DATA, DATA_IF_W } },
+    
+    
+    { Instruction_Or, 0b000010, 6, { D, W, MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_OrImmediate, 0b1000000, 7, { W, MOD, B(3, 0b001), RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
+    { Instruction_OrAccumulator, 0b0000110, 7, { W, DATA, DATA_IF_W } },
+    
+    { Instruction_Xor, 0b001100, 6, { D, W, MOD, REG, RM, DISP_LO, DISP_HI } },
+    { Instruction_XorImmediate, 0b1000000, 7, { W, MOD, B(3, 0b110), RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
+    { Instruction_XorAccumulator, 0b0011010, 7, { W, DATA, DATA_IF_W } },
+    
+    { Instruction_Rep, 0b1111001, 7, { Z } },
+    
+    { Instruction_Movs, 0b1010010, 7, { W } },
+    
+    { Instruction_Cmps, 0b1010011, 7, { W } },
+    
+    { Instruction_Scas, 0b1010111, 7, { W } },
+    
+    { Instruction_Lods, 0b1010110, 7, { W } },
+    
+    { Instruction_Stds, 0b1010101, 7, { W } },
+    
+    { Instruction_Call, 0b11111111, 8, { MOD, B(3, 0b010), RM, DISP_LO, DISP_HI } },
+    
+    { Instruction_Jmp, 0b11111111, 8, { MOD, B(3, 0b100), RM, DISP_LO, DISP_HI } },
+    
+    { Instruction_Ret, 0b11000010, 8, { DATA_LO, DATA_HI } },
+    { Instruction_Ret, 0b11000011, 8, { 0 } },
+    
+    { Instruction_Je,     0b01110100, 8, { IP_INC8 } },
+    { Instruction_Jl,     0b01111100, 8, { IP_INC8 } },
+    { Instruction_Jle,    0b01111110, 8, { IP_INC8 } },
+    { Instruction_Jb,     0b01110010, 8, { IP_INC8 } },
+    { Instruction_Jbe,    0b01110110, 8, { IP_INC8 } },
+    { Instruction_Jp,     0b01111010, 8, { IP_INC8 } },
+    { Instruction_Jo,     0b01110000, 8, { IP_INC8 } },
+    { Instruction_Js,     0b01111000, 8, { IP_INC8 } },
+    { Instruction_Jne,    0b01110101, 8, { IP_INC8 } },
+    { Instruction_Jnl,    0b01111101, 8, { IP_INC8 } },
+    { Instruction_Jg,     0b01111111, 8, { IP_INC8 } },
+    { Instruction_Jnb,    0b01110011, 8, { IP_INC8 } },
+    { Instruction_Ja,     0b01110111, 8, { IP_INC8 } },
+    { Instruction_Jnp,    0b01111011, 8, { IP_INC8 } },
+    { Instruction_Jno,    0b01110001, 8, { IP_INC8 } },
+    { Instruction_Jns,    0b01111001, 8, { IP_INC8 } },
+    { Instruction_Loop,   0b11100010, 8, { IP_INC8 } },
+    { Instruction_Loopz,  0b11100001, 8, { IP_INC8 } },
+    { Instruction_Loopnz, 0b11100000, 8, { IP_INC8 } },
+    { Instruction_Jcxz,   0b11100011, 8, { IP_INC8 } },
+    { Instruction_Int,    0b11001101, 8, { DATA } },
+    { Instruction_Int3,   0b11001100, 8, { 0 } },
+    
+    { Instruction_Into,   0b11001110, 8, { 0 } },
+    { Instruction_Iret,   0b11001111, 8, { 0 } },
+    { Instruction_Clc,    0b11111000, 8, { 0 } },
+    { Instruction_Cmc,    0b11110101, 8, { 0 } },
+    { Instruction_Stc,    0b11111001, 8, { 0 } },
+    { Instruction_Cld,    0b11111100, 8, { 0 } },
+    { Instruction_Std,    0b11111101, 8, { 0 } },
+    { Instruction_Cli,    0b11111010, 8, { 0 } },
+    { Instruction_Sti,    0b11111011, 8, { 0 } },
+    { Instruction_Hlt,    0b11110100, 8, { 0 } },
+    { Instruction_Wait,   0b10011011, 8, { 0 } },
+    
+    { Instruction_Lock,   0b11110000, 8, { 0 } },
+    
+    { Instruction_Segment, 0b001, 3, { MOD, B(3, 0b110) } },
+#if 0    
+    { Instruction_Esc,    0b, 8, { 0 } },
+    
+    
+#endif
+    
 };
 
 inline u8
@@ -167,15 +246,6 @@ GetNextInstruction(simulator_context *Context)
             }
             
             BitsAt -= TestEntry.OpCodeSize;
-            if(BitsAt < 0)
-            {
-                BitsAt = 7;
-                if(Context->InstructionStreamAt < Context->InstructionStreamSize)
-                {
-                    Op0 = Context->InstructionStream[Context->InstructionStreamAt++];
-                }
-            }
-            
             Result.OpCode = TestEntry.OpCode;
             Result.OpCodeSize = TestEntry.OpCodeSize;
             Result.Type = TestEntry.Type;
@@ -189,7 +259,21 @@ GetNextInstruction(simulator_context *Context)
                     // NOTE(kstandbridge): No more fields
                     break;
                 }
-                else if(Field.Type == Encoding_DATA_IF_W)
+                
+                
+                if(BitsAt < 0)
+                {
+                    BitsAt = 7;
+                    if(Context->InstructionStreamAt < Context->InstructionStreamSize)
+                    {
+                        Op0 = Context->InstructionStream[Context->InstructionStreamAt++];
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                if(Field.Type == Encoding_DATA_IF_W)
                 {
                     if(Result.Bits[Encoding_W] == 0)
                     {
@@ -234,21 +318,6 @@ GetNextInstruction(simulator_context *Context)
                         break;
                     }
                 }
-                
-                if(BitsAt < 0)
-                {
-                    BitsAt = 7;
-                    if(Context->InstructionStreamAt < Context->InstructionStreamSize)
-                    {
-                        Op0 = Context->InstructionStream[Context->InstructionStreamAt++];
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                
-                
             }
             
             if(Result.Type != Instruction_NOP)
@@ -264,7 +333,7 @@ GetNextInstruction(simulator_context *Context)
 }
 
 inline string
-InstructionToAssembly(memory_arena *Arena, instruction Instruction)
+InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instruction Instruction)
 {
     string Result;
     format_string_state State = BeginFormatString();
@@ -291,12 +360,81 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
         }
     }
     
+    if(Context->IsNextOpLock)
+    {
+        AppendFormatString(&State, "%S ", InstructionToString(Instruction_Lock));
+        Context->IsNextOpLock = false;
+    }
+    
+    string SegmentPrefix = String("");
+    if(Context->IsNextOpSegment)
+    {
+        SegmentPrefix = FormatString(Arena, "%S:", SegmentRegisterToString(Context->NextOpSegment));
+        Context->IsNextOpSegment = false;
+    }
+    
     if(NoFieldData)
     {
         AppendFormatString(&State, "%S", Op);
     }
+    else if(Instruction.Type == Instruction_Rep)
+    {
+        instruction SubInstruction = GetNextInstruction(Context);
+        if(SubInstruction.Type != Instruction_NOP)
+        {
+            string SubOp = InstructionToString(SubInstruction.Type);
+            string Suffix = (SubInstruction.Bits[Encoding_W]) ? String("w") : String("b");
+            AppendFormatString(&State, "%S %S%S", Op, SubOp, Suffix);
+        }
+        else
+        {
+            AppendFormatString(&State, "%S ; ERROR expected sub instruction", Op);
+        }
+    }
+    else if((Instruction.Type == Instruction_Je) ||
+            (Instruction.Type == Instruction_Jl) ||
+            (Instruction.Type == Instruction_Jle) ||
+            (Instruction.Type == Instruction_Jb) ||
+            (Instruction.Type == Instruction_Jbe) ||
+            (Instruction.Type == Instruction_Jp) ||
+            (Instruction.Type == Instruction_Jo) ||
+            (Instruction.Type == Instruction_Js) ||
+            (Instruction.Type == Instruction_Jne) ||
+            (Instruction.Type == Instruction_Jnl) ||
+            (Instruction.Type == Instruction_Jg) ||
+            (Instruction.Type == Instruction_Jnb) ||
+            (Instruction.Type == Instruction_Ja) ||
+            (Instruction.Type == Instruction_Jnp) ||
+            (Instruction.Type == Instruction_Jno) ||
+            (Instruction.Type == Instruction_Jns) ||
+            (Instruction.Type == Instruction_Loop) ||
+            (Instruction.Type == Instruction_Loopz) ||
+            (Instruction.Type == Instruction_Loopnz) ||
+            (Instruction.Type == Instruction_Jcxz))
+    {
+        
+#if 0
+        // NOTE(kstandbridge): We are just given an offset in the instruction stream to jmp
+        s8 Value = *(s8 *)&Instruction.Bits[Encoding_IP_INC8];
+        AppendFormatString(&State, "%S %d", Op, Value);
+#else
+        // TODO(kstandbridge): Better testing of jumps to go back to the correct offset
+        AppendFormatString(&State, "%S label", Op);
+#endif
+        
+    }
+    else if((Instruction.Type == Instruction_Ret))
+    {
+        u8 ValueLow = Instruction.Bits[Encoding_DATA_LO];
+        u8 ValueHigh = Instruction.Bits[Encoding_DATA_HI];
+        u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+        s16 Value = *(s16 *)&ValueWide;
+        
+        AppendFormatString(&State, "%S %d", Op, Value);
+    }
     else if((Instruction.Type == Instruction_Aam) ||
-            (Instruction.Type == Instruction_Aad))
+            (Instruction.Type == Instruction_Aad) ||
+            (Instruction.Type == Instruction_Int)) // TODO(kstandbridge): I have no tested int for this, also test int with value 3
     {
         // NOTE(kstandbridge): Reverse engineering I found the default is 10:
         // amm 255 ; 0b11010100, 0b11111111
@@ -360,7 +498,9 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
             (Instruction.Type == Instruction_SbbAccumulator) ||
             (Instruction.Type == Instruction_CmpAccumulator) ||
             (Instruction.Type == Instruction_AndAccumulator) ||
-            (Instruction.Type == Instruction_TestAccumulator))
+            (Instruction.Type == Instruction_TestAccumulator) ||
+            (Instruction.Type == Instruction_OrAccumulator) ||
+            (Instruction.Type == Instruction_XorAccumulator))
     {
         s16 Value;
         
@@ -473,7 +613,9 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                        (Instruction.Type == Instruction_Imul) ||
                        (Instruction.Type == Instruction_Div) ||
                        (Instruction.Type == Instruction_Idiv) ||
-                       (Instruction.Type == Instruction_Not))
+                       (Instruction.Type == Instruction_Not) ||
+                       (Instruction.Type == Instruction_Call) ||
+                       (Instruction.Type == Instruction_Jmp))
                     {
                         AppendFormatString(&State, "%S %S", Op, Src);
                     }
@@ -528,9 +670,12 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                     
                     string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
                     if((Instruction.Type == Instruction_Mov) ||
-                       (Instruction.Type == Instruction_And))
+                       (Instruction.Type == Instruction_And) ||
+                       (Instruction.Type == Instruction_Cmp) ||
+                       (Instruction.Type == Instruction_Or) ||
+                       (Instruction.Type == Instruction_Xor))
                     {
-                        AppendFormatString(&State, "%S %S, [%d]", Op, Dest, Displacement);
+                        AppendFormatString(&State, "%S %S, %S[%d]", Op, Dest, SegmentPrefix, Displacement);
                     }
                     else if((Instruction.Type == Instruction_Shl) ||
                             (Instruction.Type == Instruction_Shr) ||
@@ -552,6 +697,16 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                         }
                         
                     }
+                    else if((Instruction.Type == Instruction_Xchg))
+                    {
+                        // TODO(kstandbridge): Figure out why this needs the al suffix
+                        AppendFormatString(&State, "%S [%u], al", Op, ValueWide);
+                    }
+                    else if((Instruction.Type == Instruction_Call) ||
+                            (Instruction.Type == Instruction_Jmp))
+                    {
+                        AppendFormatString(&State, "%S [%u]", Op, ValueWide);
+                    }
                     else
                     {
                         AppendFormatString(&State, "%S %S [%d]", Op, Size, Displacement);
@@ -563,7 +718,7 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                     
                     if((Instruction.Type == Instruction_MovImmediate) ||
                        (Instruction.Type == Instruction_CmpImmediate) ||
-                       (Instruction.Type == Instruction_TestImmediate))
+                       (Instruction.Type == Instruction_TestImmediate) )
                     {
                         s16 Value;
                         
@@ -599,7 +754,7 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                         string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
                         if(Instruction.Bits[Encoding_D])
                         {
-                            AppendFormatString(&State, "%S %S, [%S]", Op, Dest, Src);
+                            AppendFormatString(&State, "%S %S, %S[%S]", Op, Dest, SegmentPrefix, Src);
                         }
                         else
                         {
@@ -672,17 +827,17 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                 string Src;
                 if(Value > 0)
                 {
-                    Src = FormatString(Arena, "[%S + %d]", EffectiveAddressToString(Instruction.Bits[Encoding_RM]), Value);
+                    Src = FormatString(Arena, "%S[%S + %d]", SegmentPrefix, EffectiveAddressToString(Instruction.Bits[Encoding_RM]), Value);
                 }
                 else if(Value < 0)
                 {
                     Value *= -1;
-                    Src = FormatString(Arena, "[%S - %d]", EffectiveAddressToString(Instruction.Bits[Encoding_RM]), Value);
+                    Src = FormatString(Arena, "%S[%S - %d]", SegmentPrefix, EffectiveAddressToString(Instruction.Bits[Encoding_RM]), Value);
                 }
                 else
                 {
                     Assert(Value == 0);
-                    Src = FormatString(Arena, "[%S]", EffectiveAddressToString(Instruction.Bits[Encoding_RM]));
+                    Src = FormatString(Arena, "%S[%S]", SegmentPrefix, EffectiveAddressToString(Instruction.Bits[Encoding_RM]));
                 }
                 
                 string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
@@ -718,7 +873,9 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                    (Instruction.Type == Instruction_Lea) ||
                    (Instruction.Type == Instruction_Lds) ||
                    (Instruction.Type == Instruction_Les) ||
-                   (Instruction.Type == Instruction_Test))
+                   (Instruction.Type == Instruction_Test) ||
+                   (Instruction.Type == Instruction_Or) ||
+                   (Instruction.Type == Instruction_Xor))
                 {
                     AppendFormatString(&State, "%S %S, %S", Op, Src, Dest);
                 }
@@ -742,7 +899,11 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                         AppendFormatString(&State, "%S %S %S, 1", Op, Size, Src);
                     }
                 }
-                else if((Instruction.Type == Instruction_AndImmediate))
+                else if((Instruction.Type == Instruction_AndImmediate) ||
+                        (Instruction.Type == Instruction_OrImmediate) ||
+                        (Instruction.Type == Instruction_TestImmediate) ||
+                        (Instruction.Type == Instruction_SbbImmediate) ||
+                        (Instruction.Type == Instruction_XorImmediate))
                 {
                     u16 Data;
                     if(Instruction.Bits[Encoding_W])
@@ -757,6 +918,10 @@ InstructionToAssembly(memory_arena *Arena, instruction Instruction)
                     }
                     
                     AppendFormatString(&State, "%S %S %S, %u", Op, Size, Src, Data);
+                }
+                else if(Instruction.Type == Instruction_Call)
+                {
+                    AppendFormatString(&State, "%S %S", Op, Src);
                 }
                 else
                 {
@@ -796,9 +961,21 @@ StreamToAssembly(memory_arena *Arena, u8 *Buffer, umm Size)
     for(;;)
     {
         instruction Instruction = GetNextInstruction(&Context);
-        if(Instruction.Type != Instruction_NOP)
+        
+        
+        // TODO(kstandbridge): Update the context with this instruction
+        if(Instruction.Type == Instruction_Lock)
         {
-            string Assembly = InstructionToAssembly(Arena, Instruction);
+            Context.IsNextOpLock = true;
+        }
+        else if(Instruction.Type == Instruction_Segment)
+        {
+            Context.IsNextOpSegment = true;
+            Context.NextOpSegment = Instruction.Bits[Encoding_MOD];
+        }
+        else if(Instruction.Type != Instruction_NOP)
+        {
+            string Assembly = InstructionToAssembly(Arena, &Context, Instruction);
             
             if(!First)
             {

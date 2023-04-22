@@ -200,7 +200,7 @@ bits 16
 ; ror dh, 1
 ; rcl sp, 1
 ; rcr bp, 1
-shl word [bp + 6553], 1
+; shl word [bp + 6553], 1
 ; shr byte [bx + si - 199], 1
 ; sar byte [bx + di - 300], 1
 ; rol word [bp], 1
@@ -285,8 +285,10 @@ shl word [bp + 6553], 1
 ; ret 500
 ; ret
   
+label2:
+ret
 label:
-; je label
+je label2
 ; je label
 ; jl label
 ; jle label
