@@ -299,40 +299,39 @@ GetNextInstruction(simulator_context *Context)
     instruction Result = {0};
     if(Context->InstructionStreamAt < Context->InstructionStreamSize)
     {
-        u8 Op0 = Context->InstructionStream[Context->InstructionStreamAt++];
+        u8 Byte = Context->InstructionStream[Context->InstructionStreamAt++];
         
-        instruction_table_entry TestEntry = GlobalInstructionTable[Op0];
+        instruction_table_entry TableEntry = GlobalInstructionTable[Byte];
         
         s8 BitsAt = -1;
-        Result.Type = TestEntry.Type;
-        Result.Flags = TestEntry.Flags;
-        Result.Generic = TestEntry.Generic;
-        Result.HasFieldData = false;
+        Result.Type = TableEntry.Type;
+        Result.Flags = TableEntry.Flags;
+        Result.Generic = TableEntry.Generic;
         
         for(u32 FieldIndex = 0;
-            FieldIndex < ArrayCount(TestEntry.Fields);
+            FieldIndex < ArrayCount(TableEntry.Fields);
             ++FieldIndex)
         {
-            encoding Field = TestEntry.Fields[FieldIndex];
+            encoding Field = TableEntry.Fields[FieldIndex];
             if(Field.Type == Encoding_None)
             {
                 // NOTE(kstandbridge): No more fields
                 break;
             }
-            Result.HasFieldData = true;
             
             if(BitsAt < 0)
             {
                 BitsAt = 7;
                 if(Context->InstructionStreamAt < Context->InstructionStreamSize)
                 {
-                    Op0 = Context->InstructionStream[Context->InstructionStreamAt++];
+                    Byte = Context->InstructionStream[Context->InstructionStreamAt++];
                 }
                 else
                 {
                     break;
                 }
             }
+            
             if(Field.Type == Encoding_DATA_IF_W)
             {
                 if((Result.Flags & Flag_W) == 0)
@@ -341,32 +340,32 @@ GetNextInstruction(simulator_context *Context)
                     break;
                 }
             }
-            else if(Field.Type == Encoding_DISP_LO)
+            else if((Field.Type == Encoding_DISP_LO) ||
+                    (Field.Type == Encoding_DISP_HI))
             {
-                if((Result.Bits[Encoding_MOD] == Mod_MemoryMode) && 
-                   (Result.Bits[Encoding_RM] == EffectiveAddress_DirectAddress))
+                if(Result.Bits[Encoding_MOD] == Mod_RegisterMode)
+                {
+                    continue;
+                }
+                else if((Result.Bits[Encoding_MOD] == Mod_MemoryMode) && 
+                        (Result.Bits[Encoding_RM] == EffectiveAddress_DirectAddress))
                 {
                     // NOTE(kstandbridge): Except when R/M = 110, then 16-bit displacement follows
                 }
-                else if((Result.Bits[Encoding_MOD] != Mod_8BitDisplace) &&
+                else if((Field.Type == Encoding_DISP_LO) &&
+                        (Result.Bits[Encoding_MOD] != Mod_8BitDisplace) &&
+                        (Result.Bits[Encoding_MOD] != Mod_16BitDisplace))
+                {
+                    continue;
+                }
+                else if((Field.Type == Encoding_DISP_HI) &&
                         (Result.Bits[Encoding_MOD] != Mod_16BitDisplace))
                 {
                     continue;
                 }
             }
-            else if(Field.Type == Encoding_DISP_HI)
-            {
-                if((Result.Bits[Encoding_MOD] == Mod_MemoryMode) && 
-                   (Result.Bits[Encoding_RM] == EffectiveAddress_DirectAddress))
-                {
-                    // NOTE(kstandbridge): Except when R/M = 110, then 16-bit displacement follows
-                }
-                else if(Result.Bits[Encoding_MOD] != Mod_16BitDisplace)
-                {
-                    continue;
-                }
-            }
-            u8 Bits = GetBits(Op0, BitsAt, Field.Size);
+            
+            u8 Bits = GetBits(Byte, BitsAt, Field.Size);
             Result.Bits[Field.Type] = Bits;
             BitsAt -= Field.Size;
         }
@@ -1011,18 +1010,24 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
     return Result;
 }
 
+inline simulator_context
+GetSimulatorContext(u8 *InstructionStream, umm InstructionStreamSize)
+{
+    simulator_context Result =
+    {
+        .InstructionStream = InstructionStream,
+        .InstructionStreamAt = 0,
+        .InstructionStreamSize = InstructionStreamSize
+    };
+    return Result;
+}
 internal string
-StreamToAssembly(memory_arena *Arena, u8 *Buffer, umm Size)
+StreamToAssembly(memory_arena *Arena, u8 *InstructionStream, umm InstructionStreamSize)
 {
     string Result;
     format_string_state StringState = BeginFormatString();
     
-    simulator_context Context = 
-    {
-        .InstructionStream = Buffer,
-        .InstructionStreamAt = 0,
-        .InstructionStreamSize = Size
-    };
+    simulator_context Context = GetSimulatorContext(InstructionStream, InstructionStreamSize);
     
     b32 First = false;
     for(;;)
@@ -1068,4 +1073,35 @@ StreamToAssembly(memory_arena *Arena, u8 *Buffer, umm Size)
         Result = String("; no known byte codes");
     }
     return Result;
+}
+
+internal void
+Simulate(simulator_context *Context)
+{
+    b32 Simulating = true;
+    while(Simulating)
+    {
+        instruction Instruction = GetNextInstruction(Context);
+        
+        switch(Instruction.Type)
+        {
+            
+            case Instruction_MovImmediate:
+            {
+                // TODO(kstandbridge): Get wide value?
+                u8 ValueLow = Instruction.Bits[Encoding_DATA];
+                u8 ValueHigh = Instruction.Bits[Encoding_DATA_IF_W];
+                u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                Context->Registers[Instruction.RegisterWord] = ValueWide;
+                
+            } break;
+            
+            case Instruction_NOP:
+            default:
+            {
+                Simulating = false;
+            } break;
+        }
+        
+    }
 }

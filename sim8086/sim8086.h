@@ -1,5 +1,38 @@
 #ifndef SIM8086_H
 
+typedef enum register_word_type
+{
+    RegisterWord_AX = 0b000,
+    RegisterWord_CX = 0b001,
+    RegisterWord_DX = 0b010,
+    RegisterWord_BX = 0b011,
+    RegisterWord_SP = 0b100,
+    RegisterWord_BP = 0b101,
+    RegisterWord_SI = 0b110,
+    RegisterWord_DI = 0b111,
+    
+    RegisterWord_Count,
+} register_word_type;
+
+inline string
+RegisterWordToString(register_word_type Type)
+{
+    string Result;
+    switch(Type)
+    {
+        case RegisterWord_AX: { Result = String("ax"); } break;
+        case RegisterWord_CX: { Result = String("cx"); } break;
+        case RegisterWord_DX: { Result = String("dx"); } break;
+        case RegisterWord_BX: { Result = String("bx"); } break;
+        case RegisterWord_SP: { Result = String("sp"); } break;
+        case RegisterWord_BP: { Result = String("bp"); } break;
+        case RegisterWord_SI: { Result = String("si"); } break;
+        case RegisterWord_DI: { Result = String("di"); } break;
+        default: { Result = String("; Invalid register word"); } break;
+    }
+    return Result;
+}
+
 
 typedef struct simulator_context
 {
@@ -10,6 +43,8 @@ typedef struct simulator_context
     u8 *InstructionStream;
     umm InstructionStreamAt;
     umm InstructionStreamSize;
+    
+    u16 Registers[RegisterWord_Count];
     
 } simulator_context;
 
@@ -65,37 +100,6 @@ RegisterByteToString(register_byte_type Type)
         case RegisterByte_DH: { Result = String("dh"); } break;
         case RegisterByte_BH: { Result = String("bh"); } break;
         default: { Result = String("; Invalid register byte"); } break;
-    }
-    return Result;
-}
-
-typedef enum register_word_type
-{
-    RegisterWord_AX = 0b000,
-    RegisterWord_CX = 0b001,
-    RegisterWord_DX = 0b010,
-    RegisterWord_BX = 0b011,
-    RegisterWord_SP = 0b100,
-    RegisterWord_BP = 0b101,
-    RegisterWord_SI = 0b110,
-    RegisterWord_DI = 0b111,
-} register_word_type;
-
-inline string
-RegisterWordToString(register_word_type Type)
-{
-    string Result;
-    switch(Type)
-    {
-        case RegisterWord_AX: { Result = String("ax"); } break;
-        case RegisterWord_CX: { Result = String("cx"); } break;
-        case RegisterWord_DX: { Result = String("dx"); } break;
-        case RegisterWord_BX: { Result = String("bx"); } break;
-        case RegisterWord_SP: { Result = String("sp"); } break;
-        case RegisterWord_BP: { Result = String("bp"); } break;
-        case RegisterWord_SI: { Result = String("si"); } break;
-        case RegisterWord_DI: { Result = String("di"); } break;
-        default: { Result = String("; Invalid register word"); } break;
     }
     return Result;
 }
@@ -429,7 +433,6 @@ typedef struct instruction
         segment_register_type SegmentRegister;
     };
     
-    b32 HasFieldData;
     u8 Bits[Encoding_Count];
     
 } instruction;

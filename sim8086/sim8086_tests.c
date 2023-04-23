@@ -1909,6 +1909,44 @@ RunDisassembleToAssemblyTests(memory_arena *Arena)
     }
 }
 
+inline void
+RunImmediateMovTests(memory_arena *Arena)
+{
+    {
+        u8 Stream[] = { 0b10111000, 0b00000001, 0b00000000 };
+        AssertEqualString(String("mov ax, 1"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        simulator_context Context = GetSimulatorContext(Stream, sizeof(Stream));
+        AssertEqualU32(0, Context.Registers[RegisterWord_AX]);
+        Simulate(&Context);
+        AssertEqualU32(1, Context.Registers[RegisterWord_AX]);
+    }
+    
+    {
+        u8 Stream[] = { 0b10111011, 0b00000010, 0b00000000 };
+        AssertEqualString(String("mov bx, 2"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        simulator_context Context = GetSimulatorContext(Stream, sizeof(Stream));
+        AssertEqualU32(0, Context.Registers[RegisterWord_BX]);
+        Simulate(&Context);
+        AssertEqualU32(2, Context.Registers[RegisterWord_BX]);
+    }
+    
+    {
+        u8 Stream[] = { 0b10111000, 0b00000001, 0b00000000, 0b10111011, 0b00000010, 0b00000000, 0b10111001, 0b00000011, 0b00000000, 0b10111010, 0b00000100, 0b00000000, 0b10111100, 0b00000101, 0b00000000, 0b10111101, 0b00000110, 0b00000000, 0b10111110, 0b00000111, 0b00000000, 0b10111111, 0b00001000, 0b00000000 };
+        AssertEqualString(String("mov ax, 1\nmov bx, 2\nmov cx, 3\nmov dx, 4\nmov sp, 5\nmov bp, 6\nmov si, 7\nmov di, 8"), 
+                          StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        simulator_context Context = GetSimulatorContext(Stream, sizeof(Stream));
+        Simulate(&Context);
+        AssertEqualU32(1, Context.Registers[RegisterWord_AX]);
+        AssertEqualU32(2, Context.Registers[RegisterWord_BX]);
+        AssertEqualU32(3, Context.Registers[RegisterWord_CX]);
+        AssertEqualU32(4, Context.Registers[RegisterWord_DX]);
+        AssertEqualU32(5, Context.Registers[RegisterWord_SP]);
+        AssertEqualU32(6, Context.Registers[RegisterWord_BP]);
+        AssertEqualU32(7, Context.Registers[RegisterWord_SI]);
+        AssertEqualU32(8, Context.Registers[RegisterWord_DI]);
+    }
+}
+
 void
 RunAllTests(memory_arena *Arena)
 {
@@ -1916,4 +1954,27 @@ RunAllTests(memory_arena *Arena)
     RunInstructionTableTests(Arena);
     RunDisassembleTests(Arena);
     RunDisassembleToAssemblyTests(Arena);
+    RunImmediateMovTests(Arena);
+    
+    PlatformConsoleOut("\n");
+    string FileData = PlatformReadEntireFile(Arena, String("test"));
+    b32 First = true;
+    for(umm StreamIndex = 0;
+        StreamIndex < FileData.Size;
+        ++StreamIndex)
+    {
+        if(First)
+        {
+            First = false;
+        }
+        else
+        {
+            PlatformConsoleOut(", ");
+        }
+        u8 Byte = FileData.Data[StreamIndex];
+        PlatformConsoleOut("%b", Byte);
+    }
+    PlatformConsoleOut("\n\n");
+    string Assembly = StreamToAssembly(Arena, FileData.Data, FileData.Size);
+    PlatformConsoleOut("%S\n\n", Assembly);
 }
