@@ -1907,6 +1907,12 @@ RunDisassembleToAssemblyTests(memory_arena *Arena)
         u8 Stream[] = { 0b11101010, 0b10001000, 0b01110111, 0b01100110, 0b01010101 };
         AssertEqualString(String("jmp 21862:30600"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
+    
+    {
+        u8 Stream[] = { 0b10001001, 0b11011101, 0b10001001, 0b11001110 };
+        AssertEqualString(String("mov bp, bx\nmov si, cx"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+    }
+    
 }
 
 inline void
@@ -1931,7 +1937,10 @@ RunImmediateMovTests(memory_arena *Arena)
     }
     
     {
-        u8 Stream[] = { 0b10111000, 0b00000001, 0b00000000, 0b10111011, 0b00000010, 0b00000000, 0b10111001, 0b00000011, 0b00000000, 0b10111010, 0b00000100, 0b00000000, 0b10111100, 0b00000101, 0b00000000, 0b10111101, 0b00000110, 0b00000000, 0b10111110, 0b00000111, 0b00000000, 0b10111111, 0b00001000, 0b00000000 };
+        u8 Stream[] = 
+        { 
+            0b10111000, 0b00000001, 0b00000000, 0b10111011, 0b00000010, 0b00000000, 0b10111001, 0b00000011, 0b00000000, 0b10111010, 0b00000100, 0b00000000, 0b10111100, 0b00000101, 0b00000000, 0b10111101, 0b00000110, 0b00000000, 0b10111110, 0b00000111, 0b00000000, 0b10111111, 0b00001000, 0b00000000 
+        };
         AssertEqualString(String("mov ax, 1\nmov bx, 2\nmov cx, 3\nmov dx, 4\nmov sp, 5\nmov bp, 6\nmov si, 7\nmov di, 8"), 
                           StreamToAssembly(Arena, Stream, sizeof(Stream)));
         simulator_context Context = GetSimulatorContext(Stream, sizeof(Stream));
@@ -1947,6 +1956,40 @@ RunImmediateMovTests(memory_arena *Arena)
     }
 }
 
+inline void
+RunRegisterMovTests(memory_arena *Arena)
+{
+    
+    {
+        u8 Stream[] = { 0b10111000, 42, 0b00000000, 0b10001001, 0b11000100 };
+        AssertEqualString(String("mov ax, 42\nmov sp, ax"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        simulator_context Context = GetSimulatorContext(Stream, sizeof(Stream));
+        Simulate(&Context);
+        AssertEqualU32(42, Context.Registers[RegisterWord_AX]);
+        AssertEqualU32(42, Context.Registers[RegisterWord_SP]);
+    }
+    
+    {
+        u8 Stream[] = 
+        { 
+            0b10111000, 0b00000001, 0b00000000, 0b10111011, 0b00000010, 0b00000000, 0b10111001, 0b00000011, 0b00000000, 0b10111010, 0b00000100, 0b00000000, 0b10001001, 0b11000100, 0b10001001, 0b11011101, 0b10001001, 0b11001110, 0b10001001, 0b11010111, 0b10001001, 0b11100010, 0b10001001, 0b11101001, 0b10001001, 0b11110011, 0b10001001, 0b11111000 
+        };
+        AssertEqualString(String("mov ax, 1\nmov bx, 2\nmov cx, 3\nmov dx, 4\nmov sp, ax\nmov bp, bx\nmov si, cx\nmov di, dx\nmov dx, sp\nmov cx, bp\nmov bx, si\nmov ax, di"), 
+                          StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        simulator_context Context = GetSimulatorContext(Stream, sizeof(Stream));
+        Simulate(&Context);
+        AssertEqualU32(4, Context.Registers[RegisterWord_AX]);
+        AssertEqualU32(3, Context.Registers[RegisterWord_BX]);
+        AssertEqualU32(2, Context.Registers[RegisterWord_CX]);
+        AssertEqualU32(1, Context.Registers[RegisterWord_DX]);
+        AssertEqualU32(1, Context.Registers[RegisterWord_SP]);
+        AssertEqualU32(2, Context.Registers[RegisterWord_BP]);
+        AssertEqualU32(3, Context.Registers[RegisterWord_SI]);
+        AssertEqualU32(4, Context.Registers[RegisterWord_DI]);
+    }
+    
+}
+
 void
 RunAllTests(memory_arena *Arena)
 {
@@ -1955,6 +1998,7 @@ RunAllTests(memory_arena *Arena)
     RunDisassembleTests(Arena);
     RunDisassembleToAssemblyTests(Arena);
     RunImmediateMovTests(Arena);
+    RunRegisterMovTests(Arena);
     
     PlatformConsoleOut("\n");
     string FileData = PlatformReadEntireFile(Arena, String("test"));

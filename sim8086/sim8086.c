@@ -302,6 +302,7 @@ GetNextInstruction(simulator_context *Context)
         u8 Byte = Context->InstructionStream[Context->InstructionStreamAt++];
         
         instruction_table_entry TableEntry = GlobalInstructionTable[Byte];
+        Assert(TableEntry.OpCode == Byte);
         
         s8 BitsAt = -1;
         Result.Type = TableEntry.Type;
@@ -317,19 +318,6 @@ GetNextInstruction(simulator_context *Context)
             {
                 // NOTE(kstandbridge): No more fields
                 break;
-            }
-            
-            if(BitsAt < 0)
-            {
-                BitsAt = 7;
-                if(Context->InstructionStreamAt < Context->InstructionStreamSize)
-                {
-                    Byte = Context->InstructionStream[Context->InstructionStreamAt++];
-                }
-                else
-                {
-                    break;
-                }
             }
             
             if(Field.Type == Encoding_DATA_IF_W)
@@ -362,6 +350,19 @@ GetNextInstruction(simulator_context *Context)
                         (Result.Bits[Encoding_MOD] != Mod_16BitDisplace))
                 {
                     continue;
+                }
+            }
+            
+            if(BitsAt < 0)
+            {
+                BitsAt = 7;
+                if(Context->InstructionStreamAt < Context->InstructionStreamSize)
+                {
+                    Byte = Context->InstructionStream[Context->InstructionStreamAt++];
+                }
+                else
+                {
+                    break;
                 }
             }
             
@@ -1085,7 +1086,6 @@ Simulate(simulator_context *Context)
         
         switch(Instruction.Type)
         {
-            
             case Instruction_MovImmediate:
             {
                 // TODO(kstandbridge): Get wide value?
@@ -1093,7 +1093,12 @@ Simulate(simulator_context *Context)
                 u8 ValueHigh = Instruction.Bits[Encoding_DATA_IF_W];
                 u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
                 Context->Registers[Instruction.RegisterWord] = ValueWide;
-                
+            } break;
+            
+            case Instruction_Mov:
+            {
+                u16 Source = Context->Registers[Instruction.Bits[Encoding_REG]];
+                Context->Registers[Instruction.Bits[Encoding_RM]] = Source;
             } break;
             
             case Instruction_NOP:
