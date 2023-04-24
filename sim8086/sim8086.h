@@ -1,5 +1,17 @@
 #ifndef SIM8086_H
 
+typedef enum register_byte_type
+{
+    RegisterByte_AL = 0b000,
+    RegisterByte_CL = 0b001,
+    RegisterByte_DL = 0b010,
+    RegisterByte_BL = 0b011,
+    RegisterByte_AH = 0b100,
+    RegisterByte_CH = 0b101,
+    RegisterByte_DH = 0b110,
+    RegisterByte_BH = 0b111,
+} register_byte_type;
+
 typedef enum register_word_type
 {
     RegisterWord_AX = 0b000,
@@ -14,25 +26,30 @@ typedef enum register_word_type
     RegisterWord_Count,
 } register_word_type;
 
+typedef enum segment_register_type
+{
+    SegmentRegister_ES = 0b00,
+    SegmentRegister_CS = 0b01,
+    SegmentRegister_SS = 0b10,
+    SegmentRegister_DS = 0b11,
+    
+    SegmentRegister_Count,
+} segment_register_type;
+
 inline string
-RegisterWordToString(register_word_type Type)
+SegmentRegisterToString(segment_register_type Type)
 {
     string Result;
     switch(Type)
     {
-        case RegisterWord_AX: { Result = String("ax"); } break;
-        case RegisterWord_CX: { Result = String("cx"); } break;
-        case RegisterWord_DX: { Result = String("dx"); } break;
-        case RegisterWord_BX: { Result = String("bx"); } break;
-        case RegisterWord_SP: { Result = String("sp"); } break;
-        case RegisterWord_BP: { Result = String("bp"); } break;
-        case RegisterWord_SI: { Result = String("si"); } break;
-        case RegisterWord_DI: { Result = String("di"); } break;
-        default: { Result = String("; Invalid register word"); } break;
+        case SegmentRegister_ES: { Result = String("es"); } break;
+        case SegmentRegister_CS: { Result = String("cs"); } break;
+        case SegmentRegister_SS: { Result = String("ss"); } break;
+        case SegmentRegister_DS: { Result = String("ds"); } break;
+        default: { Result = String("; Invalid segment register"); } break;
     }
     return Result;
 }
-
 
 typedef struct simulator_context
 {
@@ -45,6 +62,7 @@ typedef struct simulator_context
     umm InstructionStreamSize;
     
     u16 Registers[RegisterWord_Count];
+    u16 SegmentRegisters[SegmentRegister_Count];
     
 } simulator_context;
 
@@ -73,18 +91,6 @@ typedef enum encoding_type
     Encoding_Count,
 } encoding_type;
 
-typedef enum register_byte_type
-{
-    RegisterByte_AL = 0b000,
-    RegisterByte_CL = 0b001,
-    RegisterByte_DL = 0b010,
-    RegisterByte_BL = 0b011,
-    RegisterByte_AH = 0b100,
-    RegisterByte_CH = 0b101,
-    RegisterByte_DH = 0b110,
-    RegisterByte_BH = 0b111,
-} register_byte_type;
-
 inline string
 RegisterByteToString(register_byte_type Type)
 {
@@ -100,6 +106,25 @@ RegisterByteToString(register_byte_type Type)
         case RegisterByte_DH: { Result = String("dh"); } break;
         case RegisterByte_BH: { Result = String("bh"); } break;
         default: { Result = String("; Invalid register byte"); } break;
+    }
+    return Result;
+}
+
+inline string
+RegisterWordToString(register_word_type Type)
+{
+    string Result;
+    switch(Type)
+    {
+        case RegisterWord_AX: { Result = String("ax"); } break;
+        case RegisterWord_CX: { Result = String("cx"); } break;
+        case RegisterWord_DX: { Result = String("dx"); } break;
+        case RegisterWord_BX: { Result = String("bx"); } break;
+        case RegisterWord_SP: { Result = String("sp"); } break;
+        case RegisterWord_BP: { Result = String("bp"); } break;
+        case RegisterWord_SI: { Result = String("si"); } break;
+        case RegisterWord_DI: { Result = String("di"); } break;
+        default: { Result = String("; Invalid register word"); } break;
     }
     return Result;
 }
@@ -140,29 +165,6 @@ EffectiveAddressToString(effective_address_type Type)
         case EffectiveAddress_BP:    { Result = String("bp"); } break;
         case EffectiveAddress_BX:    { Result = String("bx"); } break;
         default: { Result = String("; Invalid effective address"); } break;
-    }
-    return Result;
-}
-
-typedef enum segment_register_type
-{
-    SegmentRegister_ES = 0b00,
-    SegmentRegister_CS = 0b01,
-    SegmentRegister_SS = 0b10,
-    SegmentRegister_DS = 0b11,
-} segment_register_type;
-
-inline string
-SegmentRegisterToString(segment_register_type Type)
-{
-    string Result;
-    switch(Type)
-    {
-        case SegmentRegister_ES: { Result = String("es"); } break;
-        case SegmentRegister_CS: { Result = String("cs"); } break;
-        case SegmentRegister_SS: { Result = String("ss"); } break;
-        case SegmentRegister_DS: { Result = String("ds"); } break;
-        default: { Result = String("; Invalid segment register"); } break;
     }
     return Result;
 }

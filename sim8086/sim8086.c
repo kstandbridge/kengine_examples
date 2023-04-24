@@ -169,7 +169,7 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Mov,                    0b10001011, Flag_W | Flag_D, 0, { MOD, REG, RM, DISP_LO, DISP_HI  } },
     { Instruction_MovRegisterSegment,     0b10001100, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Lea,                    0b10001101, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
-    { Instruction_Pop,                    0b10001110, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
+    { Instruction_MovRegisterSegment,     0b10001110, Flag_D, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
     { Instruction_Pop,                    0b10001111, Flag_W, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
     { Instruction_XchgWithAccumulator,    0b10010000, 0, 0b000,      { 0 } },
     { Instruction_XchgWithAccumulator,    0b10010001, 0, 0b001,      { 0 } },
@@ -203,7 +203,7 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Lods,                   0b10101101, Flag_W, 0, { 0 } },
     { Instruction_Scas,                   0b10101110, 0, 0, { 0 } },
     { Instruction_Scas,                   0b10101111, Flag_W, 0, { 0 } },
-    { Instruction_NOP,                    0b10110000, 0, 0, 0, { 0} },
+    { Instruction_MovImmediate,           0b10110000, 0, 0b000,      { DATA, DATA_IF_W } },
     { Instruction_MovImmediate,           0b10110001, 0, 0b001,      { DATA, DATA_IF_W } },
     { Instruction_MovImmediate,           0b10110010, 0, 0b010,      { DATA, DATA_IF_W } },
     { Instruction_MovImmediate,           0b10110011, 0, 0b011,      { DATA, DATA_IF_W } },
@@ -284,14 +284,6 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Control,                0b11111110, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
     { Instruction_Control,                0b11111111, Flag_W, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
 };
-
-inline u8
-GetBits(u8 Input, u8 Position, u8 Count)
-{
-    // NOTE(kstandbridge): Position 8 is far left, 0 is far right
-    u8 Result = (Input >> (Position + 1 - Count) & ~(~0 << Count));
-    return Result;
-}
 
 internal instruction
 GetNextInstruction(simulator_context *Context)
@@ -650,6 +642,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                     case Mod_RegisterMode:
                     {
                         string Src = ((IsWord) || 
+                                      (Instruction.Type == Instruction_MovRegisterSegment) ||
                                       (Instruction.Type == Instruction_Call) ||
                                       (Instruction.Type == Instruction_Jmp)) 
                             ? RegisterWordToString(Instruction.Bits[Encoding_RM]) : RegisterByteToString(Instruction.Bits[Encoding_RM]);
@@ -694,6 +687,18 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                                 {
                                     // NOTE(kstandbridge): V = 0 Shift/rotate count is one
                                     AppendFormatString(&State, "%S %S, 1", Op, Src);
+                                }
+                            }
+                            else if((Instruction.Type == Instruction_MovRegisterSegment))
+                            {
+                                string Dest = SegmentRegisterToString(Instruction.Bits[Encoding_REG]);
+                                if(Instruction.Flags & Flag_D)
+                                {
+                                    AppendFormatString(&State, "%S %S, %S", Op, Dest, Src);
+                                }
+                                else
+                                {
+                                    AppendFormatString(&State, "%S %S, %S", Op, Src, Dest);
                                 }
                             }
                             else
@@ -1076,37 +1081,125 @@ StreamToAssembly(memory_arena *Arena, u8 *InstructionStream, umm InstructionStre
     return Result;
 }
 
+internal instruction
+SimulateStep(simulator_context *Context)
+{
+    instruction Result = GetNextInstruction(Context);
+    
+    switch(Result.Type)
+    {
+        case Instruction_MovImmediate:
+        {
+            if(Result.Flags & Flag_W)
+            {
+                Context->Registers[Result.RegisterWord] = PackU16(Result.Bits[Encoding_DATA_IF_W], Result.Bits[Encoding_DATA]);
+            }
+            else
+            {
+                u8 HighPart;
+                u8 LowPart;
+                
+                u8 RegisterIndex = Result.RegisterByte;
+                if(RegisterIndex > 4)
+                {
+                    RegisterIndex -= 4;
+                    HighPart = Result.Bits[Encoding_DATA];
+                    LowPart = UnpackU16Low(Context->Registers[RegisterIndex]);
+                }
+                else
+                {
+                    HighPart = UnpackU16High(Context->Registers[RegisterIndex]);
+                    LowPart = Result.Bits[Encoding_DATA];
+                }
+                
+                Context->Registers[RegisterIndex] = PackU16(HighPart, LowPart);
+            }
+            
+        } break;
+        
+        case Instruction_MovRegisterSegment:
+        {
+            if(Result.Flags & Flag_D)
+            {
+                Context->SegmentRegisters[Result.Bits[Encoding_REG]] = Context->Registers[Result.Bits[Encoding_RM]];
+            }
+            else
+            {
+                Context->Registers[Result.Bits[Encoding_RM]] = Context->SegmentRegisters[Result.Bits[Encoding_REG]];
+            }
+        } break;
+        
+        case Instruction_Mov:
+        {
+            switch(Result.Bits[Encoding_MOD])
+            {
+                case Mod_MemoryMode:
+                {
+                } break;
+                case Mod_8BitDisplace:
+                {
+                } break;
+                case Mod_16BitDisplace:
+                {
+                } break;
+                case Mod_RegisterMode:
+                {
+                    if(Result.Flags & Flag_W)
+                    {                        
+                        u16 Source = Context->Registers[Result.Bits[Encoding_REG]];
+                        Context->Registers[Result.Bits[Encoding_RM]] = Source;
+                    }
+                    else
+                    {
+                        u8 DestIndex = Result.Bits[Encoding_RM];
+                        u8 SourceIndex = Result.Bits[Encoding_REG];
+                        if(SourceIndex > 3)
+                        {
+                            SourceIndex -= 4;
+                            u8 LowPart = UnpackU16High(Context->Registers[SourceIndex]);
+                            u8 HighPart = UnpackU16High(Context->Registers[DestIndex]);
+                            Context->Registers[DestIndex] = PackU16(HighPart, LowPart);
+                        }
+                        else
+                        {
+                            u8 LowPart = UnpackU16Low(Context->Registers[SourceIndex]);
+                            u8 HighPart;
+                            if(DestIndex > 3)
+                            {
+                                DestIndex -= 4;
+                                HighPart = UnpackU16Low(Context->Registers[DestIndex]);
+                            }
+                            else
+                            {
+                                HighPart = UnpackU16High(Context->Registers[DestIndex]);
+                            }
+                            
+                            Context->Registers[DestIndex] = PackU16(LowPart, HighPart);
+                        }
+                        
+                        
+                    }
+                } break;
+                
+                InvalidDefaultCase;
+            }
+        } break;
+        
+        
+    }
+    
+    return Result;
+}
+
 internal void
 Simulate(simulator_context *Context)
 {
-    b32 Simulating = true;
-    while(Simulating)
+    for(;;)
     {
-        instruction Instruction = GetNextInstruction(Context);
-        
-        switch(Instruction.Type)
+        instruction Instruction = SimulateStep(Context);
+        if(Instruction.Type == Instruction_NOP)
         {
-            case Instruction_MovImmediate:
-            {
-                // TODO(kstandbridge): Get wide value?
-                u8 ValueLow = Instruction.Bits[Encoding_DATA];
-                u8 ValueHigh = Instruction.Bits[Encoding_DATA_IF_W];
-                u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-                Context->Registers[Instruction.RegisterWord] = ValueWide;
-            } break;
-            
-            case Instruction_Mov:
-            {
-                u16 Source = Context->Registers[Instruction.Bits[Encoding_REG]];
-                Context->Registers[Instruction.Bits[Encoding_RM]] = Source;
-            } break;
-            
-            case Instruction_NOP:
-            default:
-            {
-                Simulating = false;
-            } break;
-        }
-        
+            break;
+        } 
     }
 }

@@ -1913,6 +1913,21 @@ RunDisassembleToAssemblyTests(memory_arena *Arena)
         AssertEqualString(String("mov bp, bx\nmov si, cx"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
+    {
+        u8 Stream[] = { 0b10001110, 0b11010000 };
+        AssertEqualString(String("mov ss, ax"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+    }
+    
+    {
+        u8 Stream[] = { 0b10110000, 0b00010001 };
+        AssertEqualString(String("mov al, 17"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+    }
+    
+    {
+        u8 Stream[] = { 0b10001100, 0b11011101 };
+        AssertEqualString(String("mov bp, ds"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+    }
+    
 }
 
 inline void
@@ -1956,6 +1971,72 @@ RunImmediateMovTests(memory_arena *Arena)
     }
 }
 
+// TODO(kstandbridge): Move these to kengine_tests
+inline void
+RunUnpackTests()
+{
+    {
+        u16 Value = 0x1234;
+        u8 High = UnpackU16High(Value);
+        u8 Low = UnpackU16Low(Value);
+        AssertEqualU32(0x12, High);
+        AssertEqualU32(0x34, Low);
+    }
+    
+    {
+        u16 Value = 0xABCD;
+        u8 High = UnpackU16High(Value);
+        u8 Low = UnpackU16Low(Value);
+        AssertEqualU32(0xAB, High);
+        AssertEqualU32(0xCD, Low);
+    }
+}
+inline void
+RunFormatStringHexTests(memory_arena *Arena)
+{
+    
+    {
+        AssertEqualString(String("before 0xA after"), 
+                          FormatString(Arena, "before %X after", 10));
+    }
+    
+    {
+        AssertEqualString(String("before 0xa after"), 
+                          FormatString(Arena, "before %x after", 10));
+    }
+    
+    {
+        AssertEqualString(String("before 0x18F after"), 
+                          FormatString(Arena, "before %X after", 399));
+    }
+    
+    {
+        AssertEqualString(String("before 0xABCD after"), 
+                          FormatString(Arena, "before %X after", 0xABCD));
+    }
+    
+    {
+        AssertEqualString(String("before 0xabcd010 after"), 
+                          FormatString(Arena, "before %x after", 0xABCD010));
+    }
+    
+    {
+        AssertEqualString(String("before 0x1234ABCD after"), 
+                          FormatString(Arena, "before %X after", 0x1234ABCD));
+    }
+    
+    {
+        AssertEqualString(String("before <     0x18f> after"), 
+                          FormatString(Arena, "before <%8x> after", 0x18f));
+    }
+    
+    {
+        AssertEqualString(String("before <0x0000018f> after"), 
+                          FormatString(Arena, "before <%08x> after", 0x18f));
+    }
+    
+}
+
 inline void
 RunRegisterMovTests(memory_arena *Arena)
 {
@@ -1988,17 +2069,94 @@ RunRegisterMovTests(memory_arena *Arena)
         AssertEqualU32(4, Context.Registers[RegisterWord_DI]);
     }
     
+    {
+        u8 Stream[] = 
+        { 
+            0b10111000, 0b00100010, 0b00100010, 0b10111011, 0b01000100, 0b01000100, 0b10111001, 0b01100110, 0b01100110, 0b10111010, 0b10001000, 0b10001000, 0b10001110, 0b11010000, 0b10001110, 0b11011011, 0b10001110, 0b11000001, 0b10110000, 0b00010001, 0b10110111, 0b00110011, 0b10110001, 0b01010101, 0b10110110, 0b01110111, 0b10001000, 0b11011100, 0b10001000, 0b11110001, 0b10001110, 0b11010000, 0b10001110, 0b11011011, 0b10001110, 0b11000001, 0b10001100, 0b11010100, 0b10001100, 0b11011101, 0b10001100, 0b11000110, 0b10001001, 0b11010111
+        };
+        AssertEqualString(String("mov ax, 8738\nmov bx, 17476\nmov cx, 26214\nmov dx, -30584\nmov ss, ax\nmov ds, bx\nmov es, cx\nmov al, 17\nmov bh, 51\nmov cl, 85\nmov dh, 119\nmov ah, bl\nmov cl, dh\nmov ss, ax\nmov ds, bx\nmov es, cx\nmov sp, ss\nmov bp, ds\nmov si, es\nmov di, dx"), 
+                          StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        simulator_context Context = GetSimulatorContext(Stream, sizeof(Stream));
+        SimulateStep(&Context);
+        AssertEqualHex(0x2222, Context.Registers[RegisterWord_AX]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x4444, Context.Registers[RegisterWord_BX]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x6666, Context.Registers[RegisterWord_CX]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x8888, Context.Registers[RegisterWord_DX]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x2222, Context.SegmentRegisters[SegmentRegister_SS]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x4444, Context.SegmentRegisters[SegmentRegister_DS]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x6666, Context.SegmentRegisters[SegmentRegister_ES]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x2211, Context.Registers[RegisterWord_AX]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x3344, Context.Registers[RegisterWord_BX]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x6655, Context.Registers[RegisterWord_CX]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x7788, Context.Registers[RegisterWord_DX]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x4411, Context.Registers[RegisterWord_AX]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x6677, Context.Registers[RegisterWord_CX]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x4411, Context.SegmentRegisters[SegmentRegister_SS]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x3344, Context.SegmentRegisters[SegmentRegister_DS]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x6677, Context.SegmentRegisters[SegmentRegister_ES]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x4411, Context.Registers[RegisterWord_SP]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x3344, Context.Registers[RegisterWord_BP]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x6677, Context.Registers[RegisterWord_SI]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x7788, Context.Registers[RegisterWord_DI]);
+    }
+    
+    {
+        u8 Stream[] = 
+        { 
+            0b10111000, 0b00100010, 0b00100010, 0b10111011, 0b01000100, 0b01000100, 0b10111001, 0b01100110, 0b01100110, 0b10111010, 0b10001000, 0b10001000, 0b10001110, 0b11010000, 0b10001110, 0b11011011, 0b10001110, 0b11000001, 0b10110000, 0b00010001, 0b10110111, 0b00110011, 0b10110001, 0b01010101, 0b10110110, 0b01110111, 0b10001000, 0b11011100, 0b10001000, 0b11110001, 0b10001110, 0b11010000, 0b10001110, 0b11011011, 0b10001110, 0b11000001, 0b10001100, 0b11010100, 0b10001100, 0b11011101, 0b10001100, 0b11000110, 0b10001001, 0b11010111
+        };
+        AssertEqualString(String("mov ax, 8738\nmov bx, 17476\nmov cx, 26214\nmov dx, -30584\nmov ss, ax\nmov ds, bx\nmov es, cx\nmov al, 17\nmov bh, 51\nmov cl, 85\nmov dh, 119\nmov ah, bl\nmov cl, dh\nmov ss, ax\nmov ds, bx\nmov es, cx\nmov sp, ss\nmov bp, ds\nmov si, es\nmov di, dx"), 
+                          StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        simulator_context Context = GetSimulatorContext(Stream, sizeof(Stream));
+        Simulate(&Context);
+        AssertEqualU32(17425, Context.Registers[RegisterWord_AX]);
+        AssertEqualU32(13124, Context.Registers[RegisterWord_BX]);
+        AssertEqualU32(26231, Context.Registers[RegisterWord_CX]);
+        AssertEqualU32(30600, Context.Registers[RegisterWord_DX]);
+        AssertEqualU32(17425, Context.Registers[RegisterWord_SP]);
+        AssertEqualU32(13124, Context.Registers[RegisterWord_BP]);
+        AssertEqualU32(26231, Context.Registers[RegisterWord_SI]);
+        AssertEqualU32(30600, Context.Registers[RegisterWord_DI]);
+        AssertEqualU32(26231, Context.SegmentRegisters[SegmentRegister_ES]);
+        AssertEqualU32(17425, Context.SegmentRegisters[SegmentRegister_SS]);
+        AssertEqualU32(13124, Context.SegmentRegisters[SegmentRegister_DS]);
+    }
+    
 }
 
 void
 RunAllTests(memory_arena *Arena)
 {
+    // TODO(kstandbridge): Move this to kengine_tests
+    RunUnpackTests();
+    RunFormatStringHexTests(Arena);
+    
     RunGetBitsTests(Arena);
     RunInstructionTableTests(Arena);
     RunDisassembleTests(Arena);
     RunDisassembleToAssemblyTests(Arena);
     RunImmediateMovTests(Arena);
     RunRegisterMovTests(Arena);
+    
     
     PlatformConsoleOut("\n");
     string FileData = PlatformReadEntireFile(Arena, String("test"));
