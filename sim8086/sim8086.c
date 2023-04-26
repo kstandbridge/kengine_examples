@@ -1088,6 +1088,82 @@ SimulateStep(simulator_context *Context)
     
     switch(Result.Type)
     {
+        case Instruction_Immediate:
+        {
+            sub_op_type Op = Result.Bits[Encoding_REG];
+            
+            u8 HighPart = Result.Bits[Encoding_DATA_IF_W];
+            u8 LowPart = Result.Bits[Encoding_DATA];
+            u16 IncValue = PackU16(HighPart, LowPart);
+            
+            u16 Value = Context->Registers[Result.Bits[Encoding_RM]];
+            if(Op == SubOp_Add)
+            {
+                Value += IncValue;
+            }
+            else if(Op == SubOp_Sub)
+            {
+                Value -= IncValue;
+            }
+            else
+            {
+                Value = 0xffff;
+            }
+            
+            u8 SetBits = CountSetBits(Value);
+            
+            if(SetBits % 2 == 0)
+            {
+                Context->Flags |= Flag_PF;
+            }
+            else
+            {
+                Context->Flags &= ~Flag_PF;
+            }
+            
+            if((Value >> 15) == 1)
+            {
+                Context->Flags |= Flag_SF;
+            }
+            else
+            {
+                Context->Flags &= ~Flag_SF;
+            }
+            
+            if(Value == 0)
+            {
+                Context->Flags |= Flag_ZF;
+            }
+            else
+            {
+                Context->Flags &= ~Flag_ZF;
+            }
+            
+            Context->Registers[Result.Bits[Encoding_RM]] = Value;
+            
+        } break;
+        
+        case Instruction_Sub:
+        case Instruction_Cmp:
+        {
+            u16 Value = Context->Registers[Result.Bits[Encoding_RM]] - Context->Registers[Result.Bits[Encoding_REG]];
+            
+            if((Value >> 15) == 1)
+            {
+                Context->Flags |= Flag_SF;
+            }
+            else
+            {
+                Context->Flags &= ~Flag_SF;
+            }
+            
+            if(Result.Type == Instruction_Sub)
+            {
+                Context->Registers[Result.Bits[Encoding_RM]] = Value;
+            }
+            
+        } break;
+        
         case Instruction_MovImmediate:
         {
             if(Result.Flags & Flag_W)

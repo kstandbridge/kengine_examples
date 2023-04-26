@@ -8,64 +8,8 @@
 #include "sim8086.c"
 
 inline void
-RunGetBitsTests(memory_arena *Arena)
+RunInstructionTableTests()
 {
-    Arena; 
-    {
-        u8 Input = 0b11100000;
-        u8 Expected = 0b111;
-        u8 Actual = GetBits(Input, 7, 3);
-        AssertEqualBits(Expected, Actual);
-    }
-    
-    {
-        u8 Input = 0b0000111;
-        u8 Expected = 0b111;
-        u8 Actual = GetBits(Input, 2, 3);
-        AssertEqualBits(Expected, Actual);
-    }
-    
-    {
-        u8 Input = 0b0000011;
-        u8 Expected = 0b11;
-        u8 Actual = GetBits(Input, 1, 2);
-        AssertEqualBits(Expected, Actual);
-    }
-    
-    {
-        u8 Input = 0b0000001;
-        u8 Expected = 0b1;
-        u8 Actual = GetBits(Input, 0, 1);
-        AssertEqualBits(Expected, Actual);
-    }
-    
-    {
-        u8 Input = 0b11111110;
-        u8 Expected = 0b0;
-        u8 Actual = GetBits(Input, 0, 1);
-        AssertEqualBits(Expected, Actual);
-    }
-    
-    {
-        u8 Input = 0b11111101;
-        u8 Expected = 0b0;
-        u8 Actual = GetBits(Input, 1, 1);
-        AssertEqualBits(Expected, Actual);
-    }
-    
-    {
-        u8 Input = 0b11111100;
-        u8 Expected = 0b00;
-        u8 Actual = GetBits(Input, 1, 2);
-        AssertEqualBits(Expected, Actual);
-    }
-}
-
-inline void
-RunInstructionTableTests(memory_arena *Arena)
-{
-    Arena;
-    
     for(s32 TableIndex = 0;
         TableIndex < ArrayCount(GlobalInstructionTable);
         ++TableIndex)
@@ -76,10 +20,8 @@ RunInstructionTableTests(memory_arena *Arena)
 }
 
 inline void
-RunDisassembleTests(memory_arena *Arena)
+RunDisassembleTests()
 {
-    Arena;
-    
     {
         // NOTE(kstandbridge): mov si, bx
         u8 Buffer[] = { 0b10001001, 0b11011110 };
@@ -1927,7 +1869,6 @@ RunDisassembleToAssemblyTests(memory_arena *Arena)
         u8 Stream[] = { 0b10001100, 0b11011101 };
         AssertEqualString(String("mov bp, ds"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
-    
 }
 
 inline void
@@ -1971,76 +1912,10 @@ RunImmediateMovTests(memory_arena *Arena)
     }
 }
 
-// TODO(kstandbridge): Move these to kengine_tests
-inline void
-RunUnpackTests()
-{
-    {
-        u16 Value = 0x1234;
-        u8 High = UnpackU16High(Value);
-        u8 Low = UnpackU16Low(Value);
-        AssertEqualU32(0x12, High);
-        AssertEqualU32(0x34, Low);
-    }
-    
-    {
-        u16 Value = 0xABCD;
-        u8 High = UnpackU16High(Value);
-        u8 Low = UnpackU16Low(Value);
-        AssertEqualU32(0xAB, High);
-        AssertEqualU32(0xCD, Low);
-    }
-}
-inline void
-RunFormatStringHexTests(memory_arena *Arena)
-{
-    
-    {
-        AssertEqualString(String("before 0xA after"), 
-                          FormatString(Arena, "before %X after", 10));
-    }
-    
-    {
-        AssertEqualString(String("before 0xa after"), 
-                          FormatString(Arena, "before %x after", 10));
-    }
-    
-    {
-        AssertEqualString(String("before 0x18F after"), 
-                          FormatString(Arena, "before %X after", 399));
-    }
-    
-    {
-        AssertEqualString(String("before 0xABCD after"), 
-                          FormatString(Arena, "before %X after", 0xABCD));
-    }
-    
-    {
-        AssertEqualString(String("before 0xabcd010 after"), 
-                          FormatString(Arena, "before %x after", 0xABCD010));
-    }
-    
-    {
-        AssertEqualString(String("before 0x1234ABCD after"), 
-                          FormatString(Arena, "before %X after", 0x1234ABCD));
-    }
-    
-    {
-        AssertEqualString(String("before <     0x18f> after"), 
-                          FormatString(Arena, "before <%8x> after", 0x18f));
-    }
-    
-    {
-        AssertEqualString(String("before <0x0000018f> after"), 
-                          FormatString(Arena, "before <%08x> after", 0x18f));
-    }
-    
-}
 
 inline void
 RunRegisterMovTests(memory_arena *Arena)
 {
-    
     {
         u8 Stream[] = { 0b10111000, 42, 0b00000000, 0b10001001, 0b11000100 };
         AssertEqualString(String("mov ax, 42\nmov sp, ax"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
@@ -2140,24 +2015,71 @@ RunRegisterMovTests(memory_arena *Arena)
         AssertEqualU32(17425, Context.SegmentRegisters[SegmentRegister_SS]);
         AssertEqualU32(13124, Context.SegmentRegisters[SegmentRegister_DS]);
     }
+}
+
+void inline 
+RunAddSubCmpTests(memory_arena *Arena)
+{
+    
+    {
+        u8 Stream[] = 
+        { 
+            0b10111011, 0b00000011, 0b11110000, 0b10111001, 0b00000001, 0b00001111, 0b00101001, 0b11001011, 0b10111100, 0b11100110, 0b00000011, 0b10111101, 0b11100111, 0b00000011, 0b00111001, 0b11100101, 0b10000001, 0b11000101, 0b00000011, 0b00000100, 0b10000001, 0b11101101, 0b11101010, 0b00000111
+        };
+        AssertEqualString(String("mov bx, -4093\nmov cx, 3841\nsub bx, cx\nmov sp, 998\nmov bp, 999\ncmp bp, sp\nadd bp, 1027\nsub bp, 2026"), 
+                          StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        simulator_context Context = GetSimulatorContext(Stream, sizeof(Stream));
+        SimulateStep(&Context);
+        AssertEqualHex(0xf003, Context.Registers[RegisterWord_BX]);
+        SimulateStep(&Context);
+        AssertEqualHex(0xf01, Context.Registers[RegisterWord_CX]);
+        AssertEqualBits(0, Context.Flags);
+        SimulateStep(&Context);
+        AssertEqualHex(0xe102, Context.Registers[RegisterWord_BX]);
+        AssertEqualBits(Flag_SF, Context.Flags);
+        SimulateStep(&Context);
+        AssertEqualHex(0x3e6, Context.Registers[RegisterWord_SP]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x3e7, Context.Registers[RegisterWord_BP]);
+        SimulateStep(&Context);
+        AssertEqualHex(0x3e7, Context.Registers[RegisterWord_BP]);
+        AssertEqualHex(0x3e6, Context.Registers[RegisterWord_SP]);
+        AssertEqualBits(0, Context.Flags);
+        SimulateStep(&Context);
+        AssertEqualHex(0x7ea, Context.Registers[RegisterWord_BP]);
+        AssertEqualBits(Flag_PF, Context.Flags); // NOTE(kstandbridge): This might be incorrect
+        SimulateStep(&Context);
+        AssertEqualHex(0, Context.Registers[RegisterWord_BP]);
+        AssertEqualBits((Flag_ZF | Flag_PF), Context.Flags);
+    }
+    
+    {
+        u8 Stream[] = 
+        { 
+            0b10111011, 0b00000011, 0b11110000, 0b10111001, 0b00000001, 0b00001111, 0b00101001, 0b11001011, 0b10111100, 0b11100110, 0b00000011, 0b10111101, 0b11100111, 0b00000011, 0b00111001, 0b11100101, 0b10000001, 0b11000101, 0b00000011, 0b00000100, 0b10000001, 0b11101101, 0b11101010, 0b00000111
+        };
+        AssertEqualString(String("mov bx, -4093\nmov cx, 3841\nsub bx, cx\nmov sp, 998\nmov bp, 999\ncmp bp, sp\nadd bp, 1027\nsub bp, 2026"), 
+                          StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        simulator_context Context = GetSimulatorContext(Stream, sizeof(Stream));
+        Simulate(&Context);
+        AssertEqualU32(57602, Context.Registers[RegisterWord_BX]);
+        AssertEqualU32(3841, Context.Registers[RegisterWord_CX]);
+        AssertEqualU32(998, Context.Registers[RegisterWord_SP]);
+    }
     
 }
 
 void
 RunAllTests(memory_arena *Arena)
 {
-    // TODO(kstandbridge): Move this to kengine_tests
-    RunUnpackTests();
-    RunFormatStringHexTests(Arena);
-    
-    RunGetBitsTests(Arena);
-    RunInstructionTableTests(Arena);
-    RunDisassembleTests(Arena);
+    RunInstructionTableTests();
+    RunDisassembleTests();
     RunDisassembleToAssemblyTests(Arena);
     RunImmediateMovTests(Arena);
     RunRegisterMovTests(Arena);
+    RunAddSubCmpTests(Arena);
     
-    
+#if 0
     PlatformConsoleOut("\n");
     string FileData = PlatformReadEntireFile(Arena, String("test"));
     b32 First = true;
@@ -2179,4 +2101,6 @@ RunAllTests(memory_arena *Arena)
     PlatformConsoleOut("\n\n");
     string Assembly = StreamToAssembly(Arena, FileData.Data, FileData.Size);
     PlatformConsoleOut("%S\n\n", Assembly);
+#endif
+    
 }

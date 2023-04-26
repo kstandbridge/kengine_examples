@@ -36,6 +36,19 @@ typedef enum segment_register_type
     SegmentRegister_Count,
 } segment_register_type;
 
+typedef enum register_flags
+{
+    Flag_CF = (1 << 0),
+    Flag_PF = (1 << 1),
+    Flag_AF = (1 << 2),
+    Flag_ZF = (1 << 3),
+    Flag_SF = (1 << 4),
+    Flag_TF = (1 << 5),
+    Flag_IF = (1 << 6),
+    Flag_DF = (1 << 7),
+    Flag_OF = (1 << 8),
+} register_flags;
+
 inline string
 SegmentRegisterToString(segment_register_type Type)
 {
@@ -63,6 +76,8 @@ typedef struct simulator_context
     
     u16 Registers[RegisterWord_Count];
     u16 SegmentRegisters[SegmentRegister_Count];
+    
+    register_flags Flags;
     
 } simulator_context;
 

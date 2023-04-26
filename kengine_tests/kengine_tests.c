@@ -3,6 +3,124 @@
 #define KENGINE_IMPLEMENTATION
 #include "kengine.h"
 
+inline void
+RunGetBitsTests()
+{
+    {
+        u8 Input = 0b11100000;
+        u8 Expected = 0b111;
+        u8 Actual = GetBits(Input, 7, 3);
+        AssertEqualBits(Expected, Actual);
+    }
+    
+    {
+        u8 Input = 0b0000111;
+        u8 Expected = 0b111;
+        u8 Actual = GetBits(Input, 2, 3);
+        AssertEqualBits(Expected, Actual);
+    }
+    
+    {
+        u8 Input = 0b0000011;
+        u8 Expected = 0b11;
+        u8 Actual = GetBits(Input, 1, 2);
+        AssertEqualBits(Expected, Actual);
+    }
+    
+    {
+        u8 Input = 0b0000001;
+        u8 Expected = 0b1;
+        u8 Actual = GetBits(Input, 0, 1);
+        AssertEqualBits(Expected, Actual);
+    }
+    
+    {
+        u8 Input = 0b11111110;
+        u8 Expected = 0b0;
+        u8 Actual = GetBits(Input, 0, 1);
+        AssertEqualBits(Expected, Actual);
+    }
+    
+    {
+        u8 Input = 0b11111101;
+        u8 Expected = 0b0;
+        u8 Actual = GetBits(Input, 1, 1);
+        AssertEqualBits(Expected, Actual);
+    }
+    
+    {
+        u8 Input = 0b11111100;
+        u8 Expected = 0b00;
+        u8 Actual = GetBits(Input, 1, 2);
+        AssertEqualBits(Expected, Actual);
+    }
+}
+
+inline void
+RunUnpackTests()
+{
+    {
+        u16 Value = 0x1234;
+        u8 High = UnpackU16High(Value);
+        u8 Low = UnpackU16Low(Value);
+        AssertEqualU32(0x12, High);
+        AssertEqualU32(0x34, Low);
+    }
+    
+    {
+        u16 Value = 0xABCD;
+        u8 High = UnpackU16High(Value);
+        u8 Low = UnpackU16Low(Value);
+        AssertEqualU32(0xAB, High);
+        AssertEqualU32(0xCD, Low);
+    }
+}
+inline void
+RunFormatStringHexTests(memory_arena *Arena)
+{
+    
+    {
+        AssertEqualString(String("before 0xA after"), 
+                          FormatString(Arena, "before %X after", 10));
+    }
+    
+    {
+        AssertEqualString(String("before 0xa after"), 
+                          FormatString(Arena, "before %x after", 10));
+    }
+    
+    {
+        AssertEqualString(String("before 0x18F after"), 
+                          FormatString(Arena, "before %X after", 399));
+    }
+    
+    {
+        AssertEqualString(String("before 0xABCD after"), 
+                          FormatString(Arena, "before %X after", 0xABCD));
+    }
+    
+    {
+        AssertEqualString(String("before 0xabcd010 after"), 
+                          FormatString(Arena, "before %x after", 0xABCD010));
+    }
+    
+    {
+        AssertEqualString(String("before 0x1234ABCD after"), 
+                          FormatString(Arena, "before %X after", 0x1234ABCD));
+    }
+    
+    {
+        AssertEqualString(String("before <     0x18f> after"), 
+                          FormatString(Arena, "before <%8x> after", 0x18f));
+    }
+    
+    {
+        AssertEqualString(String("before <0x0000018f> after"), 
+                          FormatString(Arena, "before <%08x> after", 0x18f));
+    }
+    
+}
+
 
 inline void
 RunStringsAreEqualTests()
@@ -1294,6 +1412,9 @@ RunParseXmlTest(memory_arena *Arena)
 void
 RunAllTests(memory_arena *Arena)
 {
+    RunGetBitsTests();
+    RunUnpackTests();
+    RunFormatStringHexTests(Arena);
     RunStringsAreEqualTests();
     RunStringBeginsWithTests();
     RunStringContainsTests();
