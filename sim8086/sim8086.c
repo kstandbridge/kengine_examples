@@ -157,8 +157,8 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Jg,                     0b01111111, 0, 0, { IP_INC8 } },
     { Instruction_Immediate,              0b10000000, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
     { Instruction_Immediate,              0b10000001, Flag_W, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
-    { Instruction_Immediate,              0b10000010, Flag_S, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
-    { Instruction_Immediate,              0b10000011, Flag_W | Flag_S, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
+    { Instruction_Immediate,              0b10000010, Flag_S, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA } },
+    { Instruction_Immediate,              0b10000011, Flag_W | Flag_S, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA } },
     { Instruction_Test,                   0b10000100, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Test,                   0b10000101, Flag_W, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Xchg,                   0b10000110, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
@@ -652,22 +652,31 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                            ((Instruction.Type == Instruction_Arithmetic) && 
                             (Instruction.Bits[Encoding_REG] == SubOp_Test)))
                         {
-                            s16 Value;
-                            
+                            u16 Value;
+                            s16 SignedValue;
                             if(Instruction.Bits[Encoding_DATA_IF_W] > 0)
                             {
                                 u8 ValueLow = Instruction.Bits[Encoding_DATA];
                                 u8 ValueHigh = Instruction.Bits[Encoding_DATA_IF_W];
-                                u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-                                Value = *(s16 *)&ValueWide;
+                                Value = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                                SignedValue = *(s16 *)&Value;
                             }
                             else
                             {
-                                Value = *(s8 *)&Instruction.Bits[Encoding_DATA];
+                                Value = Instruction.Bits[Encoding_DATA];
+                                SignedValue = *(s8 *)&Instruction.Bits[Encoding_DATA];
                             }
                             
                             string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_RM]) : RegisterByteToString(Instruction.Bits[Encoding_RM]);
-                            AppendFormatString(&State, "%S %S, %d", Op, Dest, Value);
+                            
+                            if(Instruction.Flags & Flag_S)
+                            {                            
+                                AppendFormatString(&State, "%S %S, %d", Op, Dest, SignedValue);
+                            }
+                            else
+                            {
+                                AppendFormatString(&State, "%S %S, %u", Op, Dest, Value);
+                            }
                         }
                         else
                         {                
@@ -1081,6 +1090,103 @@ StreamToAssembly(memory_arena *Arena, u8 *InstructionStream, umm InstructionStre
     return Result;
 }
 
+inline u16
+SimulateArithmetic(simulator_context *Context, sub_op_type Op, u16 A, u16 B)
+{
+    u16 Result = A;
+    
+    b32 Auxiliary = false;
+    
+    if(Op == SubOp_Add)
+    {
+        if((GetBits(UnpackU16Low(A), 3, 1) == 0b1) &&
+           (GetBits(UnpackU16Low(B), 3, 1) == 0b1))
+        {
+            Auxiliary = true;
+        }
+        
+        Result += B;
+    }
+    else if((Op == SubOp_Sub) ||
+            (Op == SubOp_Cmp))
+    {
+        Result -= B;
+        
+        if(GetBits(UnpackU16Low(A), 4, 1) != GetBits(UnpackU16Low(Result), 4, 1))
+        {
+            Auxiliary = true;
+        }
+        
+        if(A < B)
+        {
+            Context->Flags |= Flag_CF;
+        }
+        else
+        {
+            Context->Flags &= ~Flag_CF;
+        }
+        
+    }
+    
+    if(Auxiliary)
+    {
+        Context->Flags |= Flag_AF;
+    }
+    else
+    {
+        Context->Flags &= ~Flag_AF;
+    }
+    
+    u8 Low = UnpackU16Low(Result);
+    u8 LowBits = CountSetBits(Low);
+    if(LowBits % 2 == 0)
+    {
+        Context->Flags |= Flag_PF;
+    }
+    else
+    {
+        Context->Flags &= ~Flag_PF;
+    }
+    
+    if((Result >> 15) == 1)
+    {
+        Context->Flags |= Flag_SF;
+    }
+    else
+    {
+        Context->Flags &= ~Flag_SF;
+    }
+    
+    s16 ASigned = *(s16 *)&A;
+    s16 ResultSigned = *(s16 *)&Result;
+    b32 ANegative = ASigned < 0;
+    b32 ResultNegative = ResultSigned < 0;
+    
+    if(Context->Flags & Flag_CF)
+    {
+        Context->Flags &= ~Flag_OF;
+    }
+    else if(ANegative != ResultNegative)
+    {
+        Context->Flags |= Flag_OF;
+    }
+    else
+    {
+        Context->Flags &= ~Flag_OF;
+    }
+    
+    if(Result == 0)
+    {
+        Context->Flags |= Flag_ZF;
+    }
+    else
+    {
+        Context->Flags &= ~Flag_ZF;
+    }
+    
+    return Result;
+}
+
 internal instruction
 SimulateStep(simulator_context *Context)
 {
@@ -1094,72 +1200,153 @@ SimulateStep(simulator_context *Context)
             
             u8 HighPart = Result.Bits[Encoding_DATA_IF_W];
             u8 LowPart = Result.Bits[Encoding_DATA];
-            u16 IncValue = PackU16(HighPart, LowPart);
+            u16 Source = PackU16(HighPart, LowPart);
+            u16 Destination = Context->Registers[Result.Bits[Encoding_RM]];
             
-            u16 Value = Context->Registers[Result.Bits[Encoding_RM]];
-            if(Op == SubOp_Add)
+            b32 Auxiliary = false;
+            
+            if(Result.Flags & Flag_S)
             {
-                Value += IncValue;
-            }
-            else if(Op == SubOp_Sub)
-            {
-                Value -= IncValue;
+                // NOTE(kstandbridge): This is not wide
+                s8 SignedSource = *(u8 *)&Result.Bits[Encoding_DATA];
+                s16 SignedDestination = *(u16 *)&Destination;
+                s16 SignedOutput = SignedDestination;
+                
+                if(Op == SubOp_Add)
+                {
+                    if(SignedSource > 0)
+                    {
+                        if((GetBits(UnpackU16Low(SignedSource), 3, 1) == 0b1) &&
+                           (GetBits(UnpackU16Low(SignedDestination), 3, 1) == 0b1))
+                        {
+                            Auxiliary = true;
+                        }
+                    }
+                    else
+                    {
+                        if(GetBits(UnpackU16Low(SignedSource), 3, 1) != GetBits(UnpackU16Low(SignedDestination), 3, 1))
+                        {
+                            Auxiliary = true;
+                        }
+                    }
+                    
+                    SignedOutput = SignedSource + SignedDestination;
+                }
+                else if(Op == SubOp_Sub)
+                {
+                    if(GetBits(UnpackU16Low(SignedSource), 3, 1) != GetBits(UnpackU16Low(SignedDestination), 3, 1))
+                    {
+                        Auxiliary = true;
+                    }
+                    
+                    SignedOutput = SignedSource - SignedDestination;
+                }
+                
+                if(SignedOutput < SignedDestination)
+                {
+                    Context->Flags |= Flag_CF;
+                }
+                else
+                {
+                    Context->Flags &= ~Flag_CF;
+                }
+                
+                if(Auxiliary)
+                {
+                    Context->Flags |= Flag_AF;
+                }
+                else
+                {
+                    Context->Flags &= ~Flag_AF;
+                }
+                
+                u8 Low = UnpackU16Low(SignedOutput);
+                u8 LowBits = CountSetBits(Low);
+                if(LowBits % 2 == 0)
+                {
+                    Context->Flags |= Flag_PF;
+                }
+                else
+                {
+                    Context->Flags &= ~Flag_PF;
+                }
+                
+                if(Result.Flags == Flag_W)
+                {
+                    if((SignedOutput >> 15) == 1)
+                    {
+                        Context->Flags |= Flag_SF;
+                    }
+                    else
+                    {
+                        Context->Flags &= ~Flag_SF;
+                    }
+                }
+                else
+                {                    
+                    if((SignedOutput >> 7) == 1)
+                    {
+                        Context->Flags |= Flag_SF;
+                    }
+                    else
+                    {
+                        Context->Flags &= ~Flag_SF;
+                    }
+                }
+                
+                b32 DestinationNegative = SignedDestination < 0;
+                b32 OutputNegative = SignedOutput < 0;
+                if(DestinationNegative != OutputNegative)
+                {
+                    Context->Flags |= Flag_OF;
+                }
+                else
+                {
+                    Context->Flags &= ~Flag_OF;
+                }
+                
+                if(SignedOutput == 0)
+                {
+                    Context->Flags |= Flag_ZF;
+                }
+                else
+                {
+                    Context->Flags &= ~Flag_ZF;
+                }
+                
+                Context->Registers[Result.Bits[Encoding_RM]] = *(u16 *)&SignedOutput;
             }
             else
             {
-                Value = 0xffff;
+                u16 Output = SimulateArithmetic(Context, Op, Destination, Source);
+                
+                Context->Registers[Result.Bits[Encoding_RM]] = Output;        
             }
             
-            u8 SetBits = CountSetBits(Value);
-            
-            if(SetBits % 2 == 0)
-            {
-                Context->Flags |= Flag_PF;
-            }
-            else
-            {
-                Context->Flags &= ~Flag_PF;
-            }
-            
-            if((Value >> 15) == 1)
-            {
-                Context->Flags |= Flag_SF;
-            }
-            else
-            {
-                Context->Flags &= ~Flag_SF;
-            }
-            
-            if(Value == 0)
-            {
-                Context->Flags |= Flag_ZF;
-            }
-            else
-            {
-                Context->Flags &= ~Flag_ZF;
-            }
-            
-            Context->Registers[Result.Bits[Encoding_RM]] = Value;
             
         } break;
         
+        case Instruction_Add:
         case Instruction_Sub:
         case Instruction_Cmp:
         {
-            u16 Value = Context->Registers[Result.Bits[Encoding_RM]] - Context->Registers[Result.Bits[Encoding_REG]];
-            
-            if((Value >> 15) == 1)
+            sub_op_type Op = SubOp_Cmp;
+            u16 Source = Context->Registers[Result.Bits[Encoding_REG]];
+            u16 Destination = Context->Registers[Result.Bits[Encoding_RM]];
+            if(Result.Type == Instruction_Add)
             {
-                Context->Flags |= Flag_SF;
+                Op = SubOp_Add;
             }
-            else
+            else if(Result.Type == Instruction_Sub)
             {
-                Context->Flags &= ~Flag_SF;
-            }
+                Op = SubOp_Sub;
+            } 
             
-            if(Result.Type == Instruction_Sub)
+            u16 Output = SimulateArithmetic(Context, Op, Destination, Source);
+            
+            if(Result.Type != Instruction_Cmp)
             {
-                Context->Registers[Result.Bits[Encoding_RM]] = Value;
+                Context->Registers[Result.Bits[Encoding_RM]] = Output;
             }
             
         } break;

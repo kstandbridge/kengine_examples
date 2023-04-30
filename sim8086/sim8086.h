@@ -46,7 +46,7 @@ typedef enum register_flags
     Flag_TF = (1 << 5),
     Flag_IF = (1 << 6),
     Flag_DF = (1 << 7),
-    Flag_OF = (1 << 8),
+    Flag_OF = (1 << 8)
 } register_flags;
 
 inline string
@@ -94,6 +94,7 @@ typedef enum encoding_type
     
     Encoding_DATA,
     Encoding_DATA_IF_W,
+    Encoding_DATA_IF_SW,
     
     Encoding_DATA_LO,
     Encoding_DATA_HI,

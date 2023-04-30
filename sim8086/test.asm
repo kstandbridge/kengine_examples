@@ -1,12 +1,20 @@
 bits 16
 
-mov bx, -4093
-mov cx, 3841
-sub bx, cx
+; add bx, 30000
+; add bx, 10000
+; sub bx, 5000
+; sub bx, 5000
 
-mov sp, 998
-mov bp, 999
-cmp bp, sp
+; mov bx, 1
+; mov cx, 100
+; add bx, cx
 
-add bp, 1027
-sub bp, 2026
+; mov dx, 10
+; sub cx, dx
+
+; add bx, 40000
+add cx, -90
+
+; mov sp, 99
+; mov bp, 98
+; cmp bp, sp

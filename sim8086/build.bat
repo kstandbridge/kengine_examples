@@ -16,7 +16,7 @@ cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -Z7 %IncludeDirectorie
 
 del *.obj
 
-REM nasm ..\sim8086\test.asm -o test
+nasm ..\sim8086\test.asm -o test
 
 sim8086_tests.exe
 
