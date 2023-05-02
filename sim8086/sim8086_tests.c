@@ -1883,6 +1883,16 @@ RunDisassembleToAssemblyTests(memory_arena *Arena)
         u8 Stream[] = { 0b10000011, 0b11000001, 0b10100110, 0b10111100, 0b01100011, 0b00000000 };
         AssertEqualString(String("add cx, -90\nmov sp, 99"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
+    
+    {
+        u8 Stream[] = { 0b10111001,  0b11001000,  0b00000000 };
+        AssertEqualString(String("mov cx, -56"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+    }
+    
+    {
+        u8 Stream[] = { 0b10111001,  0b11001000,  0b00000000,  0b10001001,  0b11001011 };
+        AssertEqualString(String("mov cx, -56\nmov bx, cx"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+    }
 }
 
 inline void
@@ -2127,7 +2137,6 @@ RunAddSubCmpTests(memory_arena *Arena)
         
     }
     
-#if 0    
     {
         u8 Stream[] = 
         { 
@@ -2142,8 +2151,56 @@ RunAddSubCmpTests(memory_arena *Arena)
         AssertEqualU32(99, Context.Registers[RegisterWord_SP]);
         AssertEqualU32(98, Context.Registers[RegisterWord_BP]);
     }
-#endif
     
+}
+
+void inline 
+RunIPRegisterTests(memory_arena *Arena)
+{
+    {
+        u8 Stream[] = 
+        { 
+            0b10111001,  0b11001000,  0b00000000,  0b10001001,  0b11001011,  0b10000001,  0b11000001,  0b11101000,  0b00000011,  0b10111011,  0b11010000,  0b00000111,  0b00101001,  0b11011001
+        };
+        AssertEqualString(String("mov cx, -56\nmov bx, cx\nadd cx, 1000\nmov bx, 2000\nsub cx, bx"), 
+                          StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        simulator_context Context = GetSimulatorContext(Stream, sizeof(Stream));
+        SimulateStep(&Context);
+        AssertEqualHex(0xc8, Context.Registers[RegisterWord_CX]);
+        AssertEqualHex(0x3, Context.InstructionStreamAt);
+        AssertEqualBits16((0), Context.Flags);
+        SimulateStep(&Context);
+        AssertEqualHex(0xc8, Context.Registers[RegisterWord_BX]);
+        AssertEqualHex(0x5, Context.InstructionStreamAt);
+        AssertEqualBits16((0), Context.Flags);
+        SimulateStep(&Context);
+        AssertEqualHex(0x4b0, Context.Registers[RegisterWord_CX]);
+        AssertEqualHex(0x9, Context.InstructionStreamAt);
+        AssertEqualBits16((Flag_AF), Context.Flags);
+        SimulateStep(&Context);
+        AssertEqualHex(0x7d0, Context.Registers[RegisterWord_BX]);
+        AssertEqualHex(0xc, Context.InstructionStreamAt);
+        AssertEqualBits16((0), Context.Flags);
+        SimulateStep(&Context);
+        AssertEqualHex(0xfce0, Context.Registers[RegisterWord_CX]);
+        AssertEqualHex(0xe, Context.InstructionStreamAt);
+        AssertEqualBits16((Flag_CF|Flag_SF), Context.Flags);
+    }
+    
+    {
+        u8 Stream[] = 
+        { 
+            0b10111001,  0b11001000,  0b00000000,  0b10001001,  0b11001011,  0b10000001,  0b11000001,  0b11101000,  0b00000011,  0b10111011,  0b11010000,  0b00000111,  0b00101001,  0b11011001
+        };
+        AssertEqualString(String("mov cx, -56\nmov bx, cx\nadd cx, 1000\nmov bx, 2000\nsub cx, bx"), 
+                          StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        simulator_context Context = GetSimulatorContext(Stream, sizeof(Stream));
+        Simulate(&Context);
+        AssertEqualU32(0x7d0, Context.Registers[RegisterWord_BX]);
+        AssertEqualU32(0xfce0, Context.Registers[RegisterWord_CX]);
+        AssertEqualU32(0xe, Context.InstructionStreamAt);
+        AssertEqualBits16((Flag_CF|Flag_SF), Context.Flags);
+    }
 }
 
 void
@@ -2155,6 +2212,7 @@ RunAllTests(memory_arena *Arena)
     RunImmediateMovTests(Arena);
     RunRegisterMovTests(Arena);
     RunAddSubCmpTests(Arena);
+    RunIPRegisterTests(Arena);
     
 #if 1
     PlatformConsoleOut("\n");

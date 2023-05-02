@@ -1112,7 +1112,9 @@ SimulateArithmetic(simulator_context *Context, sub_op_type Op, u16 A, u16 B)
     {
         Result -= B;
         
-        if(GetBits(UnpackU16Low(A), 4, 1) != GetBits(UnpackU16Low(Result), 4, 1))
+        u8 HighResult = GetBits(UnpackU16Low(Result), 3, 4);
+        u8 HighA = GetBits(UnpackU16Low(A), 3, 4);
+        if(HighResult > HighA)
         {
             Auxiliary = true;
         }
@@ -1121,20 +1123,11 @@ SimulateArithmetic(simulator_context *Context, sub_op_type Op, u16 A, u16 B)
         {
             Context->Flags |= Flag_CF;
         }
-        else
-        {
-            Context->Flags &= ~Flag_CF;
-        }
-        
     }
     
     if(Auxiliary)
     {
         Context->Flags |= Flag_AF;
-    }
-    else
-    {
-        Context->Flags &= ~Flag_AF;
     }
     
     u8 Low = UnpackU16Low(Result);
@@ -1143,18 +1136,10 @@ SimulateArithmetic(simulator_context *Context, sub_op_type Op, u16 A, u16 B)
     {
         Context->Flags |= Flag_PF;
     }
-    else
-    {
-        Context->Flags &= ~Flag_PF;
-    }
     
     if((Result >> 15) == 1)
     {
         Context->Flags |= Flag_SF;
-    }
-    else
-    {
-        Context->Flags &= ~Flag_SF;
     }
     
     s16 ASigned = *(s16 *)&A;
@@ -1170,18 +1155,10 @@ SimulateArithmetic(simulator_context *Context, sub_op_type Op, u16 A, u16 B)
     {
         Context->Flags |= Flag_OF;
     }
-    else
-    {
-        Context->Flags &= ~Flag_OF;
-    }
     
     if(Result == 0)
     {
         Context->Flags |= Flag_ZF;
-    }
-    else
-    {
-        Context->Flags &= ~Flag_ZF;
     }
     
     return Result;
@@ -1191,6 +1168,11 @@ internal instruction
 SimulateStep(simulator_context *Context)
 {
     instruction Result = GetNextInstruction(Context);
+    
+    if(Result.Type != Instruction_NOP)
+    {
+        Context->Flags = 0;
+    }
     
     switch(Result.Type)
     {
@@ -1234,11 +1216,6 @@ SimulateStep(simulator_context *Context)
                 }
                 else if(Op == SubOp_Sub)
                 {
-                    if(GetBits(UnpackU16Low(SignedSource), 3, 1) != GetBits(UnpackU16Low(SignedDestination), 3, 1))
-                    {
-                        Auxiliary = true;
-                    }
-                    
                     SignedOutput = SignedSource - SignedDestination;
                 }
                 
@@ -1246,18 +1223,10 @@ SimulateStep(simulator_context *Context)
                 {
                     Context->Flags |= Flag_CF;
                 }
-                else
-                {
-                    Context->Flags &= ~Flag_CF;
-                }
                 
                 if(Auxiliary)
                 {
                     Context->Flags |= Flag_AF;
-                }
-                else
-                {
-                    Context->Flags &= ~Flag_AF;
                 }
                 
                 u8 Low = UnpackU16Low(SignedOutput);
@@ -1266,10 +1235,6 @@ SimulateStep(simulator_context *Context)
                 {
                     Context->Flags |= Flag_PF;
                 }
-                else
-                {
-                    Context->Flags &= ~Flag_PF;
-                }
                 
                 if(Result.Flags == Flag_W)
                 {
@@ -1277,20 +1242,12 @@ SimulateStep(simulator_context *Context)
                     {
                         Context->Flags |= Flag_SF;
                     }
-                    else
-                    {
-                        Context->Flags &= ~Flag_SF;
-                    }
                 }
                 else
                 {                    
                     if((SignedOutput >> 7) == 1)
                     {
                         Context->Flags |= Flag_SF;
-                    }
-                    else
-                    {
-                        Context->Flags &= ~Flag_SF;
                     }
                 }
                 
@@ -1300,18 +1257,10 @@ SimulateStep(simulator_context *Context)
                 {
                     Context->Flags |= Flag_OF;
                 }
-                else
-                {
-                    Context->Flags &= ~Flag_OF;
-                }
                 
                 if(SignedOutput == 0)
                 {
                     Context->Flags |= Flag_ZF;
-                }
-                else
-                {
-                    Context->Flags &= ~Flag_ZF;
                 }
                 
                 Context->Registers[Result.Bits[Encoding_RM]] = *(u16 *)&SignedOutput;
@@ -1377,7 +1326,6 @@ SimulateStep(simulator_context *Context)
                 
                 Context->Registers[RegisterIndex] = PackU16(HighPart, LowPart);
             }
-            
         } break;
         
         case Instruction_MovRegisterSegment:
@@ -1439,8 +1387,6 @@ SimulateStep(simulator_context *Context)
                             
                             Context->Registers[DestIndex] = PackU16(LowPart, HighPart);
                         }
-                        
-                        
                     }
                 } break;
                 
