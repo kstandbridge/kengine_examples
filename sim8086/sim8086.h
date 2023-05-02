@@ -453,6 +453,8 @@ typedef struct instruction
     
     u8 Bits[Encoding_Count];
     
+    u8 Size;
+    
 } instruction;
 
 inline string

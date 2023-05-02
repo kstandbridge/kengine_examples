@@ -1543,102 +1543,102 @@ RunDisassembleToAssemblyTests(memory_arena *Arena)
     
     {
         u8 Stream[] = { 0b01110100, 0b11111110 };
-        AssertEqualString(String("je label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("je $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b01111100, 0b11111110 };
-        AssertEqualString(String("jl label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("jl $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b01111110, 0b11111110 };
-        AssertEqualString(String("jle label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("jle $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b01110010, 0b11111110 };
-        AssertEqualString(String("jb label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("jb $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b01110110, 0b11111110 };
-        AssertEqualString(String("jbe label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("jbe $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b01111010, 0b11111110 };
-        AssertEqualString(String("jp label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("jp $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b01110000, 0b11111110 };
-        AssertEqualString(String("jo label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("jo $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b01111000, 0b11111110 };
-        AssertEqualString(String("js label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("js $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b01110101, 0b11111110 };
-        AssertEqualString(String("jne label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("jne $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b01111101, 0b11111110 };
-        AssertEqualString(String("jnl label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("jnl $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b01111111, 0b11111110 };
-        AssertEqualString(String("jg label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("jg $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b01110011, 0b11111110 };
-        AssertEqualString(String("jnb label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("jnb $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b01110111, 0b11111110 };
-        AssertEqualString(String("ja label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("ja $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b01111011, 0b11111110 };
-        AssertEqualString(String("jnp label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("jnp $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b01110001, 0b11111110 };
-        AssertEqualString(String("jno label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("jno $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b01111001, 0b11111110 };
-        AssertEqualString(String("jns label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("jns $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b11100010, 0b11111110 };
-        AssertEqualString(String("loop label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("loop $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b11100001, 0b11111110 };
-        AssertEqualString(String("loopz label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("loopz $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b11100000, 0b11111110 };
-        AssertEqualString(String("loopnz label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("loopnz $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
         u8 Stream[] = { 0b11100011, 0b11111110 };
-        AssertEqualString(String("jcxz label"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("jcxz $0"), StreamToAssembly(Arena, Stream, sizeof(Stream)));
     }
     
     {
@@ -2203,6 +2203,79 @@ RunIPRegisterTests(memory_arena *Arena)
     }
 }
 
+void inline 
+RunIPConditionalJumpTests(memory_arena *Arena)
+{
+    {
+        u8 Stream[] = 
+        { 
+            0b10111001,  0b00000011,  0b00000000,  0b10111011,  0b11101000,  0b00000011,  0b10000011,  0b11000011,  0b00001010,  0b10000011,  0b11101001,  0b00000001,  0b01110101,  0b11111000
+        };
+        AssertEqualString(String("mov cx, 3\nmov bx, 1000\nadd bx, 10\nsub cx, 1\njne $-6"), 
+                          StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        simulator_context Context = GetSimulatorContext(Stream, sizeof(Stream));
+        SimulateStep(&Context); // mov cx, 3
+        AssertEqualHex(0x3, Context.Registers[RegisterWord_CX]);
+        AssertEqualHex(0x3, Context.InstructionStreamAt);
+        AssertEqualBits16((0), Context.Flags);
+        SimulateStep(&Context); // mov bx, 1000
+        AssertEqualHex(0x3e8, Context.Registers[RegisterWord_BX]);
+        AssertEqualHex(0x6, Context.InstructionStreamAt);
+        AssertEqualBits16((0), Context.Flags);
+        SimulateStep(&Context); // add bx, 10
+        AssertEqualHex(0x3f2, Context.Registers[RegisterWord_BX]);
+        AssertEqualHex(0x9, Context.InstructionStreamAt);
+        AssertEqualBits16((Flag_AF), Context.Flags);
+        SimulateStep(&Context); // sub cx, 16
+        AssertEqualHex(0x2, Context.Registers[RegisterWord_CX]);
+        AssertEqualHex(0xc, Context.InstructionStreamAt);
+        AssertEqualBits16((0), Context.Flags);
+        SimulateStep(&Context); // jne $-6
+        AssertEqualHex(0x6, Context.InstructionStreamAt);
+        
+        SimulateStep(&Context); // add bx, 10
+        AssertEqualHex(0x3fc, Context.Registers[RegisterWord_BX]);
+        AssertEqualHex(0x9, Context.InstructionStreamAt);
+        AssertEqualBits16((Flag_PF), Context.Flags);
+        SimulateStep(&Context); // sub cx, 16
+        AssertEqualHex(0x1, Context.Registers[RegisterWord_CX]);
+        AssertEqualHex(0xc, Context.InstructionStreamAt);
+        AssertEqualBits16((0), Context.Flags);
+        SimulateStep(&Context); // jne $-6
+        AssertEqualHex(0x6, Context.InstructionStreamAt);
+        
+        SimulateStep(&Context); // add bx, 10
+        AssertEqualHex(0x406, Context.Registers[RegisterWord_BX]);
+        AssertEqualHex(0x9, Context.InstructionStreamAt);
+        AssertEqualBits16((Flag_PF|Flag_AF), Context.Flags);
+        SimulateStep(&Context); // sub cx, 16
+        AssertEqualHex(0x0, Context.Registers[RegisterWord_CX]);
+        AssertEqualHex(0xc, Context.InstructionStreamAt);
+        AssertEqualBits16((Flag_PF|Flag_ZF), Context.Flags);
+        SimulateStep(&Context); // jne $-6
+        AssertEqualHex(0xe, Context.InstructionStreamAt);
+        
+        AssertEqualU32(0x406, Context.Registers[RegisterWord_BX]);
+        AssertEqualU32(0xe, Context.InstructionStreamAt);
+        AssertEqualBits16((Flag_PF|Flag_ZF), Context.Flags);
+    }
+    
+    {
+        u8 Stream[] = 
+        { 
+            0b10111001,  0b00000011,  0b00000000,  0b10111011,  0b11101000,  0b00000011,  0b10000011,  0b11000011,  0b00001010,  0b10000011,  0b11101001,  0b00000001,  0b01110101,  0b11111000
+        };
+        AssertEqualString(String("mov cx, 3\nmov bx, 1000\nadd bx, 10\nsub cx, 1\njne $-6"), 
+                          StreamToAssembly(Arena, Stream, sizeof(Stream)));
+        simulator_context Context = GetSimulatorContext(Stream, sizeof(Stream));
+        Simulate(&Context);
+        AssertEqualU32(0x406, Context.Registers[RegisterWord_BX]);
+        AssertEqualU32(0xe, Context.InstructionStreamAt);
+        AssertEqualBits16((Flag_PF|Flag_ZF), Context.Flags);
+    }
+    
+}
+
 void
 RunAllTests(memory_arena *Arena)
 {
@@ -2213,6 +2286,7 @@ RunAllTests(memory_arena *Arena)
     RunRegisterMovTests(Arena);
     RunAddSubCmpTests(Arena);
     RunIPRegisterTests(Arena);
+    RunIPConditionalJumpTests(Arena);
     
 #if 1
     PlatformConsoleOut("\n");

@@ -300,6 +300,7 @@ GetNextInstruction(simulator_context *Context)
         Result.Type = TableEntry.Type;
         Result.Flags = TableEntry.Flags;
         Result.Generic = TableEntry.Generic;
+        Result.Size = 1;
         
         for(u32 FieldIndex = 0;
             FieldIndex < ArrayCount(TableEntry.Fields);
@@ -351,6 +352,7 @@ GetNextInstruction(simulator_context *Context)
                 if(Context->InstructionStreamAt < Context->InstructionStreamSize)
                 {
                     Byte = Context->InstructionStream[Context->InstructionStreamAt++];
+                    ++Result.Size;
                 }
                 else
                 {
@@ -460,14 +462,10 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
         case Instruction_Loopnz:
         case Instruction_Jcxz:
         {
-#if 0
             // NOTE(kstandbridge): We are just given an offset in the instruction stream to jmp
             s8 Value = *(s8 *)&Instruction.Bits[Encoding_IP_INC8];
-            AppendFormatString(&State, "%S %d", Op, Value);
-#else
-            // TODO(kstandbridge): Better testing of jumps to go back to the correct offset
-            AppendFormatString(&State, "%S label", Op);
-#endif
+            Value += Instruction.Size;
+            AppendFormatString(&State, "%S $%d", Op, Value);
         } break;
         
         case Instruction_Ret:
@@ -1171,13 +1169,32 @@ SimulateStep(simulator_context *Context)
     
     if(Result.Type != Instruction_NOP)
     {
-        Context->Flags = 0;
+        local_persist memory_arena Arena;
+        if(Context == 0)
+        {
+            string Assembly = InstructionToAssembly(&Arena, Context, Result);
+            LogDebug("%S", Assembly);
+            int x = 5;
+            x;
+        }
+        
     }
     
     switch(Result.Type)
     {
+        case Instruction_Jne:
+        {
+            if((Context->Flags & Flag_ZF) == 0)
+            {
+                s8 Offset = *(u8 *)&Result.Bits[Encoding_IP_INC8];
+                Context->InstructionStreamAt += Offset;
+            }
+        } break;
+        
         case Instruction_Immediate:
         {
+            Context->Flags = 0;
+            
             sub_op_type Op = Result.Bits[Encoding_REG];
             
             u8 HighPart = Result.Bits[Encoding_DATA_IF_W];
@@ -1213,15 +1230,17 @@ SimulateStep(simulator_context *Context)
                     }
                     
                     SignedOutput = SignedSource + SignedDestination;
+                    
+                    
+                    if(SignedOutput < SignedDestination)
+                    {
+                        Context->Flags |= Flag_CF;
+                    }
+                    
                 }
                 else if(Op == SubOp_Sub)
                 {
-                    SignedOutput = SignedSource - SignedDestination;
-                }
-                
-                if(SignedOutput < SignedDestination)
-                {
-                    Context->Flags |= Flag_CF;
+                    SignedOutput = SignedDestination - SignedSource;
                 }
                 
                 if(Auxiliary)
@@ -1279,6 +1298,8 @@ SimulateStep(simulator_context *Context)
         case Instruction_Sub:
         case Instruction_Cmp:
         {
+            Context->Flags = 0;
+            
             sub_op_type Op = SubOp_Cmp;
             u16 Source = Context->Registers[Result.Bits[Encoding_REG]];
             u16 Destination = Context->Registers[Result.Bits[Encoding_RM]];
@@ -1302,6 +1323,8 @@ SimulateStep(simulator_context *Context)
         
         case Instruction_MovImmediate:
         {
+            Context->Flags = 0;
+            
             if(Result.Flags & Flag_W)
             {
                 Context->Registers[Result.RegisterWord] = PackU16(Result.Bits[Encoding_DATA_IF_W], Result.Bits[Encoding_DATA]);
@@ -1330,6 +1353,8 @@ SimulateStep(simulator_context *Context)
         
         case Instruction_MovRegisterSegment:
         {
+            Context->Flags = 0;
+            
             if(Result.Flags & Flag_D)
             {
                 Context->SegmentRegisters[Result.Bits[Encoding_REG]] = Context->Registers[Result.Bits[Encoding_RM]];
@@ -1342,6 +1367,8 @@ SimulateStep(simulator_context *Context)
         
         case Instruction_Mov:
         {
+            Context->Flags = 0;
+            
             switch(Result.Bits[Encoding_MOD])
             {
                 case Mod_MemoryMode:
@@ -1393,8 +1420,6 @@ SimulateStep(simulator_context *Context)
                 InvalidDefaultCase;
             }
         } break;
-        
-        
     }
     
     return Result;
