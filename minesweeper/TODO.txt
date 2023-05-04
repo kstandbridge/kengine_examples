@@ -1,4 +1,9 @@
-feat: display on hover
+feat: interaction grid
+feat: interaction show hot
+feat: interaction set column width
+feat: interaction set column height
+feat: interaction cell draw sprite
+feat: interaction cell draw click sprite
 feat: click to check chell
 feat: display surrounding mine count
 feat: display timer
@@ -23,7 +28,8 @@ feat: menu Game>Exit
 feat: menu Help>About
 
 tech: application title
-tech: text rendering moved to engine
-tech: sprite sheet rendering moved to engine
+tech: enforce window size
 tech: interaction moved to engine
+tech: sprite sheet rendering moved to engine
+tech: text rendering moved to engine
 tech: stb malloc/free
