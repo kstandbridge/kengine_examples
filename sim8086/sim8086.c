@@ -821,8 +821,19 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                                     AppendFormatString(&State, "%S %S [%S], %d", Op, Size, Src, Value);
                                 }
                             } 
-                            else if((Instruction.Type == Instruction_Mov) ||
-                                    (Instruction.Type == Instruction_Add) ||
+                            else if((Instruction.Type == Instruction_Mov))
+                            {
+                                string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
+                                if(Instruction.Flags & Flag_D)
+                                {
+                                    AppendFormatString(&State, "%S %S, %S %S[%S]", Op, Dest, Size, SegmentPrefix, Src);
+                                }
+                                else
+                                {
+                                    AppendFormatString(&State, "%S %S %S[%S], %S", Op, Size, SegmentPrefix, Src, Dest);
+                                }
+                            }
+                            else if((Instruction.Type == Instruction_Add) ||
                                     (Instruction.Type == Instruction_Adc) ||
                                     (Instruction.Type == Instruction_Sub) ||
                                     (Instruction.Type == Instruction_Sbb) ||
@@ -1487,7 +1498,29 @@ SimulateStep(simulator_context *Context)
                     u8 LowPart = Result.Bits[Encoding_DISP_LO];
                     u16 Displacement  = PackU16(HighPart, LowPart);
                     
-                    Context->Registers[Result.Bits[Encoding_REG]] = Context->Memory[Displacement];
+                    
+                    u16 Offset = 0;
+                    switch(Result.Bits[Encoding_RM])
+                    {
+                        case EffectiveAddress_BX_SI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_SI]; } break;
+                        case EffectiveAddress_BX_DI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_DI]; } break;
+                        case EffectiveAddress_BP_SI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_SI]; } break;
+                        case EffectiveAddress_BP_DI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_DI]; } break;
+                        case EffectiveAddress_SI:    { Offset = Context->Registers[RegisterWord_SI]; } break;
+                        case EffectiveAddress_DI:    { Offset = Context->Registers[RegisterWord_DI]; } break;
+                        case EffectiveAddress_BP:    { Offset = Context->Registers[RegisterWord_BP]; } break;
+                        case EffectiveAddress_BX:    { Offset = Context->Registers[RegisterWord_BX]; } break;
+                    }
+                    
+                    if(Result.Flags & Flag_D)
+                    {
+                        Context->Registers[Result.Bits[Encoding_REG]] = Context->Memory[Displacement + Offset];
+                    }
+                    else
+                    {
+                        u8 *Target = Context->Memory + Displacement + Offset;
+                        *Target = (u8)Context->Registers[Result.Bits[Encoding_REG]];
+                    }
                     
                 } break;
                 case Mod_8BitDisplace:
