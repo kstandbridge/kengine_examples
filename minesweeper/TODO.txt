@@ -1,0 +1,33 @@
+feat: display entire sprite sheet
+feat: display sprite sheet cell
+feat: display grid 8x8 10 mines
+feat: display grid 16x16 40 mines
+feat: display grid 30x16 99 minues
+feat: display grid Custom
+feat: display on hover
+feat: click to check chell
+feat: display surrounding mine count
+feat: display timer
+feat: reset face button
+feat: face button for hover
+feat: face button for click
+feat: face button for dead
+feat: face button for win
+feat: game over on mine click
+feat: right click for toggle flag
+feat: display mines remaining
+feat: menu Debug>Show Mines
+feat: menu Debug>Reset Timer
+feat: menu Game>New
+feat: menu Game>Beginner
+feat: menu Game>Intermediate
+feat: menu Game>Expert
+feat: menu Game>Marks?
+feat: menu Game>Color
+feat: menu Game>Best Times
+feat: menu Game>Exit
+feat: menu Help>About
+
+tech: text rendering moved to engine
+tech: sprite sheet rendering moved to engine
+tech: interaction moved to engine
