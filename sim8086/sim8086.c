@@ -537,7 +537,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
         {
             s16 Value;
             
-            if(Instruction.Flags && Flag_W)
+            if(Instruction.Flags & Flag_W)
             {
                 u8 ValueLow = Instruction.Bits[Encoding_DATA];
                 u8 ValueHigh = Instruction.Bits[Encoding_DATA_IF_W];
@@ -551,7 +551,7 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
             
             s16 Displacement = 0;
             
-            if(Instruction.Flags && Flag_W)
+            if(Instruction.Flags & Flag_W)
             {        
                 u8 ValueLow = Instruction.Bits[Encoding_DISP_LO];
                 u8 ValueHigh = Instruction.Bits[Encoding_DISP_HI];
@@ -565,14 +565,22 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
             
             string Src = EffectiveAddressToString(Instruction.Bits[Encoding_RM]);
             
-            if(Displacement > 0)
+            if(Instruction.Bits[Encoding_MOD] == Mod_MemoryMode)
             {
-                AppendFormatString(&State, "%S [%S + %d], %S %d", Op, Src, Displacement, Size, Value);
+                if(Displacement > 0)
+                {
+                    AppendFormatString(&State, "%S %S [%d], %d", Op, Size, Displacement, Value);
+                }
+                else
+                {
+                    AppendFormatString(&State, "%S [%S], %S %d", Op, Src, Size, Value);
+                }
             }
             else
             {
-                AppendFormatString(&State, "%S [%S], %S %d", Op, Src, Size, Value);
+                AppendFormatString(&State, "%S %S [%S + %d], %d", Op, Size, Src, Displacement, Value);
             }
+            
         } break;
         
         case Instruction_AddAccumulator:
@@ -739,11 +747,14 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
                             Displacement = *(s16 *)&ValueWide;
                             
                             string Dest = (IsWord) ? RegisterWordToString(Instruction.Bits[Encoding_REG]) : RegisterByteToString(Instruction.Bits[Encoding_REG]);
-                            if((Instruction.Type == Instruction_Mov) ||
-                               (Instruction.Type == Instruction_And) ||
-                               (Instruction.Type == Instruction_Cmp) ||
-                               (Instruction.Type == Instruction_Or) ||
-                               (Instruction.Type == Instruction_Xor))
+                            if((Instruction.Type == Instruction_Mov))
+                            {
+                                AppendFormatString(&State, "%S %S, %S %S[%d]", Op, Dest, Size, SegmentPrefix, Displacement);
+                            }
+                            else if((Instruction.Type == Instruction_And) ||
+                                    (Instruction.Type == Instruction_Cmp) ||
+                                    (Instruction.Type == Instruction_Or) ||
+                                    (Instruction.Type == Instruction_Xor))
                             {
                                 AppendFormatString(&State, "%S %S, %S[%d]", Op, Dest, SegmentPrefix, Displacement);
                             }
@@ -1024,13 +1035,14 @@ InstructionToAssembly(memory_arena *Arena, simulator_context *Context, instructi
 }
 
 inline simulator_context
-GetSimulatorContext(u8 *InstructionStream, umm InstructionStreamSize)
+GetSimulatorContext(memory_arena *Arena, u8 *InstructionStream, umm InstructionStreamSize)
 {
     simulator_context Result =
     {
         .InstructionStream = InstructionStream,
         .InstructionStreamAt = 0,
-        .InstructionStreamSize = InstructionStreamSize
+        .InstructionStreamSize = InstructionStreamSize,
+        .Memory = PushSize(Arena, Megabytes(1))
     };
     return Result;
 }
@@ -1040,7 +1052,7 @@ StreamToAssembly(memory_arena *Arena, u8 *InstructionStream, umm InstructionStre
     string Result;
     format_string_state StringState = BeginFormatString();
     
-    simulator_context Context = GetSimulatorContext(InstructionStream, InstructionStreamSize);
+    simulator_context Context = GetSimulatorContext(Arena, InstructionStream, InstructionStreamSize);
     
     b32 First = false;
     for(;;)
@@ -1129,7 +1141,7 @@ SimulateArithmetic(simulator_context *Context, sub_op_type Op, u16 A, u16 B)
     }
     
     u8 Low = UnpackU16Low(Result);
-    u8 LowBits = CountSetBits(Low);
+    u8 LowBits = (u8)CountSetBits(Low);
     if(LowBits % 2 == 0)
     {
         Context->Flags |= Flag_PF;
@@ -1303,7 +1315,7 @@ SimulateStep(simulator_context *Context)
                 }
                 
                 u8 Low = UnpackU16Low(SignedOutput);
-                u8 LowBits = CountSetBits(Low);
+                u8 LowBits = (u8)CountSetBits(Low);
                 if(LowBits % 2 == 0)
                 {
                     Context->Flags |= Flag_PF;
@@ -1369,6 +1381,56 @@ SimulateStep(simulator_context *Context)
             
         } break;
         
+        case Instruction_MovImmediateMemory:
+        {
+            switch(Result.Bits[Encoding_MOD])
+            {
+                case Mod_MemoryMode:
+                {                
+                    if(Result.Bits[Encoding_RM] == EffectiveAddress_DirectAddress)
+                    {
+                        u8 HighPart = Result.Bits[Encoding_DISP_HI];
+                        u8 LowPart = Result.Bits[Encoding_DISP_LO];
+                        u16 Displacement  = PackU16(HighPart, LowPart);
+                        
+                        u8 Data = Result.Bits[Encoding_DATA];
+                        
+                        Context->Memory[Displacement] = Data;
+                    }
+                } break;
+                
+                case Mod_8BitDisplace:
+                case Mod_16BitDisplace:
+                {
+                    
+                    u8 HighPart = Result.Bits[Encoding_DISP_HI];
+                    u8 LowPart = Result.Bits[Encoding_DISP_LO];
+                    u16 Displacement  = PackU16(HighPart, LowPart);
+                    
+                    
+                    u16 Offset = 0;
+                    switch(Result.Bits[Encoding_RM])
+                    {
+                        case EffectiveAddress_BX_SI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_SI]; } break;
+                        case EffectiveAddress_BX_DI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_DI]; } break;
+                        case EffectiveAddress_BP_SI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_SI]; } break;
+                        case EffectiveAddress_BP_DI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_DI]; } break;
+                        case EffectiveAddress_SI:    { Offset = Context->Registers[RegisterWord_SI]; } break;
+                        case EffectiveAddress_DI:    { Offset = Context->Registers[RegisterWord_DI]; } break;
+                        case EffectiveAddress_BP:    { Offset = Context->Registers[RegisterWord_BP]; } break;
+                        case EffectiveAddress_BX:    { Offset = Context->Registers[RegisterWord_BX]; } break;
+                    }
+                    
+                    u8 Data = Result.Bits[Encoding_DATA];
+                    
+                    Context->Memory[Displacement + Offset] = Data;
+                    
+                } break;
+                
+            }
+            
+        } break;
+        
         case Instruction_MovImmediate:
         {
             Context->Flags = 0;
@@ -1421,6 +1483,12 @@ SimulateStep(simulator_context *Context)
             {
                 case Mod_MemoryMode:
                 {
+                    u8 HighPart = Result.Bits[Encoding_DISP_HI];
+                    u8 LowPart = Result.Bits[Encoding_DISP_LO];
+                    u16 Displacement  = PackU16(HighPart, LowPart);
+                    
+                    Context->Registers[Result.Bits[Encoding_REG]] = Context->Memory[Displacement];
+                    
                 } break;
                 case Mod_8BitDisplace:
                 {

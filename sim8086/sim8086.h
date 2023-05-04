@@ -79,6 +79,8 @@ typedef struct simulator_context
     
     register_flags Flags;
     
+    u8 *Memory;
+    
 } simulator_context;
 
 typedef enum encoding_type

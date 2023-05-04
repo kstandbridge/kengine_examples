@@ -1,22 +1,12 @@
 bits 16
 
-mov ax, 10
-mov bx, 10
-mov cx, 10
-
-label_0:
-cmp bx, cx
-je label_1
-
-add ax, 1
-jp label_2
-
-label_1:
-sub bx, 5
-jb label_3
-
-label_2:
-sub cx, 2
-
-label_3:
-loopnz label_0
+; mov word [1000], 1
+; mov word [1002], 2
+; mov word [1004], 3
+; mov word [1006], 4
+; mov bx, 1000
+; mov word [bx + 4], 10
+; mov bx, word [1000]
+; mov cx, word [1002]
+; mov dx, word [1004]
+; mov bp, word [1006]
