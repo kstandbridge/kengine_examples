@@ -1,7 +1,3 @@
-feat: display grid 8x8 10 mines
-feat: display grid 16x16 40 mines
-feat: display grid 30x16 99 minues
-feat: display grid Custom
 feat: display on hover
 feat: click to check chell
 feat: display surrounding mine count

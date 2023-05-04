@@ -41,6 +41,7 @@ InitApp(app_memory *AppMemory)
 
 #define RGBv4(R, G ,B) {R/255.0f,G/255.0f,B/255.0f, 1.0f }
 global v4 GlobalBackColor = RGBv4(192, 199, 200);
+global f32 GlobalScale = 4.0f;
 
 inline void
 DrawSprite(render_group *RenderGroup, sprite_sheet *Sprite, f32 OffsetY, u32 Index, v2 Size, v2 P)
@@ -54,10 +55,8 @@ DrawSprite(render_group *RenderGroup, sprite_sheet *Sprite, f32 OffsetY, u32 Ind
     UV.B = UV.B / Sprite->Width;
     UV.A = UV.A / Sprite->Height;
     
-    PushRenderCommandSprite(RenderGroup, P, 3.0f, Size, V4(1, 1, 1, 1), UV, Sprite->Handle);
+    Size = V2Multiply(Size, V2Set1(GlobalScale));
     
-    Size = V2Multiply(Size, V2Set1(4.0f));
-    P.X += 50;
     PushRenderCommandSprite(RenderGroup, P, 3.0f, Size, V4(1, 1, 1, 1), UV, Sprite->Handle);
 }
 
@@ -102,21 +101,45 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     Assert(AppState);
     Input;
     
-#if 1
+    
+#if 1    
     // NOTE(kstandbridge): Texture test
     {    
-        v2 P = V2(500, 500);
+        v2 P = V2(32, 600);
         sprite_sheet *Sprite = &AppState->Sprite;
-        v2 Size = V2(Sprite->Width, Sprite->Height);
+        v2 Size = V2(Sprite->Width*GlobalScale, Sprite->Height*GlobalScale);
         PushRenderCommandSprite(RenderGroup, P, 3.0f, Size, V4(1, 1, 1, 1), V4(0, 0, 1, 1), Sprite->Handle);
     }
     
     // NOTE(kstandbridge): Sprite test
     {    
-        DrawTimerNumber(RenderGroup, &AppState->Sprite, V2(10, 100), (u32)AppState->Timer % 10);
-        DrawFace(RenderGroup, &AppState->Sprite, V2(10, 300), (u32)AppState->Timer % 5);
-        DrawButton(RenderGroup, &AppState->Sprite, V2(10, 500), (u32)AppState->Timer % 8);
-        DrawButtonNumber(RenderGroup, &AppState->Sprite, V2(10, 700), (u32)AppState->Timer % 8);
+        DrawTimerNumber(RenderGroup, &AppState->Sprite, V2(640, 100), (u32)AppState->Timer % 10);
+        DrawFace(RenderGroup, &AppState->Sprite, V2(640, 300), (u32)AppState->Timer % 5);
+        DrawButton(RenderGroup, &AppState->Sprite, V2(640, 500), (u32)AppState->Timer % 8);
+        DrawButtonNumber(RenderGroup, &AppState->Sprite, V2(640, 700), (u32)AppState->Timer % 8);
+    }
+    
+    // NOTE(kstandbridge): Board test
+    {
+        f32 CellSize = 16.0f;
+        u32 BoardColumns = 8;
+        u32 BoardRows = 8;
+        v2 P = V2(32, 32);
+        
+        for(u32 Row = 0;
+            Row < BoardRows;
+            ++Row)
+        {
+            for(u32 Column = 0;
+                Column < BoardColumns;
+                ++Column)
+            {
+                DrawButton(RenderGroup, &AppState->Sprite, P, 0);
+                P.X += CellSize*GlobalScale;
+            }
+            P.X = 32;
+            P.Y += CellSize*GlobalScale;
+        }
     }
 #endif
     
