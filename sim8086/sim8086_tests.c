@@ -632,7 +632,7 @@ RunDisassembleToAssemblyTests(memory_arena *Arena)
     {
         temporary_memory MemoryFlush = BeginTemporaryMemory(Arena);
         u8 Stream[] = { 0b00000011, 0b00010000 };
-        AssertEqualString(String("add dx, [bx + si]"), StreamToAssembly(MemoryFlush.Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("add dx, word [bx + si]"), StreamToAssembly(MemoryFlush.Arena, Stream, sizeof(Stream)));
         EndTemporaryMemory(MemoryFlush);
     }
     
@@ -646,7 +646,7 @@ RunDisassembleToAssemblyTests(memory_arena *Arena)
     {
         temporary_memory MemoryFlush = BeginTemporaryMemory(Arena);
         u8 Stream[] = { 0b00000000, 0b00000111 };
-        AssertEqualString(String("add [bx], al"), StreamToAssembly(MemoryFlush.Arena, Stream, sizeof(Stream)));
+        AssertEqualString(String("add byte [bx], al"), StreamToAssembly(MemoryFlush.Arena, Stream, sizeof(Stream)));
         EndTemporaryMemory(MemoryFlush);
     }
     
@@ -2626,6 +2626,13 @@ RunDisassembleToAssemblyTests(memory_arena *Arena)
     
     {
         temporary_memory MemoryFlush = BeginTemporaryMemory(Arena);
+        u8 Stream[] = { 0b00000011, 0b00011010 };
+        AssertEqualString(String("add bx, word [bp + si]"), StreamToAssembly(MemoryFlush.Arena, Stream, sizeof(Stream)));
+        EndTemporaryMemory(MemoryFlush);
+    }
+    
+    {
+        temporary_memory MemoryFlush = BeginTemporaryMemory(Arena);
         u8 Stream[] = { 0b10000011, 0b11000001, 0b10100110 };
         AssertEqualString(String("add cx, -90"), StreamToAssembly(MemoryFlush.Arena, Stream, sizeof(Stream)));
         EndTemporaryMemory(MemoryFlush);
@@ -2843,12 +2850,12 @@ RunAddSubCmpTests(memory_arena *Arena)
                           StreamToAssembly(MemoryFlush.Arena, Stream, sizeof(Stream)));
         EndTemporaryMemory(MemoryFlush); MemoryFlush = BeginTemporaryMemory(Arena);
         simulator_context Context = GetSimulatorContext(MemoryFlush.Arena, Stream, sizeof(Stream));
-        SimulateStep(&Context);
+        SimulateStep(&Context); // mov bx, -4093
         AssertEqualHex(0xf003, Context.Registers[RegisterWord_BX]);
-        SimulateStep(&Context);
+        SimulateStep(&Context); // mov cx, 3841
         AssertEqualHex(0xf01, Context.Registers[RegisterWord_CX]);
         AssertEqualBits16(0, Context.Flags);
-        SimulateStep(&Context);
+        SimulateStep(&Context); // sub bx, cx
         AssertEqualHex(0xe102, Context.Registers[RegisterWord_BX]);
         AssertEqualBits16(Flag_SF, Context.Flags);
         SimulateStep(&Context);
@@ -3412,6 +3419,123 @@ RunMemoryAddLoopTests(memory_arena *Arena)
         AssertEqualHex(0x23, Context.InstructionStreamAt);
         EndTemporaryMemory(MemoryFlush);
     }
+    
+    {
+        temporary_memory MemoryFlush = BeginTemporaryMemory(Arena);
+        u8 Stream[] = 
+        { 
+            0b10111010, 0b00000110, 0b00000000, 0b10111101, 0b11101000, 0b00000011, 0b10111110, 0b00000000, 0b00000000, 0b10001001, 0b00110010, 0b10000011, 0b11000110, 0b00000010, 0b00111001, 0b11010110, 0b01110101, 0b11110111, 0b10111011, 0b00000000, 0b00000000, 0b10001001, 0b11010110, 0b10000011, 0b11101101, 0b00000010, 0b00000011, 0b00011010, 0b10000011, 0b11101110, 0b00000010, 0b01110101, 0b11111001
+        };
+        AssertEqualString(String("mov dx, 6\nmov bp, 1000\nmov si, 0\nmov word [bp + si], si\nadd si, 2\ncmp si, dx\njne $-7\nmov bx, 0\nmov si, dx\nsub bp, 2\nadd bx, word [bp + si]\nsub si, 2\njne $-5"), 
+                          StreamToAssembly(MemoryFlush.Arena, Stream, sizeof(Stream)));
+        EndTemporaryMemory(MemoryFlush); MemoryFlush = BeginTemporaryMemory(Arena);
+        simulator_context Context = GetSimulatorContext(MemoryFlush.Arena, Stream, sizeof(Stream));
+        SimulateStep(&Context); // mov dx, 6
+        AssertEqualHex(0x6, Context.Registers[RegisterWord_DX]);
+        AssertEqualHex(0x3, Context.InstructionStreamAt);
+        SimulateStep(&Context); // mov bp, 1000
+        AssertEqualHex(0x3e8, Context.Registers[RegisterWord_BP]);
+        AssertEqualHex(0x6, Context.InstructionStreamAt);
+        SimulateStep(&Context); // mov si, 0
+        AssertEqualHex(0x9, Context.InstructionStreamAt);
+        SimulateStep(&Context); // mov word [bp+si], si
+        AssertEqualHex(0x0, Context.Memory[1000 + 0]);
+        AssertEqualHex(0xb, Context.InstructionStreamAt);
+        SimulateStep(&Context); // add si, 2
+        AssertEqualHex(0x2, Context.Registers[RegisterWord_SI]);
+        AssertEqualHex(0xe, Context.InstructionStreamAt);
+        SimulateStep(&Context); // cmp si, dx
+        AssertEqualBits16((Flag_CF|Flag_PF|Flag_AF|Flag_SF), Context.Flags);
+        AssertEqualHex(0x10, Context.InstructionStreamAt);
+        SimulateStep(&Context); // jne $-7
+        AssertEqualHex(0x9, Context.InstructionStreamAt);
+        SimulateStep(&Context); // mov word [bp+si], si
+        AssertEqualHex(0x2, Context.Memory[1000 + 2]);
+        AssertEqualHex(0xb, Context.InstructionStreamAt);
+        SimulateStep(&Context); // add si, 2
+        AssertEqualHex(0x4, Context.Registers[RegisterWord_SI]);
+        AssertEqualHex(0xe, Context.InstructionStreamAt);
+        AssertEqualBits16((0), Context.Flags);
+        SimulateStep(&Context); // cmp si, dx
+        AssertEqualHex(0x10, Context.InstructionStreamAt);
+        AssertEqualBits16((Flag_CF|Flag_AF|Flag_SF), Context.Flags);
+        SimulateStep(&Context); // jne $-7
+        AssertEqualHex(0x9, Context.InstructionStreamAt);
+        SimulateStep(&Context); // mov word [bp+si], si
+        AssertEqualHex(0x4, Context.Memory[1000 + 4]);
+        AssertEqualHex(0xb, Context.InstructionStreamAt);
+        SimulateStep(&Context); // add si, 2
+        AssertEqualHex(0x6, Context.Registers[RegisterWord_SI]);
+        AssertEqualHex(0xe, Context.InstructionStreamAt);
+        AssertEqualBits16((Flag_PF), Context.Flags);
+        SimulateStep(&Context); // cmp si, dx
+        AssertEqualHex(0x10, Context.InstructionStreamAt);
+        AssertEqualBits16((Flag_PF|Flag_ZF), Context.Flags);
+        SimulateStep(&Context); // jne $-7
+        AssertEqualHex(0x12, Context.InstructionStreamAt);
+        SimulateStep(&Context); // mov bx, 0
+        AssertEqualHex(0x15, Context.InstructionStreamAt);
+        SimulateStep(&Context); // mov si, dx
+        AssertEqualHex(0x6, Context.Registers[RegisterWord_SI]);
+        AssertEqualHex(0x6, Context.Registers[RegisterWord_DX]);
+        AssertEqualHex(0x17, Context.InstructionStreamAt);
+        SimulateStep(&Context); // sub bp, 2
+        AssertEqualHex(0x3e6, Context.Registers[RegisterWord_BP]);
+        AssertEqualHex(0x1a, Context.InstructionStreamAt);
+        AssertEqualBits16((0), Context.Flags);
+        AssertEqualHex(0x4, Context.Memory[0x3e6 + 6]); // BP + SI
+        SimulateStep(&Context); // add bx, [bp+si]
+        AssertEqualHex(0x4, Context.Registers[RegisterWord_BX]);
+        AssertEqualHex(0x1c, Context.InstructionStreamAt);
+        SimulateStep(&Context); // sub si, 2
+        AssertEqualHex(0x4, Context.Registers[RegisterWord_SI]);
+        AssertEqualHex(0x1f, Context.InstructionStreamAt);
+        SimulateStep(&Context); // jne $-5
+        AssertEqualHex(0x1a, Context.InstructionStreamAt);
+        SimulateStep(&Context); // add bx, [bp+si]
+        AssertEqualHex(0x6, Context.Registers[RegisterWord_BX]);
+        AssertEqualHex(0x1c, Context.InstructionStreamAt);
+        AssertEqualBits16((Flag_PF), Context.Flags);
+        SimulateStep(&Context); // sub si, 2
+        AssertEqualHex(0x2, Context.Registers[RegisterWord_SI]);
+        AssertEqualHex(0x1f, Context.InstructionStreamAt);
+        AssertEqualBits16((0), Context.Flags);
+        SimulateStep(&Context); // jne $-5
+        AssertEqualHex(0x1a, Context.InstructionStreamAt);
+        SimulateStep(&Context); // add bx, [bp+si]
+        AssertEqualHex(0x1c, Context.InstructionStreamAt);
+        AssertEqualBits16((Flag_PF), Context.Flags);
+        SimulateStep(&Context); // sub si, 2
+        AssertEqualHex(0x0, Context.Registers[RegisterWord_SI]);
+        AssertEqualHex(0x1f, Context.InstructionStreamAt);
+        AssertEqualBits16((Flag_PF|Flag_ZF), Context.Flags);
+        SimulateStep(&Context); // jne $-5
+        AssertEqualHex(0x21, Context.InstructionStreamAt);
+        AssertEqualHex(0x6, Context.Registers[RegisterWord_BX]);
+        AssertEqualHex(0x6, Context.Registers[RegisterWord_DX]);
+        AssertEqualHex(0x3e6, Context.Registers[RegisterWord_BP]);
+        EndTemporaryMemory(MemoryFlush);
+    }
+    
+    {
+        temporary_memory MemoryFlush = BeginTemporaryMemory(Arena);
+        u8 Stream[] = 
+        { 
+            0b10111010, 0b00000110, 0b00000000, 0b10111101, 0b11101000, 0b00000011, 0b10111110, 0b00000000, 0b00000000, 0b10001001, 0b00110010, 0b10000011, 0b11000110, 0b00000010, 0b00111001, 0b11010110, 0b01110101, 0b11110111, 0b10111011, 0b00000000, 0b00000000, 0b10001001, 0b11010110, 0b10000011, 0b11101101, 0b00000010, 0b00000011, 0b00011010, 0b10000011, 0b11101110, 0b00000010, 0b01110101, 0b11111001
+        };
+        AssertEqualString(String("mov dx, 6\nmov bp, 1000\nmov si, 0\nmov word [bp + si], si\nadd si, 2\ncmp si, dx\njne $-7\nmov bx, 0\nmov si, dx\nsub bp, 2\nadd bx, word [bp + si]\nsub si, 2\njne $-5"), 
+                          StreamToAssembly(MemoryFlush.Arena, Stream, sizeof(Stream)));
+        EndTemporaryMemory(MemoryFlush); MemoryFlush = BeginTemporaryMemory(Arena);
+        simulator_context Context = GetSimulatorContext(MemoryFlush.Arena, Stream, sizeof(Stream));
+        Simulate(&Context);
+        AssertEqualHex(0x6, Context.Registers[RegisterWord_BX]);
+        AssertEqualHex(0x6, Context.Registers[RegisterWord_DX]);
+        AssertEqualHex(0x3e6, Context.Registers[RegisterWord_BP]);
+        AssertEqualHex(0x21, Context.InstructionStreamAt);
+        EndTemporaryMemory(MemoryFlush);
+    }
+    
+    
 }
 
 void
