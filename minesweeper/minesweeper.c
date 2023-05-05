@@ -66,11 +66,24 @@ DrawSprite(render_group *RenderGroup, sprite_sheet *Sprite, f32 OffsetY, u32 Ind
 }
 
 inline void
-DrawTimerNumber(render_group *RenderGroup, sprite_sheet *Sprite, v2 P, u32 Index)
+DrawNumber_(render_group *RenderGroup, sprite_sheet *Sprite, v2 P, u32 Index)
 {
     f32 OffsetY = 32.0f;
     v2 Size = V2(13.0f, 23.0f);
     DrawSprite(RenderGroup, Sprite, OffsetY, Index, Size, P);
+}
+
+inline void
+DrawNumber(render_group *RenderGroup, sprite_sheet *Sprite, rectangle2 Bounds, u32 Number)
+{
+    PushRenderCommandAlternateRectOutline(RenderGroup, Bounds, 1.0f, 1.0f,
+                                          RGBv4(128, 128, 128), RGBv4(255, 255, 255));
+    v2 P = Bounds.Min; P.X += 1; P.Y += 1;
+    DrawNumber_(RenderGroup, Sprite, P, (Number/100) % 10);
+    P.X += 13.0f*GlobalScale;
+    DrawNumber_(RenderGroup, Sprite, P, (Number/10) % 10);
+    P.X += 13.0f*GlobalScale;
+    DrawNumber_(RenderGroup, Sprite, P, Number % 10);
 }
 
 inline void
@@ -138,12 +151,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                 rectangle2 MineCountBounds = GridGetCellBounds(Frame, 0, 0, 16.0f);
                 PushRenderCommandAlternateRectOutline(RenderGroup, MineCountBounds, 1.0f, 1.0f,
                                                       RGBv4(128, 128, 128), RGBv4(255, 255, 255));
-                v2 P = MineCountBounds.Min; P.X += 1; P.Y += 1;
-                DrawTimerNumber(RenderGroup, &AppState->Sprite, P, (u32)(4*AppState->Timer) % 8);
-                P.X += 13.0f*GlobalScale;
-                DrawTimerNumber(RenderGroup, &AppState->Sprite, P, (u32)(2*AppState->Timer) % 8);
-                P.X += 13.0f*GlobalScale;
-                DrawTimerNumber(RenderGroup, &AppState->Sprite, P, (u32)(1*AppState->Timer) % 8);
+                DrawNumber(RenderGroup, &AppState->Sprite, MineCountBounds, 10);
                 
                 rectangle2 FaceButtonBounds = GridGetCellBounds(Frame, 1, 0, 16.0f);
                 DrawFace(RenderGroup, &AppState->Sprite, FaceButtonBounds.Min, 1);
@@ -151,12 +159,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                 rectangle2 TimerBounds = GridGetCellBounds(Frame, 2, 0, 16.0f);
                 PushRenderCommandAlternateRectOutline(RenderGroup, TimerBounds, 1.0f, 1.0f,
                                                       RGBv4(128, 128, 128), RGBv4(255, 255, 255));
-                P = TimerBounds.Min; P.X += 1; P.Y += 1;
-                DrawTimerNumber(RenderGroup, &AppState->Sprite, P, (u32)(9*AppState->Timer) % 8);
-                P.X += 13.0f*GlobalScale;
-                DrawTimerNumber(RenderGroup, &AppState->Sprite, P, (u32)(3*AppState->Timer) % 8);
-                P.X += 13.0f*GlobalScale;
-                DrawTimerNumber(RenderGroup, &AppState->Sprite, P, (u32)(5*AppState->Timer) % 8);
+                DrawNumber(RenderGroup, &AppState->Sprite, TimerBounds, (u32)AppState->Timer);
             }
             EndGrid(Frame);
             
@@ -215,7 +218,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                             
                             default:
                             {
-                                DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, Tile->Type % 8);
+                                DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, Tile->Type % 9);
                             } break;
                         }
                         

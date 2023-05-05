@@ -1,5 +1,3 @@
-feat: finalize ui layout
-feat: display timer
 feat: display mines remaining
 feat: reset face button
 feat: display surrounding mine count
