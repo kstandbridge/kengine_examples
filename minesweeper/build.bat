@@ -24,7 +24,7 @@ if "%~1"=="shaders" (
 	IF NOT EXIST ..\bin mkdir ..\bin
 	pushd ..\bin
 
-	cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -Z7 %IncludeDirectories% ..\minesweeper\minesweeper.c /Fe:minesweeper.exe /link %CommonLinkerFlags%
+	cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -Z7 %IncludeDirectories% ..\minesweeper\pch.c ..\minesweeper\minesweeper.c /Fe:minesweeper.exe /link %CommonLinkerFlags%
 
 	del *.obj
 

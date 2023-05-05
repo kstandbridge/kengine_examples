@@ -1,6 +1,5 @@
 #define KENGINE_WIN32
 #define KENGINE_DIRECTX
-#define KENGINE_IMPLEMENTATION
 #include "kengine.h"
 
 typedef struct sprite_sheet
@@ -146,7 +145,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                                                   RGBv4(128, 128, 128), RGBv4(255, 255, 255));
             BeginGrid(Frame, ScoreBounds, 3, 1);
             {
-                GridSetColumnWidth(Frame, 1, (26.0f+8.0f)*GlobalScale);
+                GridSetColumnWidth(Frame, 1, (26.0f + 8.0f)*GlobalScale);
                 
                 rectangle2 MineCountBounds = GridGetCellBounds(Frame, 0, 0, 16.0f);
                 PushRenderCommandAlternateRectOutline(RenderGroup, MineCountBounds, 1.0f, 1.0f,
@@ -163,6 +162,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                 };
                 if(InteractionsAreEqual(Interaction, UIState->ToExecute))
                 {
+                    // TODO(kstandbridge): New game?
                     AppState->Timer = 0.0f;
                 }
                 ui_interaction_state InteractionState = AddUIInteraction(UIState, FaceButtonBounds, Interaction);

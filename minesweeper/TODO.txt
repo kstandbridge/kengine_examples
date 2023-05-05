@@ -18,6 +18,5 @@ tech: application title
 tech: sprite sheet rendering moved to engine
 tech: text rendering moved to engine
 tech: stb malloc/free
-tech: multi translation unit build
 tech: load bmp
 tech: load png
