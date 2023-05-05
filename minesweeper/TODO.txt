@@ -1,5 +1,4 @@
 feat: display mines remaining
-feat: reset face button
 feat: display surrounding mine count
 feat: game over on mine click
 feat: right click for toggle flag

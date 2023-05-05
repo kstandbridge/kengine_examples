@@ -154,7 +154,30 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                 DrawNumber(RenderGroup, &AppState->Sprite, MineCountBounds, 10);
                 
                 rectangle2 FaceButtonBounds = GridGetCellBounds(Frame, 1, 0, 16.0f);
-                DrawFace(RenderGroup, &AppState->Sprite, FaceButtonBounds.Min, 1);
+                
+                ui_interaction Interaction =
+                {
+                    .Id = GenerateUIId(0),
+                    .Type = UI_Interaction_ImmediateButton,
+                    .Target = 0
+                };
+                if(InteractionsAreEqual(Interaction, UIState->ToExecute))
+                {
+                    AppState->Timer = 0.0f;
+                }
+                ui_interaction_state InteractionState = AddUIInteraction(UIState, FaceButtonBounds, Interaction);
+                if(InteractionState == UIInteractionState_HotClicked)
+                {
+                    DrawFace(RenderGroup, &AppState->Sprite, FaceButtonBounds.Min, 0);
+                }
+                else if(UIState->Interaction.Target == AppState->Tiles)
+                {
+                    DrawFace(RenderGroup, &AppState->Sprite, FaceButtonBounds.Min, 2);
+                }
+                else
+                {
+                    DrawFace(RenderGroup, &AppState->Sprite, FaceButtonBounds.Min, 1);
+                }
                 
                 rectangle2 TimerBounds = GridGetCellBounds(Frame, 2, 0, 16.0f);
                 PushRenderCommandAlternateRectOutline(RenderGroup, TimerBounds, 1.0f, 1.0f,
@@ -185,7 +208,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                         {
                             .Id = GenerateUIId(Tile),
                             .Type = UI_Interaction_ImmediateButton,
-                            .Target = 0
+                            .Target = AppState->Tiles
                         };
                         
                         if(InteractionsAreEqual(Interaction, UIState->ToExecute))
@@ -194,27 +217,29 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                             LogDebug("%u, %u = %u", Column, Row, Tile->Type);
                         }
                         
-                        
                         ui_interaction_state InteractionState = AddUIInteraction(UIState, TileBounds, Interaction);
                         switch(InteractionState)
                         {
                             
-#if 0                            
                             case UIInteractionState_HotClicked:
                             {
-                                DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, 7);
+                                DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, Tile->Type % 9);
                             } break;
                             
                             case UIInteractionState_Hot:
                             {
-                                DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, 0);
+                                if(WasPressed(Input->MouseButtons[MouseButton_Right]))
+                                {
+                                    --Tile->Type;
+                                    LogDebug("%u, %u = %u", Column, Row, Tile->Type);
+                                }
+                                DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, Tile->Type % 9);
                             } break;
                             
                             case UIInteractionState_Selected:
                             {
-                                DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, 3);
+                                DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, Tile->Type % 9);
                             } break;
-#endif
                             
                             default:
                             {
