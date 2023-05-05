@@ -146,7 +146,6 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
             rectangle2 BoardBounds = GridGetCellBounds(Frame, 0, 1);
             BeginGrid(Frame, BoardBounds, 8, 8);
             {
-                
                 for(u32 Row = 0;
                     Row < 8;
                     ++Row)
