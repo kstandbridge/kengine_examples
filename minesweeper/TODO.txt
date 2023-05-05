@@ -1,13 +1,10 @@
-feat: display surrounding mine count
+feat: finalize ui layout
 feat: display timer
+feat: display mines remaining
 feat: reset face button
-feat: face button for hover
-feat: face button for click
-feat: face button for dead
-feat: face button for win
+feat: display surrounding mine count
 feat: game over on mine click
 feat: right click for toggle flag
-feat: display mines remaining
 feat: menu Debug>Show Mines
 feat: menu Debug>Reset Timer
 feat: menu Game>New
@@ -25,3 +22,5 @@ tech: sprite sheet rendering moved to engine
 tech: text rendering moved to engine
 tech: stb malloc/free
 tech: multi translation unit build
+tech: load bmp
+tech: load png
