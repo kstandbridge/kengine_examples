@@ -12,10 +12,19 @@ typedef struct sprite_sheet
     
 } sprite_sheet;
 
+typedef struct tile
+{
+    u32 Type;
+} tile;
+
 typedef struct app_state
 {
     sprite_sheet Sprite;
     memory_arena *Arena;
+    
+    ui_state UIState;
+    
+    tile Tiles[8 * 8];
     
     f32 Timer;
 } app_state;
@@ -37,11 +46,13 @@ InitApp(app_memory *AppMemory)
         Sprite->Handle = DirectXLoadTexture(Sprite->Width, Sprite->Height, (u32 *)Bytes);
     }
     EndTemporaryMemory(MemoryFlush);
+    
+    PlatformSetWindowSize(V2(320, 480));
 }
 
 #define RGBv4(R, G ,B) {R/255.0f,G/255.0f,B/255.0f, 1.0f }
 global v4 GlobalBackColor = RGBv4(192, 199, 200);
-global f32 GlobalScale = 4.0f;
+global f32 GlobalScale = 2.0f;
 
 inline void
 DrawSprite(render_group *RenderGroup, sprite_sheet *Sprite, f32 OffsetY, u32 Index, v2 Size, v2 P)
@@ -101,8 +112,101 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     Assert(AppState);
     Input;
     
+    temporary_memory MemoryFlush = BeginTemporaryMemory(AppState->Arena);
+    ui_state *UIState = &AppState->UIState;
+    ui_frame Frame_ = BeginUI(UIState, Input, MemoryFlush.Arena); ui_frame *Frame = &Frame_;
     
-#if 1    
+    rectangle2 Bounds = Rectangle2(V2Set1(0), V2(RenderGroup->Width, RenderGroup->Height));
+    BeginGrid(Frame, Bounds, 1, 2);
+    {
+        GridSetRowHeight(Frame, 0, 40.0f);
+        rectangle2 MenuBounds = GridGetCellBounds(Frame, 0, 0);
+        BeginGrid(Frame, MenuBounds, 1, 3);
+        {
+            
+        }
+        EndGrid(Frame);
+        
+        rectangle2 GameBounds = GridGetCellBounds(Frame, 0, 1);
+        BeginGrid(Frame, GameBounds, 1, 2);
+        {
+            GridSetRowHeight(Frame, 0, 100.0f);
+            rectangle2 ScoreBounds = GridGetCellBounds(Frame, 0, 0);
+            BeginGrid(Frame, ScoreBounds, 3, 1);
+            {
+                rectangle2 MineCountBounds = GridGetCellBounds(Frame, 0, 0);
+                PushRenderCommandRect(RenderGroup, MineCountBounds, 1.0f, V4(1, 0, 0, 1));
+                rectangle2 FaceButtonBounds = GridGetCellBounds(Frame, 1, 0);
+                PushRenderCommandRect(RenderGroup, FaceButtonBounds, 1.0f, V4(0, 0, 1, 1));
+                rectangle2 TimerBounds = GridGetCellBounds(Frame, 2, 0);
+                PushRenderCommandRect(RenderGroup, TimerBounds, 1.0f, V4(0, 1, 0, 1));
+            }
+            EndGrid(Frame);
+            
+            rectangle2 BoardBounds = GridGetCellBounds(Frame, 0, 1);
+            BeginGrid(Frame, BoardBounds, 8, 8);
+            {
+                
+                for(u32 Row = 0;
+                    Row < 8;
+                    ++Row)
+                {
+                    for(u32 Column = 0;
+                        Column < 8;
+                        ++Column)
+                    {
+                        rectangle2 TileBounds = GridGetCellBounds(Frame, Column, Row);
+                        
+                        tile *Tile = AppState->Tiles + (Row * 8) + Column;
+                        
+                        ui_interaction Interaction =
+                        {
+                            .Id = GenerateUIId(Tile),
+                            .Type = UI_Interaction_ImmediateButton,
+                            .Target = 0
+                        };
+                        if(InteractionsAreEqual(Interaction, UIState->ToExecute))
+                        {
+                            __debugbreak();
+                        }
+                        
+                        ui_interaction_state InteractionState = AddUIInteraction(UIState, TileBounds, Interaction);
+                        switch(InteractionState)
+                        {
+                            case UIInteractionState_HotClicked:
+                            {
+                                DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 4);
+                            } break;
+                            
+                            case UIInteractionState_Hot:
+                            {
+                                DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 3);
+                            } break;
+                            
+                            case UIInteractionState_Selected:
+                            {
+                                DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 2);
+                            } break;
+                            
+                            default:
+                            {
+                                DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 1);
+                            } break;
+                        }
+                    }
+                }
+            }
+            EndGrid(Frame);
+        }
+        EndGrid(Frame);
+    }
+    EndGrid(Frame);
+    
+    EndUI(UIState, Input);
+    EndTemporaryMemory(MemoryFlush);
+    
+    
+#if 0
     // NOTE(kstandbridge): Texture test
     {    
         v2 P = V2(32, 600);
