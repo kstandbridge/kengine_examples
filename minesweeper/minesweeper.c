@@ -2,31 +2,7 @@
 #define KENGINE_DIRECTX
 #include "kengine.h"
 
-typedef struct sprite_sheet
-{
-    s32 Width;
-    s32 Height;
-    s32 Comp;
-    void *Handle;
-    
-} sprite_sheet;
-
-typedef struct tile
-{
-    u32 Type;
-} tile;
-
-typedef struct app_state
-{
-    sprite_sheet Sprite;
-    memory_arena Arena;
-    
-    ui_state UIState;
-    
-    tile *Tiles;
-    
-    f32 Timer;
-} app_state;
+#include "minesweeper.h"
 
 extern void
 InitApp(app_memory *AppMemory)
@@ -34,18 +10,16 @@ InitApp(app_memory *AppMemory)
     Assert(AppMemory->AppState == 0);
     app_state *AppState = AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
     Assert(AppState);
-    AppState->Tiles = PushArray(&AppState->Arena, 8*8, tile);
-    
+    AppState->RandomState.Value = (u32)PlatformGetSystemTimestamp();
     sprite_sheet *Sprite = &AppState->Sprite;
     stbi_uc *Bytes = stbi_load("sprite.png", &Sprite->Width, &Sprite->Height, &Sprite->Comp, 4);
     Sprite->Handle = DirectXLoadTexture(Sprite->Width, Sprite->Height, (u32 *)Bytes);
     free(Bytes);
     
+    AppState->WorkQueue = PlatformMakeWorkQueue(&AppState->Arena, 4);
+    
     PlatformSetWindowSize(V2(320, 464));
 }
-
-#define RGBv4(R, G ,B) V4((f32)R/255.0f,(f32)G/255.0f,(f32)B/255.0f, 1.0f)
-global f32 GlobalScale = 2.0f;
 
 inline void
 DrawSprite(render_group *RenderGroup, sprite_sheet *Sprite, f32 OffsetY, u32 Index, v2 Size, v2 P)
@@ -109,6 +83,124 @@ DrawButtonNumber(render_group *RenderGroup, sprite_sheet *Sprite, v2 P, u32 Inde
     DrawSprite(RenderGroup, Sprite, OffsetY, Index, Size, P);
 }
 
+inline b32
+IsMine(u8 *Tiles, u8 Column, u8 Row)
+{
+    Assert(Column >= 0);
+    Assert(Column <= 7);
+    Assert(Row >= 0);
+    Assert(Row <= 7);
+    
+    b32 Result = false;
+    
+    u32 Index = (Row * 8) + Column;
+    u8 Tile = Tiles[Index];
+    u8 Flags = UnpackU8High(Tile);
+    
+    if(Flags & TileFlag_Mine)
+    {
+        Result = true;
+    }
+    
+    return Result;
+}
+
+internal void
+GenerateBoardThread(void *Data)
+{
+    app_state *AppState = (app_state *)Data;
+    Assert(AppState);
+    
+    AppState->Timer = 0.0f;
+    AppState->MinesRemaining = 0;
+    
+    for(u32 Index = 0;
+        Index < 10;
+        ++Index)
+    {
+        u32 Random = RandomU32(&AppState->RandomState) % 64;
+        u8 Tile = AppState->Tiles[Random];
+        u8 Flags = UnpackU8High(Tile);
+        u8 Mines = UnpackU8Low(Tile);
+        Flags |= TileFlag_Mine;
+        AppState->Tiles[Random] = PackU8(Flags, Mines);
+        ++AppState->MinesRemaining;
+        
+        Sleep(50);
+    }
+    
+    for(u8 Row = 0;
+        Row < 8;
+        ++Row)
+    {
+        for(u8 Column = 0;
+            Column < 8;
+            ++Column)
+        {
+            u32 Index = (Row * 8) + Column;
+            u8 Tile = AppState->Tiles[Index];
+            u8 Flags = UnpackU8High(Tile);
+            u8 Mines = UnpackU8Low(Tile);
+            
+            Mines = 0;
+            
+            if((Column > 0) &&
+               IsMine(AppState->Tiles, Column - 1, Row))
+            {
+                ++Mines;
+            }
+            
+            if((Column > 0) && (Row > 0) &&
+               (IsMine(AppState->Tiles, Column - 1, Row - 1)))
+            {
+                ++Mines;
+            }
+            
+            if((Row > 0) &&
+               IsMine(AppState->Tiles, Column, Row - 1))
+            {
+                ++Mines;
+            }
+            
+            if((Column < 7) && (Row > 0) &&(Row < 7) &&
+               IsMine(AppState->Tiles, Column + 1, Row - 1))
+            {
+                ++Mines;
+            }
+            
+            if((Column < 7) &&
+               IsMine(AppState->Tiles, Column + 1, Row))
+            {
+                ++Mines;
+            }
+            
+            if((Column < 7) && (Row > 0) &&(Row < 7) &&
+               IsMine(AppState->Tiles, Column + 1, Row + 1))
+            {
+                ++Mines;
+            }
+            
+            if((Row < 7) &&
+               IsMine(AppState->Tiles, Column, Row + 1))
+            {
+                ++Mines;
+            }
+            
+            if((Column > 0) && (Row < 7) &&
+               IsMine(AppState->Tiles, Column - 1, Row + 1))
+            {
+                ++Mines;
+            }
+            
+            AppState->Tiles[Index] = PackU8(Flags, Mines);
+            
+            Sleep(50);
+        }
+    }
+    
+    AppState->IsLoading = false;
+}
+
 extern void
 AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Input, f32 DeltaTime)
 {
@@ -150,7 +242,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                 rectangle2 MineCountBounds = GridGetCellBounds(Frame, 0, 0, 16.0f);
                 PushRenderCommandAlternateRectOutline(RenderGroup, MineCountBounds, 1.0f, 1.0f,
                                                       RGBv4(128, 128, 128), RGBv4(255, 255, 255));
-                DrawNumber(RenderGroup, &AppState->Sprite, MineCountBounds, 10);
+                DrawNumber(RenderGroup, &AppState->Sprite, MineCountBounds, AppState->MinesRemaining);
                 
                 rectangle2 FaceButtonBounds = GridGetCellBounds(Frame, 1, 0, 16.0f);
                 
@@ -162,8 +254,11 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                 };
                 if(InteractionsAreEqual(Interaction, UIState->ToExecute))
                 {
-                    // TODO(kstandbridge): New game?
-                    AppState->Timer = 0.0f;
+                    if(!AppState->IsLoading)
+                    {
+                        AppState->IsLoading = true;
+                        Win32AddWorkEntry(AppState->WorkQueue, GenerateBoardThread, AppState);
+                    }
                 }
                 ui_interaction_state InteractionState = AddUIInteraction(UIState, FaceButtonBounds, Interaction);
                 if(InteractionState == UIInteractionState_HotClicked)
@@ -202,50 +297,76 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                         ++Column)
                     {
                         rectangle2 TileBounds = GridGetCellBounds(Frame, Column, Row, 0.0f);
-                        tile *Tile = AppState->Tiles + (Row * 8) + Column;
+                        
+                        u32 Index = (Row * 8) + Column;
+                        u8 Tile = AppState->Tiles[Index];
+                        u8 Flags = UnpackU8High(Tile);
+                        u8 Mines = UnpackU8Low(Tile);
                         
                         ui_interaction Interaction =
                         {
-                            .Id = GenerateUIId(Tile),
+                            .Id = GenerateUIId(AppState->Tiles + Index),
                             .Type = UI_Interaction_ImmediateButton,
                             .Target = AppState->Tiles
                         };
                         
                         if(InteractionsAreEqual(Interaction, UIState->ToExecute))
                         {
-                            ++Tile->Type;
-                            LogDebug("%u, %u = %u", Column, Row, Tile->Type);
+                            ++Mines;
+                            LogDebug("(%u) %u, %u = %b", Index, Column, Row, Mines);
+                            AppState->Tiles[Index] = PackU8(Flags, Mines);
                         }
                         
                         ui_interaction_state InteractionState = AddUIInteraction(UIState, TileBounds, Interaction);
+                        if(InteractionState == UIInteractionState_Hot)
+                        {
+                            if(WasPressed(Input->MouseButtons[MouseButton_Right]))
+                            {
+                                --Mines;
+                                LogDebug("(%u) %u, %u = %b", Index, Column, Row, Mines);
+                                AppState->Tiles[Index] = PackU8(Flags, Mines);
+                            }
+                        }
+                        
+                        
+                        if(Flags & TileFlag_Mine)
+                        {
+                            DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 0);
+                        }
+                        else
+                        {
+                            DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, Mines % 8);
+                        }
+                        
+#if 0                        
                         switch(InteractionState)
                         {
-                            
                             case UIInteractionState_HotClicked:
                             {
-                                DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, Tile->Type % 9);
+                                DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, *Tile % 9);
                             } break;
                             
                             case UIInteractionState_Hot:
                             {
                                 if(WasPressed(Input->MouseButtons[MouseButton_Right]))
                                 {
-                                    --Tile->Type;
-                                    LogDebug("%u, %u = %u", Column, Row, Tile->Type);
+                                    --(*Tile);
+                                    LogDebug("%u, %u = %b", Column, Row, *Tile);
                                 }
-                                DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, Tile->Type % 9);
+                                DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, *Tile);
                             } break;
                             
                             case UIInteractionState_Selected:
                             {
-                                DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, Tile->Type % 9);
+                                DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, *Tile);
                             } break;
                             
                             default:
                             {
-                                DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, Tile->Type % 9);
+                                DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, *Tile);
                             } break;
                         }
+#endif
                         
                         
                     }
