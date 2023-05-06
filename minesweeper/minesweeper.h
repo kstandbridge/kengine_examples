@@ -24,14 +24,20 @@ typedef struct app_state
     ui_state UIState;
     random_state RandomState;
     sprite_sheet Sprite;
-    u8 Tiles[8 * 8];
-    u8 MinesRemaining;
     
     f32 Timer;
     
     b32 IsLoading;
+    b32 IsGameOver;
     platform_work_queue *WorkQueue;
     
+    memory_arena TransientArena;
+    temporary_memory MemoryFlush;
+    u8 Mines;
+    u8 MinesRemaining;
+    u8 Columns;
+    u8 Rows;
+    u8 *Tiles;
 } app_state;
 
 #define RGBv4(R, G ,B) V4((f32)R/255.0f,(f32)G/255.0f,(f32)B/255.0f, 1.0f)

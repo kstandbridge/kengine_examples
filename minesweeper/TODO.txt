@@ -1,5 +1,4 @@
-feat: game over on mine click
-feat: right click for toggle flag
+feat: detect win
 feat: menu Debug>Show Mines
 feat: menu Debug>Reset Timer
 feat: menu Game>New
