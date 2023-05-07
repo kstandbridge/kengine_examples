@@ -9,18 +9,17 @@ typedef enum tile_flag
 } tile_flag;
 
 internal void
-InitGame(struct app_state *AppState);
-
+InitGame(app_state *AppState);
 
 typedef struct simulate_game_work
 {
-    struct app_state *AppState;
+    app_state *AppState;
     u8 Column;
     u8 Row;
 } simulate_game_work;
 
 internal void
-SimulateGameThread(void *Data);
+SimulateGameThread(simulate_game_work *Work);
 
 #define MINESWEEPER_SIMULATE_H
 #endif //MINESWEEPER_SIMULATE_H

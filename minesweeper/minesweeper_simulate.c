@@ -66,9 +66,8 @@ GenerateBoard(app_state *AppState, u8 FirstMoveColumn, u8 FirstMoveRow)
 }
 
 internal void
-SimulateGameThread(void *Data)
+SimulateGameThread(simulate_game_work *Work)
 {
-    simulate_game_work *Work = (simulate_game_work *)Data;
     app_state *AppState = Work->AppState;
     u8 Column = Work->Column;
     u8 Row = Work->Row;
@@ -124,7 +123,6 @@ SimulateGameThread(void *Data)
             }
         }
     }
-    
 }
 
 internal void

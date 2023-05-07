@@ -3,8 +3,9 @@
 #include "kengine.h"
 
 #include "minesweeper_rendering.h"
-#include "minesweeper_simulate.h"
+
 #include "minesweeper.h"
+#include "minesweeper_simulate.h"
 
 global f32 GlobalScale = 2.0f;
 
@@ -44,7 +45,10 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     ui_state *UIState = AppState->UIState;
     BeginUI(UIState, Input);
     
-    rectangle2 Bounds = Rectangle2(V2Set1(0), V2(316, 436));
+    v2 WorkingArea = V2(316, 436);
+    v2 OffSet = V2((RenderGroup->Width * 0.5f) - (WorkingArea.X * 0.5f),
+                   (RenderGroup->Height * 0.5f) - (WorkingArea.Y * 0.5f));
+    rectangle2 Bounds = Rectangle2(OffSet, V2Add(OffSet, WorkingArea));
     BeginGrid(UIState, Bounds, 1, 2);
     {
         GridSetRowHeight(UIState, 0, 40.0f);
@@ -152,7 +156,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                                 NewWork->AppState = AppState;
                                 NewWork->Column = Column;
                                 NewWork->Row = Row;
-                                Win32AddWorkEntry(AppState->WorkQueue, SimulateGameThread, NewWork);
+                                PlatformAddWorkEntry(AppState->WorkQueue, SimulateGameThread, NewWork);
                             }
                             
                             ui_interaction_state InteractionState = AddUIInteraction(UIState, TileBounds, Interaction);
