@@ -141,7 +141,8 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                         u8 Mines = UnpackU8Low(Tile);
                         
                         if((!AppState->IsGameOver) && 
-                           (AppState->RemainingTiles > 0))
+                           (AppState->RemainingTiles > 0) &&
+                           ((Flags & TileFlag_Visited) == 0))
                         {                        
                             ui_interaction Interaction =
                             {
@@ -150,13 +151,17 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                                 .Target = AppState->Tiles
                             };
                             
-                            if(InteractionsAreEqual(Interaction, UIState->ToExecute))
-                            {
-                                simulate_game_work *NewWork = PushStruct(AppState->MemoryFlush.Arena, simulate_game_work);
-                                NewWork->AppState = AppState;
-                                NewWork->Column = Column;
-                                NewWork->Row = Row;
-                                PlatformAddWorkEntry(AppState->WorkQueue, SimulateGameThread, NewWork);
+                            if(((Flags & TileFlag_Flag) == 0) &&
+                               ((Flags & TileFlag_Unkown) == 0))
+                            {                                
+                                if(InteractionsAreEqual(Interaction, UIState->ToExecute))
+                                {
+                                    simulate_game_work *NewWork = PushStruct(AppState->MemoryFlush.Arena, simulate_game_work);
+                                    NewWork->AppState = AppState;
+                                    NewWork->Column = Column;
+                                    NewWork->Row = Row;
+                                    PlatformAddWorkEntry(AppState->WorkQueue, SimulateGameThread, NewWork);
+                                }
                             }
                             
                             ui_interaction_state InteractionState = AddUIInteraction(UIState, TileBounds, Interaction);

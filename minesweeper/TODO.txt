@@ -1,4 +1,3 @@
-fix: flag tiles allow visit
 feat: menu Debug>Show Mines
 feat: menu Debug>Reset Timer
 feat: menu Game>New
