@@ -209,7 +209,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
             GridSetColumnWidth(UIState, 1, 54.0f);
             GridSetColumnWidth(UIState, 2, 72.0f);
             
-            if(BeginMenu(UIState, GridGetCellBounds(UIState, 0, 0, 0.0f), GlobalScale, String("Game"), 5))
+            if(BeginMenu(UIState, GridGetCellBounds(UIState, 0, 0, 0.0f), GlobalScale, String("Game"), 5, 120))
             {
                 if(MenuButton(UIState, 0, GlobalScale, String("New")))
                 {
@@ -234,16 +234,16 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                 EndMenu(UIState);
             }
             
-            if(BeginMenu(UIState, GridGetCellBounds(UIState, 1, 0, 0.0f), GlobalScale, String("Help"), 2))
+            if(BeginMenu(UIState, GridGetCellBounds(UIState, 1, 0, 0.0f), GlobalScale, String("Help"), 2, 160))
             {
                 MenuButton(UIState, 0, GlobalScale, String("How to play?"));
                 MenuButton(UIState, 1, GlobalScale, String("About"));
                 EndMenu(UIState);
             }
             
-            if(BeginMenu(UIState, GridGetCellBounds(UIState, 2, 0, 0.0f), GlobalScale, String("Debug"), 3))
+            if(BeginMenu(UIState, GridGetCellBounds(UIState, 2, 0, 0.0f), GlobalScale, String("Debug"), 3, 140))
             {
-                MenuButton(UIState, 0, GlobalScale, String("Foo"));
+                MenuCheck(UIState, 0, GlobalScale, String("Show Mines"), &AppState->DEBUGShowMines);
                 MenuButton(UIState, 1, GlobalScale, String("Bar"));
                 MenuButton(UIState, 2, GlobalScale, String("Bas"));
                 EndMenu(UIState);
@@ -410,6 +410,13 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                                 DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, Mines % 8);
                             }
                         }
+#if KENGINE_INTERNAL
+                        else if((Flags & TileFlag_Mine) &&
+                                (AppState->DEBUGShowMines))
+                        {
+                            DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 0);
+                        }
+#endif
                         else if(Flags & TileFlag_Flag)
                         {
                             DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 4);

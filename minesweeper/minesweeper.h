@@ -22,6 +22,11 @@ typedef struct app_state
     u8 Rows;
     u8 *Tiles;
     u8 RemainingTiles;
+    
+#if KENGINE_INTERNAL
+    b32 DEBUGShowMines;
+#endif
+    
 } app_state;
 
 
