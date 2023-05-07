@@ -30,21 +30,170 @@ InitApp(app_memory *AppMemory)
     InitGame(AppState);
     
     PlatformSetWindowSize(V2(322, 464));
+    
+    
+    // NOTE(kstandbridge): Loading a glyph sprite sheet
+    {
+        ui_state *UIState = AppState->UIState;
+        LogDebug("Loading a glyph sprite sheet");
+        
+        string FontData = PlatformReadEntireFile(&AppState->Arena, String("C:\\Windows\\Fonts\\segoeui.ttf"));
+        stbtt_InitFont(&UIState->FontInfo, FontData.Data, 0);
+        
+        f32 MaxFontHeightInPixels = 12.0f;
+        UIState->FontScale = stbtt_ScaleForPixelHeight(&UIState->FontInfo, MaxFontHeightInPixels);
+        stbtt_GetFontVMetrics(&UIState->FontInfo, &UIState->FontAscent, &UIState->FontDescent, &UIState->FontLineGap);
+        
+#if 1
+        u32 FirstChar = 0;
+        u32 LastChar = 256;
+#else
+        u32 FirstChar = 0x0400;
+        u32 LastChar = FirstChar + 255;
+#endif
+        
+        s32 MaxWidth = 0;
+        s32 MaxHeight = 0;
+        s32 TotalWidth = 0;
+        s32 TotalHeight = 0;
+        u32 ColumnAt = 0;
+        u32 RowCount = 1;
+        
+        glyph_info *GlyphInfo = UIState->GlyphInfos;
+        
+        for(u32 CodePoint = FirstChar;
+            CodePoint < LastChar;
+            ++CodePoint)
+        {                
+            s32 Padding = (s32)(MaxFontHeightInPixels / 3.0f);
+            u8 OnEdgeValue = (u8)(0.8f*255.0f);
+            f32 PixelDistanceScale = (f32)OnEdgeValue/(f32)Padding;
+            GlyphInfo->Data = stbtt_GetCodepointSDF(&UIState->FontInfo, UIState->FontScale, CodePoint, Padding, OnEdgeValue, PixelDistanceScale, 
+                                                    &GlyphInfo->Width, &GlyphInfo->Height, 
+                                                    &GlyphInfo->XOffset, &GlyphInfo->YOffset);
+            
+            stbtt_GetCodepointHMetrics(&UIState->FontInfo, CodePoint, &GlyphInfo->AdvanceWidth, &GlyphInfo->LeftSideBearing);
+            
+            GlyphInfo->CodePoint = CodePoint;
+            
+            if(GlyphInfo->Data)
+            {
+                TotalWidth += GlyphInfo->Width;
+                ++ColumnAt;
+                
+                if(GlyphInfo->Height > MaxHeight)
+                {
+                    MaxHeight = GlyphInfo->Height;
+                }
+            }
+            
+            if((ColumnAt % 16) == 0)
+            {
+                ++RowCount;
+                ColumnAt = 0;
+                if(TotalWidth > MaxWidth)
+                {
+                    MaxWidth = TotalWidth;
+                }
+                TotalWidth = 0;
+            }
+            
+            ++GlyphInfo;
+        }
+        
+        TotalWidth = MaxWidth;
+        TotalHeight = MaxHeight*RowCount;
+        
+        umm TextureSize = TotalWidth*TotalHeight*sizeof(u32);
+        // TODO(kstandbridge): Temp memory here
+        u32 *TextureBytes = PushSize(&AppState->Arena, TextureSize);
+        
+        u32 AtX = 0;
+        u32 AtY = 0;
+        
+        ColumnAt = 0;
+        
+        for(u32 Index = 0;
+            Index < ArrayCount(UIState->GlyphInfos);
+            ++Index)
+        {
+            GlyphInfo = UIState->GlyphInfos + Index;
+            
+            GlyphInfo->UV = V4((f32)AtX / (f32)TotalWidth, (f32)AtY / (f32)TotalHeight,
+                               ((f32)AtX + (f32)GlyphInfo->Width) / (f32)TotalWidth, 
+                               ((f32)AtY + (f32)GlyphInfo->Height) / (f32)TotalHeight);
+            
+            for(s32 Y = 0;
+                Y < GlyphInfo->Height;
+                ++Y)
+            {
+                for(s32 X = 0;
+                    X < GlyphInfo->Width;
+                    ++X)
+                {
+                    u32 Alpha = (u32)GlyphInfo->Data[(Y*GlyphInfo->Width) + X];
+                    TextureBytes[(Y + AtY)*TotalWidth + (X + AtX)] = 0x00FFFFFF | (u32)((Alpha) << 24);
+                }
+            }
+            
+            AtX += GlyphInfo->Width;
+            
+            ++ColumnAt;
+            
+            if((ColumnAt % 16) == 0)
+            {
+                AtY += MaxHeight;
+                AtX = 0;
+            }
+            
+            stbtt_FreeSDF(GlyphInfo->Data, 0);
+        }
+        
+        UIState->SpriteSheetSize = V2(TotalWidth, TotalHeight);
+        
+        UIState->GlyphSheetHandle = DirectXLoadTexture(TotalWidth, TotalHeight, TextureBytes);
+        
+    }
 }
 
 extern void
 AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Input, f32 DeltaTime)
 {
     app_state *AppState = AppMemory->AppState;
+    RenderGroup->ClearColor = RGBv4(192, 192, 192);
+    Input;
     if(!AppState->IsGameOver && AppState->RemainingTiles > 0)
     {
         AppState->Timer += DeltaTime;
     }
-    RenderGroup->ClearColor = RGBv4(192, 192, 192);
     Assert(AppState);
     
+#if 0
+    {    
+        v2 P = V2(0, 0);
+        v2 Size = AppState->SpriteSheetSize;
+        PushRenderCommandGlyph(RenderGroup, P, 3.0f, Size, V4(1, 1, 1, 1), V4(0, 0, 1, 1), AppState->GlyphSheetHandle);
+    }
+    
+    {    
+        v2 P = V2(10 + AppState->SpriteSheetSize.X, 0);
+        v2 Size = AppState->SpriteSheetSize;
+        PushRenderCommandSprite(RenderGroup, P, 3.0f, Size, V4(1, 1, 1, 1), V4(0, 0, 1, 1), AppState->GlyphSheetHandle);
+    }
+    
+#if 0
+    string LoremIpsum = String("Lorem Ipsum is simply dummy text of the printing and typesetting\nindustry. Lorem Ipsum has been the industry's standard dummy\ntext ever since the 1500s, when an unknown printer took a galley\nof type and scrambled it to make a type specimen book. It has\nsurvived not only five centuries, but also the leap into electronic\ntypesetting, remaining essentially unchanged. It was popularised in\nthe 1960s with the release of Letraset sheets containing Lorem\nIpsum passages, and more recently with desktop publishing\nsoftware like Aldus PageMaker including versions of Lorem Ipsum.");
+#else
+    string LoremIpsum = String("Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.");
+#endif
+    
+    rectangle2 Bounds = Rectangle2(Input->MouseP, V2(RenderGroup->Width, RenderGroup->Height));
+    
+    DrawTextAt(AppState, RenderGroup, Bounds, 4.0f, GlobalScale, V4(0.3f, 0, 0.3f, 1), LoremIpsum);
+    
+#else
     ui_state *UIState = AppState->UIState;
-    BeginUI(UIState, Input);
+    BeginUI(UIState, Input, RenderGroup);
     
     v2 WorkingArea = V2(316, 436);
     v2 OffSet = V2((RenderGroup->Width * 0.5f) - (WorkingArea.X * 0.5f),
@@ -52,11 +201,74 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     rectangle2 Bounds = Rectangle2(OffSet, V2Add(OffSet, WorkingArea));
     BeginGrid(UIState, Bounds, 1, 2);
     {
-        GridSetRowHeight(UIState, 0, 40.0f);
-        rectangle2 MenuBounds = GridGetCellBounds(UIState, 0, 0, 0);
-        BeginGrid(UIState, MenuBounds, 1, 3);
+        GridSetRowHeight(UIState, 0, 28.0f);
+        rectangle2 MenuBounds = GridGetCellBounds(UIState, 0, 0, 1.0f);
+        BeginGrid(UIState, MenuBounds, 4, 1);
         {
+            GridSetColumnWidth(UIState, 0, 66.0f);
+            GridSetColumnWidth(UIState, 1, 54.0f);
+            GridSetColumnWidth(UIState, 2, 72.0f);
             
+            ui_interaction Interaction =
+            {
+                .Id = GenerateUIId(0),
+                .Type = UI_Interaction_ImmediateButton,
+                .Target = 0
+            };
+            rectangle2 GameBounds = GridGetCellBounds(UIState, 0, 0, 0.0f);
+            ui_interaction_state InteractionState = AddUIInteraction(UIState, GameBounds, Interaction);
+            if(InteractionsAreEqual(Interaction, UIState->SelectedInteration))
+            {
+                PushRenderCommandAlternateRectOutline(RenderGroup, GameBounds, 1.0f, 1.0f,
+                                                      RGBv4(128, 128, 128), RGBv4(255, 255, 255));
+                
+                v2 GameMenuBoundsMin = V2(GameBounds.Min.X, GameBounds.Max.Y);
+                rectangle2 GameMenuBounds = Rectangle2(GameMenuBoundsMin, V2Add(GameMenuBoundsMin, V2(120, 240)));
+                PushRenderCommandRect(RenderGroup, GameMenuBounds, 10.0f, RGBv4(192, 192, 192));
+                PushRenderCommandAlternateRectOutline(RenderGroup, GameMenuBounds, 10.0f, 1.0f,
+                                                      RGBv4(128, 128, 128), RGBv4(255, 255, 255));
+                BeginGrid(UIState, GameMenuBounds, 1, 9);
+                {
+                    if(MenuButton(UIState, GridGetCellBounds(UIState, 0, 0, 0), GlobalScale, String("New")))
+                    {
+                        InitGame(AppState);
+                    }
+                    if(MenuButton(UIState, GridGetCellBounds(UIState, 0, 1, 0), GlobalScale, String("Beginner")))
+                    {
+                        LogDebug("Set beginner level");
+                    }
+                    if(MenuButton(UIState, GridGetCellBounds(UIState, 0, 2, 0), GlobalScale, String("Intermediate")))
+                    {
+                        LogDebug("Set Intermediate level");
+                    }
+                    if(MenuButton(UIState, GridGetCellBounds(UIState, 0, 3, 0), GlobalScale, String("Expert")))
+                    {
+                        LogDebug("Set Expert level");
+                    }
+                    if(MenuButton(UIState, GridGetCellBounds(UIState, 0, 4, 0), GlobalScale, String("Custom...")))
+                    {
+                        LogDebug("Set Custom level");
+                    }
+                }
+                               EndGrid(UIState);
+                
+                
+            }
+            
+            if(InteractionState == UIInteractionState_Hot)
+            {
+                PushRenderCommandRect(RenderGroup, GameBounds, 1.0f, RGBv4(128, 128, 128));
+            }
+            DrawTextAt(UIState, GameBounds, 1.0f, GlobalScale, V4(0, 0, 0, 1), String("Game"));
+            
+            
+            rectangle2 HelpBounds = GridGetCellBounds(UIState, 1, 0, 0.0f);
+            PushRenderCommandRectOutline(RenderGroup, HelpBounds, 1.0f, 1.0f, RGBv4(191, 0, 0));
+            DrawTextAt(UIState, HelpBounds, 1.0f, GlobalScale, V4(0, 0, 0, 1), String("Help"));
+            
+            rectangle2 DebugBounds = GridGetCellBounds(UIState, 2, 0, 0.0f);
+            PushRenderCommandRectOutline(RenderGroup, DebugBounds, 1.0f, 1.0f, RGBv4(191, 0, 0));
+            DrawTextAt(UIState, DebugBounds, 1.0f, GlobalScale, V4(0, 0, 0, 1), String("Debug"));
         }
         EndGrid(UIState);
         
@@ -245,8 +457,10 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     }
     EndGrid(UIState);
     
-    EndUI(UIState, Input);
+    EndUI(UIState);
     CheckArena(&AppState->Arena);
+#endif
+    
 }
 
 #include "minesweeper_rendering.c"

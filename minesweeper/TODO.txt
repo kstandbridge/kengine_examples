@@ -11,8 +11,8 @@ feat: menu Game>Exit
 feat: menu Help>About
 
 tech: application title
-tech: sprite sheet rendering moved to engine
-tech: text rendering moved to engine
+tech: sprite sheet loading moved to engine
+tech: glyph generation moved to engine
 tech: stb malloc/free
 tech: load bmp
 tech: load png
