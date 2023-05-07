@@ -1,5 +1,4 @@
-feat: menu Debug>Reset Timer
-
+fix: timer start after first move
 feat: menu Game>Beginner
 feat: menu Game>Intermediate
 feat: menu Game>Expert

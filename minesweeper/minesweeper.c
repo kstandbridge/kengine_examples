@@ -241,13 +241,17 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                 EndMenu(UIState);
             }
             
-            if(BeginMenu(UIState, GridGetCellBounds(UIState, 2, 0, 0.0f), GlobalScale, String("Debug"), 3, 140))
+#if KENGINE_INTERNAL
+            if(BeginMenu(UIState, GridGetCellBounds(UIState, 2, 0, 0.0f), GlobalScale, String("Debug"), 2, 140))
             {
                 MenuCheck(UIState, 0, GlobalScale, String("Show Mines"), &AppState->DEBUGShowMines);
-                MenuButton(UIState, 1, GlobalScale, String("Bar"));
-                MenuButton(UIState, 2, GlobalScale, String("Bas"));
+                if(MenuButton(UIState, 1, GlobalScale, String("Reset Timer")))
+                {
+                    AppState->Timer = 0.0f;
+                }
                 EndMenu(UIState);
             }
+#endif
         }
         EndGrid(UIState);
         
