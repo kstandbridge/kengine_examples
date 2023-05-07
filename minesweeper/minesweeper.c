@@ -228,6 +228,7 @@ InitApp(app_memory *AppMemory)
     app_state *AppState = AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
     Assert(AppState);
     AppState->RandomState.Value = (u32)PlatformGetSystemTimestamp();
+    
     sprite_sheet *Sprite = &AppState->Sprite;
     stbi_uc *Bytes = stbi_load("sprite.png", &Sprite->Width, &Sprite->Height, &Sprite->Comp, 4);
     Sprite->Handle = DirectXLoadTexture(Sprite->Width, Sprite->Height, (u32 *)Bytes);
@@ -239,7 +240,7 @@ InitApp(app_memory *AppMemory)
     
     InitGame(AppState);
     
-    PlatformSetWindowSize(V2(320, 464));
+    PlatformSetWindowSize(V2(322, 464));
 }
 
 extern void
@@ -256,7 +257,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     ui_state *UIState = AppState->UIState;
     BeginUI(UIState, Input);
     
-    rectangle2 Bounds = Rectangle2(V2Set1(0), V2(RenderGroup->Width, RenderGroup->Height));
+    rectangle2 Bounds = Rectangle2(V2Set1(0), V2(316, 436));
     BeginGrid(UIState, Bounds, 1, 2);
     {
         GridSetRowHeight(UIState, 0, 40.0f);
