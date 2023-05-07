@@ -161,24 +161,26 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
 {
     app_state *AppState = AppMemory->AppState;
     RenderGroup->ClearColor = RGBv4(192, 192, 192);
-    Input;
     if(!AppState->IsGameOver && AppState->RemainingTiles > 0)
     {
         AppState->Timer += DeltaTime;
     }
     Assert(AppState);
+    ui_state *UIState = AppState->UIState;
+    BeginUI(UIState, Input, RenderGroup);
     
 #if 0
+    
     {    
         v2 P = V2(0, 0);
-        v2 Size = AppState->SpriteSheetSize;
-        PushRenderCommandGlyph(RenderGroup, P, 3.0f, Size, V4(1, 1, 1, 1), V4(0, 0, 1, 1), AppState->GlyphSheetHandle);
+        v2 Size = UIState->SpriteSheetSize;
+        PushRenderCommandGlyph(RenderGroup, P, 3.0f, Size, V4(1, 1, 1, 1), V4(0, 0, 1, 1), UIState->GlyphSheetHandle);
     }
     
     {    
-        v2 P = V2(10 + AppState->SpriteSheetSize.X, 0);
-        v2 Size = AppState->SpriteSheetSize;
-        PushRenderCommandSprite(RenderGroup, P, 3.0f, Size, V4(1, 1, 1, 1), V4(0, 0, 1, 1), AppState->GlyphSheetHandle);
+        v2 P = V2(10 + UIState->SpriteSheetSize.X, 0);
+        v2 Size = UIState->SpriteSheetSize;
+        PushRenderCommandSprite(RenderGroup, P, 3.0f, Size, V4(1, 1, 1, 1), V4(0, 0, 1, 1), UIState->GlyphSheetHandle);
     }
     
 #if 0
@@ -189,11 +191,9 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     
     rectangle2 Bounds = Rectangle2(Input->MouseP, V2(RenderGroup->Width, RenderGroup->Height));
     
-    DrawTextAt(AppState, RenderGroup, Bounds, 4.0f, GlobalScale, V4(0.3f, 0, 0.3f, 1), LoremIpsum);
+    DrawTextAt(UIState, Bounds, 4.0f, GlobalScale, V4(0.3f, 0, 0.3f, 1), LoremIpsum);
     
 #else
-    ui_state *UIState = AppState->UIState;
-    BeginUI(UIState, Input, RenderGroup);
     
     v2 WorkingArea = V2(316, 436);
     v2 OffSet = V2((RenderGroup->Width * 0.5f) - (WorkingArea.X * 0.5f),
@@ -209,66 +209,45 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
             GridSetColumnWidth(UIState, 1, 54.0f);
             GridSetColumnWidth(UIState, 2, 72.0f);
             
-            ui_interaction Interaction =
+            if(BeginMenu(UIState, GridGetCellBounds(UIState, 0, 0, 0.0f), GlobalScale, String("Game"), 5))
             {
-                .Id = GenerateUIId(0),
-                .Type = UI_Interaction_ImmediateButton,
-                .Target = 0
-            };
-            rectangle2 GameBounds = GridGetCellBounds(UIState, 0, 0, 0.0f);
-            ui_interaction_state InteractionState = AddUIInteraction(UIState, GameBounds, Interaction);
-            if(InteractionsAreEqual(Interaction, UIState->SelectedInteration))
-            {
-                PushRenderCommandAlternateRectOutline(RenderGroup, GameBounds, 1.0f, 1.0f,
-                                                      RGBv4(128, 128, 128), RGBv4(255, 255, 255));
-                
-                v2 GameMenuBoundsMin = V2(GameBounds.Min.X, GameBounds.Max.Y);
-                rectangle2 GameMenuBounds = Rectangle2(GameMenuBoundsMin, V2Add(GameMenuBoundsMin, V2(120, 240)));
-                PushRenderCommandRect(RenderGroup, GameMenuBounds, 10.0f, RGBv4(192, 192, 192));
-                PushRenderCommandAlternateRectOutline(RenderGroup, GameMenuBounds, 10.0f, 1.0f,
-                                                      RGBv4(128, 128, 128), RGBv4(255, 255, 255));
-                BeginGrid(UIState, GameMenuBounds, 1, 9);
+                if(MenuButton(UIState, 0, GlobalScale, String("New")))
                 {
-                    if(MenuButton(UIState, GridGetCellBounds(UIState, 0, 0, 0), GlobalScale, String("New")))
-                    {
-                        InitGame(AppState);
-                    }
-                    if(MenuButton(UIState, GridGetCellBounds(UIState, 0, 1, 0), GlobalScale, String("Beginner")))
-                    {
-                        LogDebug("Set beginner level");
-                    }
-                    if(MenuButton(UIState, GridGetCellBounds(UIState, 0, 2, 0), GlobalScale, String("Intermediate")))
-                    {
-                        LogDebug("Set Intermediate level");
-                    }
-                    if(MenuButton(UIState, GridGetCellBounds(UIState, 0, 3, 0), GlobalScale, String("Expert")))
-                    {
-                        LogDebug("Set Expert level");
-                    }
-                    if(MenuButton(UIState, GridGetCellBounds(UIState, 0, 4, 0), GlobalScale, String("Custom...")))
-                    {
-                        LogDebug("Set Custom level");
-                    }
+                    InitGame(AppState);
                 }
-                               EndGrid(UIState);
-                
-                
+                if(MenuButton(UIState, 1, GlobalScale, String("Beginner")))
+                {
+                    LogDebug("Set beginner level");
+                }
+                if(MenuButton(UIState, 2, GlobalScale, String("Intermediate")))
+                {
+                    LogDebug("Set Intermediate level");
+                }
+                if(MenuButton(UIState, 3, GlobalScale, String("Expert")))
+                {
+                    LogDebug("Set Expert level");
+                }
+                if(MenuButton(UIState, 4, GlobalScale, String("Custom...")))
+                {
+                    LogDebug("Set Custom level");
+                }
+                EndMenu(UIState);
             }
             
-            if(InteractionState == UIInteractionState_Hot)
+            if(BeginMenu(UIState, GridGetCellBounds(UIState, 1, 0, 0.0f), GlobalScale, String("Help"), 2))
             {
-                PushRenderCommandRect(RenderGroup, GameBounds, 1.0f, RGBv4(128, 128, 128));
+                MenuButton(UIState, 0, GlobalScale, String("How to play?"));
+                MenuButton(UIState, 1, GlobalScale, String("About"));
+                EndMenu(UIState);
             }
-            DrawTextAt(UIState, GameBounds, 1.0f, GlobalScale, V4(0, 0, 0, 1), String("Game"));
             
-            
-            rectangle2 HelpBounds = GridGetCellBounds(UIState, 1, 0, 0.0f);
-            PushRenderCommandRectOutline(RenderGroup, HelpBounds, 1.0f, 1.0f, RGBv4(191, 0, 0));
-            DrawTextAt(UIState, HelpBounds, 1.0f, GlobalScale, V4(0, 0, 0, 1), String("Help"));
-            
-            rectangle2 DebugBounds = GridGetCellBounds(UIState, 2, 0, 0.0f);
-            PushRenderCommandRectOutline(RenderGroup, DebugBounds, 1.0f, 1.0f, RGBv4(191, 0, 0));
-            DrawTextAt(UIState, DebugBounds, 1.0f, GlobalScale, V4(0, 0, 0, 1), String("Debug"));
+            if(BeginMenu(UIState, GridGetCellBounds(UIState, 2, 0, 0.0f), GlobalScale, String("Debug"), 3))
+            {
+                MenuButton(UIState, 0, GlobalScale, String("Foo"));
+                MenuButton(UIState, 1, GlobalScale, String("Bar"));
+                MenuButton(UIState, 2, GlobalScale, String("Bas"));
+                EndMenu(UIState);
+            }
         }
         EndGrid(UIState);
         
@@ -456,10 +435,10 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
         
     }
     EndGrid(UIState);
+#endif
     
     EndUI(UIState);
     CheckArena(&AppState->Arena);
-#endif
     
 }
 

@@ -1,6 +1,8 @@
+fix: interactons under menus
+
 feat: menu Debug>Show Mines
 feat: menu Debug>Reset Timer
-feat: menu Game>New
+
 feat: menu Game>Beginner
 feat: menu Game>Intermediate
 feat: menu Game>Expert
@@ -11,6 +13,8 @@ feat: menu Game>Exit
 feat: menu Help>About
 
 tech: application title
+tech: CheckMenu
+tech: OptionMenu
 tech: sprite sheet loading moved to engine
 tech: glyph generation moved to engine
 tech: stb malloc/free
