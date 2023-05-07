@@ -89,6 +89,7 @@ typedef struct fan_out_work
     u8 Column;
     u8 Row;
 } fan_out_work;
+
 internal void
 FanoutThread(void *Data)
 {
@@ -226,6 +227,8 @@ InitApp(app_memory *AppMemory)
     
     AppState->WorkQueue = PlatformMakeWorkQueue(&AppState->Arena, 4);
     
+    InitUI(&AppState->UIState);
+    
     PlatformSetWindowSize(V2(320, 464));
     Win32AddWorkEntry(AppState->WorkQueue, GenerateBoardThread, AppState);
 }
@@ -238,40 +241,39 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     RenderGroup->ClearColor = RGBv4(192, 192, 192);
     Assert(AppState);
     
-    temporary_memory MemoryFlush = BeginTemporaryMemory(&AppState->Arena);
-    ui_state *UIState = &AppState->UIState;
-    ui_frame Frame_ = BeginUI(UIState, Input, MemoryFlush.Arena); ui_frame *Frame = &Frame_;
+    ui_state *UIState = AppState->UIState;
+    BeginUI(UIState, Input);
     
     rectangle2 Bounds = Rectangle2(V2Set1(0), V2(RenderGroup->Width, RenderGroup->Height));
-    BeginGrid(Frame, Bounds, 1, 2);
+    BeginGrid(UIState, Bounds, 1, 2);
     {
-        GridSetRowHeight(Frame, 0, 40.0f);
-        rectangle2 MenuBounds = GridGetCellBounds(Frame, 0, 0, 0);
-        BeginGrid(Frame, MenuBounds, 1, 3);
+        GridSetRowHeight(UIState, 0, 40.0f);
+        rectangle2 MenuBounds = GridGetCellBounds(UIState, 0, 0, 0);
+        BeginGrid(UIState, MenuBounds, 1, 3);
         {
             
         }
-        EndGrid(Frame);
+        EndGrid(UIState);
         
-        rectangle2 GameBounds = GridGetCellBounds(Frame, 0, 1, 4.0f);
+        rectangle2 GameBounds = GridGetCellBounds(UIState, 0, 1, 4.0f);
         PushRenderCommandAlternateRectOutline(RenderGroup, GameBounds, 1.0f, 6.0f, 
                                               RGBv4(255, 255, 255), RGBv4(128, 128, 128));
-        BeginGrid(Frame, GameBounds, 1, 2);
+        BeginGrid(UIState, GameBounds, 1, 2);
         {
-            GridSetRowHeight(Frame, 0, 104.0f);
-            rectangle2 ScoreBounds = GridGetCellBounds(Frame, 0, 0, 16.0f);
+            GridSetRowHeight(UIState, 0, 104.0f);
+            rectangle2 ScoreBounds = GridGetCellBounds(UIState, 0, 0, 16.0f);
             PushRenderCommandAlternateRectOutline(RenderGroup, ScoreBounds, 1.0f, 4.0f, 
                                                   RGBv4(128, 128, 128), RGBv4(255, 255, 255));
-            BeginGrid(Frame, ScoreBounds, 3, 1);
+            BeginGrid(UIState, ScoreBounds, 3, 1);
             {
-                GridSetColumnWidth(Frame, 1, (26.0f + 8.0f)*GlobalScale);
+                GridSetColumnWidth(UIState, 1, (26.0f + 8.0f)*GlobalScale);
                 
-                rectangle2 MineCountBounds = GridGetCellBounds(Frame, 0, 0, 16.0f);
+                rectangle2 MineCountBounds = GridGetCellBounds(UIState, 0, 0, 16.0f);
                 PushRenderCommandAlternateRectOutline(RenderGroup, MineCountBounds, 1.0f, 1.0f,
                                                       RGBv4(128, 128, 128), RGBv4(255, 255, 255));
                 DrawNumber(RenderGroup, &AppState->Sprite, MineCountBounds, AppState->MinesRemaining);
                 
-                rectangle2 FaceButtonBounds = GridGetCellBounds(Frame, 1, 0, 16.0f);
+                rectangle2 FaceButtonBounds = GridGetCellBounds(UIState, 1, 0, 16.0f);
                 
                 ui_interaction Interaction =
                 {
@@ -308,19 +310,19 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                     DrawFace(RenderGroup, &AppState->Sprite, FaceButtonBounds.Min, 1);
                 }
                 
-                rectangle2 TimerBounds = GridGetCellBounds(Frame, 2, 0, 16.0f);
+                rectangle2 TimerBounds = GridGetCellBounds(UIState, 2, 0, 16.0f);
                 PushRenderCommandAlternateRectOutline(RenderGroup, TimerBounds, 1.0f, 1.0f,
                                                       RGBv4(128, 128, 128), RGBv4(255, 255, 255));
                 DrawNumber(RenderGroup, &AppState->Sprite, TimerBounds, (u32)AppState->Timer);
             }
-            EndGrid(Frame);
+            EndGrid(UIState);
             
-            rectangle2 BoardBounds = GridGetCellBounds(Frame, 0, 1, 16.0f);
+            rectangle2 BoardBounds = GridGetCellBounds(UIState, 0, 1, 16.0f);
             PushRenderCommandAlternateRectOutline(RenderGroup, BoardBounds, 1.0f, 4.0f, 
                                                   RGBv4(128, 128, 128), RGBv4(255, 255, 255));
             BoardBounds = Rectangle2AddRadiusTo(BoardBounds, -4.0f);
             
-            BeginGrid(Frame, BoardBounds, AppState->Columns, AppState->Rows);
+            BeginGrid(UIState, BoardBounds, AppState->Columns, AppState->Rows);
             {
                 for(u8 Row = 0;
                     Row < AppState->Rows;
@@ -330,7 +332,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                         Column < AppState->Columns;
                         ++Column)
                     {
-                        rectangle2 TileBounds = GridGetCellBounds(Frame, Column, Row, 0.0f);
+                        rectangle2 TileBounds = GridGetCellBounds(UIState, Column, Row, 0.0f);
                         
                         u32 Index = (Row * AppState->Columns) + Column;
                         u8 Tile = AppState->Tiles[Index];
@@ -425,14 +427,13 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                     }
                 }
             }
-            EndGrid(Frame);
+            EndGrid(UIState);
         }
-        EndGrid(Frame);
+        EndGrid(UIState);
         
     }
-    EndGrid(Frame);
+    EndGrid(UIState);
     
     EndUI(UIState, Input);
-    EndTemporaryMemory(MemoryFlush);
     CheckArena(&AppState->Arena);
 }

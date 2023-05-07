@@ -21,7 +21,7 @@ typedef struct app_state
 {
     memory_arena Arena;
     
-    ui_state UIState;
+    ui_state *UIState;
     random_state RandomState;
     sprite_sheet Sprite;
     
