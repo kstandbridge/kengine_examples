@@ -86,9 +86,6 @@ IsMine(app_state *AppState, u8 Column, u8 Row)
 inline void
 GenerateBoard(app_state *AppState, u8 FirstMoveColumn, u8 FirstMoveRow)
 {
-    EndTemporaryMemory(AppState->MemoryFlush);
-    CheckArena(&AppState->TransientArena);
-    AppState->MemoryFlush = BeginTemporaryMemory(&AppState->TransientArena);
     AppState->MinesRemaining = 0;
     AppState->Tiles = PushArray(AppState->MemoryFlush.Arena, AppState->Rows * AppState->Columns, u8);
     
@@ -193,12 +190,13 @@ SimulateGameThread(void *Data)
                 {
                     if(Mines == 0 && !IsMine(AppState, Column + X, Row + Y))
                     {
-                        simulate_game_work *NewWork = PushStruct(AppState->MemoryFlush.Arena, simulate_game_work);
-                        NewWork->AppState = AppState;
-                        NewWork->Column = Column + X;
-                        NewWork->Row = Row + Y;
-                        Win32AddWorkEntry(AppState->WorkQueue, SimulateGameThread, NewWork);
-                        //SimulateGameThread(NewWork);
+                        simulate_game_work NewWork = 
+                        {
+                            .AppState = AppState,
+                            .Column = Column + X,
+                            .Row = Row + Y,
+                        };
+                        SimulateGameThread(&NewWork);
                     }
                 }
             }
@@ -215,10 +213,17 @@ InitGame(app_state *AppState)
     AppState->Mines = 10;
     AppState->MinesRemaining = 10;
     AppState->RemainingTiles = AppState->Rows * AppState->Columns;
-    AppState->Tiles = PushArray(AppState->MemoryFlush.Arena, AppState->RemainingTiles, u8);
     AppState->IsInitialized = false;
     AppState->IsGameOver = false;
     AppState->Timer = 0.0f;
+    
+    if(AppState->MemoryFlush.Arena)
+    {
+        EndTemporaryMemory(AppState->MemoryFlush);
+    }
+    CheckArena(&AppState->TransientArena);
+    AppState->MemoryFlush = BeginTemporaryMemory(&AppState->TransientArena);
+    AppState->Tiles = PushArray(AppState->MemoryFlush.Arena, AppState->RemainingTiles, u8);
 }
 
 extern void
@@ -237,7 +242,6 @@ InitApp(app_memory *AppMemory)
     
     InitUI(&AppState->UIState);
     
-    AppState->MemoryFlush = BeginTemporaryMemory(&AppState->TransientArena);
     InitGame(AppState);
     
     PlatformSetWindowSize(V2(320, 464));
@@ -284,11 +288,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                 rectangle2 MineCountBounds = GridGetCellBounds(UIState, 0, 0, 16.0f);
                 PushRenderCommandAlternateRectOutline(RenderGroup, MineCountBounds, 1.0f, 1.0f,
                                                       RGBv4(128, 128, 128), RGBv4(255, 255, 255));
-#if 1
-                DrawNumber(RenderGroup, &AppState->Sprite, MineCountBounds, AppState->RemainingTiles);
-#else
                 DrawNumber(RenderGroup, &AppState->Sprite, MineCountBounds, AppState->MinesRemaining);
-#endif
                 
                 rectangle2 FaceButtonBounds = GridGetCellBounds(UIState, 1, 0, 16.0f);
                 
@@ -353,16 +353,17 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                         u8 Flags = UnpackU8High(Tile);
                         u8 Mines = UnpackU8Low(Tile);
                         
-                        ui_interaction Interaction =
-                        {
-                            .Id = GenerateUIId(AppState->Tiles + Index),
-                            .Type = UI_Interaction_ImmediateButton,
-                            .Target = AppState->Tiles
-                        };
-                        
-                        if(InteractionsAreEqual(Interaction, UIState->ToExecute))
-                        {
-                            if(AppState->RemainingTiles > 0)
+                        if((!AppState->IsGameOver) && 
+                           (AppState->RemainingTiles > 0))
+                        {                        
+                            ui_interaction Interaction =
+                            {
+                                .Id = GenerateUIId(AppState->Tiles + Index),
+                                .Type = UI_Interaction_ImmediateButton,
+                                .Target = AppState->Tiles
+                            };
+                            
+                            if(InteractionsAreEqual(Interaction, UIState->ToExecute))
                             {
                                 simulate_game_work *NewWork = PushStruct(AppState->MemoryFlush.Arena, simulate_game_work);
                                 NewWork->AppState = AppState;
@@ -370,29 +371,29 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                                 NewWork->Row = Row;
                                 Win32AddWorkEntry(AppState->WorkQueue, SimulateGameThread, NewWork);
                             }
-                        }
-                        
-                        ui_interaction_state InteractionState = AddUIInteraction(UIState, TileBounds, Interaction);
-                        if(InteractionState == UIInteractionState_Hot)
-                        {
-                            if(WasPressed(Input->MouseButtons[MouseButton_Right]))
+                            
+                            ui_interaction_state InteractionState = AddUIInteraction(UIState, TileBounds, Interaction);
+                            if(InteractionState == UIInteractionState_Hot)
                             {
-                                if(Flags & TileFlag_Flag)
+                                if(WasPressed(Input->MouseButtons[MouseButton_Right]))
                                 {
-                                    Flags &= ~TileFlag_Flag;
-                                    Flags |= TileFlag_Unkown;
-                                    ++AppState->MinesRemaining;
+                                    if(Flags & TileFlag_Flag)
+                                    {
+                                        Flags &= ~TileFlag_Flag;
+                                        Flags |= TileFlag_Unkown;
+                                        ++AppState->MinesRemaining;
+                                    }
+                                    else if(Flags & TileFlag_Unkown)
+                                    {
+                                        Flags &= ~TileFlag_Unkown;
+                                    }
+                                    else
+                                    {
+                                        Flags |= TileFlag_Flag;
+                                        --AppState->MinesRemaining;
+                                    }
+                                    AppState->Tiles[Index] = PackU8(Flags, Mines);
                                 }
-                                else if(Flags & TileFlag_Unkown)
-                                {
-                                    Flags &= ~TileFlag_Unkown;
-                                }
-                                else
-                                {
-                                    Flags |= TileFlag_Flag;
-                                    --AppState->MinesRemaining;
-                                }
-                                AppState->Tiles[Index] = PackU8(Flags, Mines);
                             }
                         }
                         
