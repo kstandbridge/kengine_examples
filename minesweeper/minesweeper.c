@@ -1,3 +1,4 @@
+#define KENGINE_IMPLEMENTATION
 #define KENGINE_WIN32
 #define KENGINE_DIRECTX
 #include "kengine.h"
@@ -247,7 +248,6 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     EndUI(UIState, Input);
     CheckArena(&AppState->Arena);
 }
-
 
 #include "minesweeper_rendering.c"
 #include "minesweeper_simulate.c"

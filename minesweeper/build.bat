@@ -9,7 +9,6 @@ set InternalCompilerFlags=-DKENGINE_INTERNAL=1 -DKENGINE_SLOW=1
 set IncludeDirectories=-I..\kengine
 set CommonLinkerFlags=-incremental:no -opt:ref
 
-
 if "%~1"=="shaders" (
 
 	pushd ..\kengine\kengine
@@ -24,7 +23,7 @@ if "%~1"=="shaders" (
 	IF NOT EXIST ..\bin mkdir ..\bin
 	pushd ..\bin
 
-	cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -Z7 %IncludeDirectories% ..\minesweeper\pch.c ..\minesweeper\minesweeper.c /Fe:minesweeper.exe /link %CommonLinkerFlags%
+	cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -Z7 %IncludeDirectories% ..\minesweeper\minesweeper.c /Fe:minesweeper.exe /link %CommonLinkerFlags%
 
 	del *.obj
 
