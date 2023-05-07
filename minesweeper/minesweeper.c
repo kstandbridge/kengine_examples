@@ -385,7 +385,8 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                             }
                         }
                         
-                        if(AppState->IsGameOver)
+                        if((AppState->IsGameOver) || 
+                           (AppState->RemainingTiles == 0))
                         {
                             if(Flags & TileFlag_Flag)
                             {
