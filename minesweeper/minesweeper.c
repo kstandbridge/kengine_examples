@@ -150,9 +150,7 @@ InitApp(app_memory *AppMemory)
         }
         
         UIState->SpriteSheetSize = V2(TotalWidth, TotalHeight);
-        
         UIState->GlyphSheetHandle = DirectXLoadTexture(TotalWidth, TotalHeight, TextureBytes);
-        
     }
 }
 
@@ -161,7 +159,9 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
 {
     app_state *AppState = AppMemory->AppState;
     RenderGroup->ClearColor = RGBv4(192, 192, 192);
-    if(!AppState->IsGameOver && AppState->RemainingTiles > 0)
+    if((!AppState->IsGameOver) && 
+       (AppState->IsInitialized) &&
+       (AppState->RemainingTiles > 0))
     {
         AppState->Timer += DeltaTime;
     }
@@ -396,7 +396,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                                 }
                                 else
                                 {
-                                    DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 0);
+                                    DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 4);
                                 }
                             } 
                             else if(Flags & TileFlag_Mine)
