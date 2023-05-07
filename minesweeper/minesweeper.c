@@ -66,23 +66,6 @@ DrawButtonNumber(render_group *RenderGroup, sprite_sheet *Sprite, v2 P, u32 Inde
     DrawSprite(RenderGroup, Sprite, OffsetY, Index, Size, P);
 }
 
-inline b32
-IsMine(app_state *AppState, u8 Column, u8 Row)
-{
-    b32 Result = false;
-    
-    u32 Index = (Row * AppState->Columns) + Column;
-    u8 Tile = AppState->Tiles[Index];
-    u8 Flags = UnpackU8High(Tile);
-    
-    if(Flags & TileFlag_Mine)
-    {
-        Result = true;
-    }
-    
-    return Result;
-}
-
 inline void
 GenerateBoard(app_state *AppState, u8 FirstMoveColumn, u8 FirstMoveRow)
 {
@@ -129,7 +112,11 @@ GenerateBoard(app_state *AppState, u8 FirstMoveColumn, u8 FirstMoveRow)
                        (Row + Y >= 0) &&
                        (Row + Y < AppState->Rows))
                     {
-                        if(IsMine(AppState, Column + X, Row + Y))
+                        u32 CheckIndex = ((Row + Y) * AppState->Columns) + Column + X;
+                        u8 CheckTile = AppState->Tiles[CheckIndex];
+                        u8 CheckFlags = UnpackU8High(CheckTile);
+                        
+                        if(CheckFlags & TileFlag_Mine)
                         {
                             ++Mines;
                         }
@@ -188,15 +175,23 @@ SimulateGameThread(void *Data)
                    (Row + Y >= 0) &&
                    (Row + Y < AppState->Rows))
                 {
-                    if(Mines == 0 && !IsMine(AppState, Column + X, Row + Y))
+                    if(Mines == 0)
                     {
-                        simulate_game_work NewWork = 
+                        u32 CheckIndex = ((Row + Y) * AppState->Columns) + Column + X;
+                        u8 CheckTile = AppState->Tiles[CheckIndex];
+                        u8 CheckFlags = UnpackU8High(CheckTile);
+                        
+                        if(((CheckFlags & TileFlag_Mine) == 0) &&
+                           ((CheckFlags & TileFlag_Visited) == 0))
                         {
-                            .AppState = AppState,
-                            .Column = Column + X,
-                            .Row = Row + Y,
-                        };
-                        SimulateGameThread(&NewWork);
+                            simulate_game_work NewWork = 
+                            {
+                                .AppState = AppState,
+                                .Column = Column + X,
+                                .Row = Row + Y,
+                            };
+                            SimulateGameThread(&NewWork);
+                        }
                     }
                 }
             }
