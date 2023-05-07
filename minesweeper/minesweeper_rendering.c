@@ -12,7 +12,7 @@ DrawSprite(render_group *RenderGroup, sprite_sheet *Sprite, f32 OffsetY, u32 Ind
     
     Size = V2Multiply(Size, V2Set1(GlobalScale));
     
-    PushRenderCommandSprite(RenderGroup, P, 3.0f, Size, V4(1, 1, 1, 1), UV, Sprite->Handle);
+    PushRenderCommandSprite(RenderGroup, P, 1.0f, Size, V4(1, 1, 1, 1), UV, Sprite->Handle);
 }
 
 inline void

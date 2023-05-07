@@ -29,6 +29,5 @@ typedef struct app_state
     
 } app_state;
 
-
 #define MINESWEEPER_H
 #endif //MINESWEEPER_H

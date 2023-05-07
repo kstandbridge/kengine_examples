@@ -7,7 +7,7 @@ GenerateBoard(app_state *AppState, u8 FirstMoveColumn, u8 FirstMoveRow)
     
     while(AppState->Mines > AppState->MinesRemaining)
     {
-        u32 Random = RandomU32(&AppState->RandomState) % 64;
+        u32 Random = RandomU32(&AppState->RandomState) % (AppState->Rows * AppState->Columns);
         u32 Index = (FirstMoveRow * AppState->Columns) + FirstMoveColumn;
         // NOTE(kstandbridge): Dont place mine on players first move
         if(Index != Random)
@@ -33,31 +33,31 @@ GenerateBoard(app_state *AppState, u8 FirstMoveColumn, u8 FirstMoveRow)
             u32 Index = (Row * AppState->Columns) + Column;
             u8 Tile = AppState->Tiles[Index];
             u8 Flags = UnpackU8High(Tile);
-            
-            u8 Mines = 0;
-            
-            for(s8 Y = -1; Y < 2; ++Y)
+            if((Flags & TileFlag_Mine) == 0)
             {
-                for(s8 X = -1; X < 2; ++X)
+                u8 Mines = 0;
+                for(s8 Y = -1; Y < 2; ++Y)
                 {
-                    if((Column + X >= 0) &&
-                       (Column + X < AppState->Columns) &&
-                       (Row + Y >= 0) &&
-                       (Row + Y < AppState->Rows))
+                    for(s8 X = -1; X < 2; ++X)
                     {
-                        u32 CheckIndex = ((Row + Y) * AppState->Columns) + Column + X;
-                        u8 CheckTile = AppState->Tiles[CheckIndex];
-                        u8 CheckFlags = UnpackU8High(CheckTile);
-                        
-                        if(CheckFlags & TileFlag_Mine)
+                        if((Column + X >= 0) &&
+                           (Column + X < AppState->Columns) &&
+                           (Row + Y >= 0) &&
+                           (Row + Y < AppState->Rows))
                         {
-                            ++Mines;
+                            u32 CheckIndex = ((Row + Y) * AppState->Columns) + Column + X;
+                            u8 CheckTile = AppState->Tiles[CheckIndex];
+                            u8 CheckFlags = UnpackU8High(CheckTile);
+                            
+                            if(CheckFlags & TileFlag_Mine)
+                            {
+                                ++Mines;
+                            }
                         }
                     }
                 }
+                AppState->Tiles[Index] = PackU8(Flags, Mines);
             }
-            
-            AppState->Tiles[Index] = PackU8(Flags, Mines);
         }
     }
     
@@ -84,39 +84,42 @@ SimulateGameThread(simulate_game_work *Work)
     
     if((Flags & TileFlag_Visited) == 0)
     {
+        Flags |= TileFlag_Visited;
+        AppState->Tiles[Index] = PackU8(Flags, Mines);
+        
         if(Flags & TileFlag_Mine)
         {
             AppState->IsGameOver = true;
         }
-        Flags |= TileFlag_Visited;
-        --AppState->RemainingTiles;
-        AppState->Tiles[Index] = PackU8(Flags, Mines);
-        
-        for(s8 Y = -1; Y < 2; ++Y)
-        {
-            for(s8 X = -1; X < 2; ++X)
+        else
+        {        
+            --AppState->RemainingTiles;
+            if(Mines == 0)
             {
-                if((Column + X >= 0) &&
-                   (Column + X < AppState->Columns) &&
-                   (Row + Y >= 0) &&
-                   (Row + Y < AppState->Rows))
+                for(s8 Y = -1; Y < 2; ++Y)
                 {
-                    if(Mines == 0)
+                    for(s8 X = -1; X < 2; ++X)
                     {
-                        u32 CheckIndex = ((Row + Y) * AppState->Columns) + Column + X;
-                        u8 CheckTile = AppState->Tiles[CheckIndex];
-                        u8 CheckFlags = UnpackU8High(CheckTile);
-                        
-                        if(((CheckFlags & TileFlag_Mine) == 0) &&
-                           ((CheckFlags & TileFlag_Visited) == 0))
+                        if((Column + X >= 0) &&
+                           (Column + X < AppState->Columns) &&
+                           (Row + Y >= 0) &&
+                           (Row + Y < AppState->Rows))
                         {
-                            simulate_game_work NewWork = 
+                            u32 CheckIndex = ((Row + Y) * AppState->Columns) + Column + X;
+                            u8 CheckTile = AppState->Tiles[CheckIndex];
+                            u8 CheckFlags = UnpackU8High(CheckTile);
+                            
+                            if(((CheckFlags & TileFlag_Mine) == 0) &&
+                               ((CheckFlags & TileFlag_Visited) == 0))
                             {
-                                .AppState = AppState,
-                                .Column = Column + X,
-                                .Row = Row + Y,
-                            };
-                            SimulateGameThread(&NewWork);
+                                simulate_game_work NewWork = 
+                                {
+                                    .AppState = AppState,
+                                    .Column = Column + X,
+                                    .Row = Row + Y,
+                                };
+                                SimulateGameThread(&NewWork);
+                            }
                         }
                     }
                 }

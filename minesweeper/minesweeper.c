@@ -271,7 +271,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                 rectangle2 MineCountBounds = GridGetCellBounds(UIState, 0, 0, 16.0f);
                 PushRenderCommandAlternateRectOutline(RenderGroup, MineCountBounds, 1.0f, 1.0f,
                                                       RGBv4(128, 128, 128), RGBv4(255, 255, 255));
-                DrawNumber(RenderGroup, &AppState->Sprite, MineCountBounds, AppState->MinesRemaining);
+                DrawNumber(RenderGroup, &AppState->Sprite, MineCountBounds, (AppState->RemainingTiles == 0) ? 0 : AppState->MinesRemaining);
                 
                 rectangle2 FaceButtonBounds = GridGetCellBounds(UIState, 1, 0, 16.0f);
                 
@@ -377,8 +377,11 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                                     }
                                     else
                                     {
-                                        Flags |= TileFlag_Flag;
-                                        --AppState->MinesRemaining;
+                                        if(AppState->MinesRemaining > 0)
+                                        {
+                                            Flags |= TileFlag_Flag;
+                                            --AppState->MinesRemaining;
+                                        }
                                     }
                                     AppState->Tiles[Index] = PackU8(Flags, Mines);
                                 }
