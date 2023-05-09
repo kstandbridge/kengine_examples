@@ -19,13 +19,20 @@ MainLoop(app_memory *AppMemory)
     
     string_list *Args = PlatformGetCommandLineArgs(&AppState->Arena);
     string FilePath = {0};
+    b32 DumpMemory = false;
     
     for(string_list *Arg = Args;
         Arg;
         Arg = Arg->Next)
     {
-        // TODO(kstandbridge): Check arg for options like silent, dump, etc
-        FilePath = Arg->Entry;
+        if(StringsAreEqual(Arg->Entry, String("-dump")))
+        {
+            DumpMemory = true;
+        }
+        else
+        {
+            FilePath = Arg->Entry;
+        }
     }
     
     if(!PlatformFileExists(FilePath))
@@ -47,6 +54,11 @@ MainLoop(app_memory *AppMemory)
         PlatformConsoleOut("\n\nFinal registers:\n");
         string Output = GetRegisterDetails(&Context);
         PlatformConsoleOut("%S", Output);
+        
+        if(DumpMemory)
+        {
+            PlatformWriteTextToFile(String_(Megabytes(1), Context.Memory), String("memory.data"));
+        }
     }
     
     return Result;

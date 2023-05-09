@@ -536,20 +536,6 @@ InstructionToAssembly(simulator_context *Context, instruction Instruction)
         
         case Instruction_MovImmediateMemory:
         {
-            s16 Value;
-            
-            if(Instruction.Flags & Flag_W)
-            {
-                u8 ValueLow = Instruction.Bits[Encoding_DATA];
-                u8 ValueHigh = Instruction.Bits[Encoding_DATA_IF_W];
-                u16 ValueWide = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
-                Value = *(s16 *)&ValueWide;
-            }
-            else
-            {
-                Value = *(s8 *)&Instruction.Bits[Encoding_DATA];
-            }
-            
             s16 Displacement = 0;
             
             if(Instruction.Flags & Flag_W)
@@ -568,18 +554,38 @@ InstructionToAssembly(simulator_context *Context, instruction Instruction)
             
             if(Instruction.Bits[Encoding_MOD] == Mod_MemoryMode)
             {
-                if(Displacement > 0)
+                
+                if(Instruction.Flags & Flag_W)
                 {
-                    AppendFormatString(&State, "%S %S [%d], %d", Op, Size, Displacement, Value);
+                    u8 ValueLow = Instruction.Bits[Encoding_DATA];
+                    u8 ValueHigh = Instruction.Bits[Encoding_DATA_IF_W];
+                    u16 Value = ((ValueHigh & 0xFF) << 8) | (ValueLow & 0xFF);
+                    if(Displacement > 0)
+                    {
+                        AppendFormatString(&State, "%S %S [%d], %u", Op, Size, Displacement, Value);
+                    }
+                    else
+                    {
+                        AppendFormatString(&State, "%S [%S], %S %u", Op, Src, Size, Value);
+                    }
                 }
                 else
                 {
-                    AppendFormatString(&State, "%S [%S], %S %d", Op, Src, Size, Value);
+                    u8 Value = Instruction.Bits[Encoding_DATA];
+                    if(Displacement > 0)
+                    {
+                        AppendFormatString(&State, "%S %S [%d], %u", Op, Size, Displacement, Value);
+                    }
+                    else
+                    {
+                        AppendFormatString(&State, "%S [%S], %S %u", Op, Src, Size, Value);
+                    }
                 }
             }
             else
             {
-                AppendFormatString(&State, "%S %S [%S + %d], %d", Op, Size, Src, Displacement, Value);
+                u8 Value = Instruction.Bits[Encoding_DATA];
+                AppendFormatString(&State, "%S %S [%S+%d], %u", Op, Size, Src, Displacement, Value);
             }
             
         } break;
@@ -926,7 +932,7 @@ InstructionToAssembly(simulator_context *Context, instruction Instruction)
                         string Src;
                         if(Value > 0)
                         {
-                            Src = FormatString(Context->Arena, "%S[%S + %d]", SegmentPrefix, EffectiveAddressToString(Instruction.Bits[Encoding_RM]), Value);
+                            Src = FormatString(Context->Arena, "%S[%S+%d]", SegmentPrefix, EffectiveAddressToString(Instruction.Bits[Encoding_RM]), Value);
                         }
                         else if(Value < 0)
                         {
@@ -975,7 +981,7 @@ InstructionToAssembly(simulator_context *Context, instruction Instruction)
                            (Instruction.Type == Instruction_Or) ||
                            (Instruction.Type == Instruction_Xor))
                         {
-                            AppendFormatString(&State, "%S %S, %S", Op, Src, Dest);
+                            AppendFormatString(&State, "%S %S %S, %S", Op, Size, Src, Dest);
                         }
                         else if(Instruction.Type == Instruction_Logic)
                         {
@@ -1309,13 +1315,17 @@ SimulateStep(simulator_context *Context)
                 
                 if(Op == SubOp_Add)
                 {
+                    SignedOutput = SignedSource + SignedDestination;
+                    
                     if(SignedSource > 0)
                     {
-                        if((GetBits(UnpackU16Low(SignedSource), 3, 1) == 0b1) &&
-                           (GetBits(UnpackU16Low(SignedDestination), 3, 1) == 0b1))
+                        u8 HighResult = GetBits(UnpackU16Low(SignedOutput), 3, 4);
+                        u8 HighA = GetBits(UnpackU16Low(SignedDestination), 3, 4);
+                        if(HighResult < HighA)
                         {
                             Auxiliary = true;
                         }
+                        
                     }
                     else
                     {
@@ -1325,7 +1335,6 @@ SimulateStep(simulator_context *Context)
                         }
                     }
                     
-                    SignedOutput = SignedSource + SignedDestination;
                     
                     
                     if(SignedOutput < SignedDestination)
@@ -1334,7 +1343,7 @@ SimulateStep(simulator_context *Context)
                     }
                     
                 }
-                else if(Op == SubOp_Sub)
+                else
                 {
                     SignedOutput = SignedDestination - SignedSource;
                     
@@ -1385,20 +1394,20 @@ SimulateStep(simulator_context *Context)
                     Context->Flags |= Flag_ZF;
                 }
                 
-                u16 ValueBefore = Context->Registers[Instruction.Bits[Encoding_RM]];
-                Context->Registers[Instruction.Bits[Encoding_RM]] = *(u16 *)&SignedOutput;
-                u16 ValueAfter = Context->Registers[Instruction.Bits[Encoding_RM]];
-                if(ValueBefore != ValueAfter)
+                if(Op != SubOp_Cmp)
                 {
-                    AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.Bits[Encoding_RM]), ValueBefore, ValueAfter);
+                    u16 ValueBefore = Context->Registers[Instruction.Bits[Encoding_RM]];
+                    Context->Registers[Instruction.Bits[Encoding_RM]] = *(u16 *)&SignedOutput;
+                    u16 ValueAfter = Context->Registers[Instruction.Bits[Encoding_RM]];
+                    if(ValueBefore != ValueAfter)
+                    {
+                        AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.Bits[Encoding_RM]), ValueBefore, ValueAfter);
+                    }
                 }
-                
-                
             }
             else
             {
                 u16 Output = SimulateArithmetic(Context, Op, Destination, Source);
-                
                 u16 ValueBefore = Context->Registers[Instruction.Bits[Encoding_RM]];
                 Context->Registers[Instruction.Bits[Encoding_RM]] = Output;        
                 u16 ValueAfter = Context->Registers[Instruction.Bits[Encoding_RM]];
@@ -1647,9 +1656,13 @@ SimulateStep(simulator_context *Context)
                 } break;
                 case Mod_8BitDisplace:
                 {
+                    u8 Displacement  = Instruction.Bits[Encoding_DISP_LO];
+                    u8 *Target = Context->Memory + Context->Registers[RegisterWord_BP] + Displacement;
+                    *Target = (u8)Context->Registers[Instruction.Bits[Encoding_REG]];
                 } break;
                 case Mod_16BitDisplace:
                 {
+                    
                 } break;
                 case Mod_RegisterMode:
                 {
