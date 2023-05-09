@@ -3656,6 +3656,118 @@ RunDrawRectangleTexts(memory_arena *Arena)
         // NOTE(kstandbridge): This goes on for 28k lines
         EndTemporaryMemory(MemoryFlush);
     }
+    
+    {
+        temporary_memory MemoryFlush = BeginTemporaryMemory(Arena);
+        u8 Stream[] = 
+        { 
+            0b10111101, 0b00000000, 0b00000001, 0b10111010, 0b01000000, 0b00000000, 0b10111001, 0b01000000, 0b00000000, 0b10001000, 0b01001110, 0b00000000, 0b11000110, 0b01000110, 0b00000001, 0b00000000, 0b10001000, 0b01010110, 0b00000010, 0b11000110, 0b01000110, 0b00000011, 0b11111111, 0b10000011, 0b11000101, 0b00000100, 0b11100010, 0b11101101, 0b10000011, 0b11101010, 0b00000001, 0b01110101, 0b11100101, 0b10111101, 0b00000100, 0b00000010, 0b10001001, 0b11101011, 0b10111001, 0b00111110, 0b00000000, 0b11000110, 0b01000110, 0b00000001, 0b11111111, 0b11000110, 0b10000110, 0b00000001, 0b00111101, 0b11111111, 0b11000110, 0b01000111, 0b00000001, 0b11111111, 0b11000110, 0b10000111, 0b11110101, 0b00000000, 0b11111111, 0b10000011, 0b11000101, 0b00000100, 0b10000001, 0b11000011, 0b00000000, 0b00000001, 0b11100010, 0b11100101
+        };
+        
+        simulator_context Context = GetSimulatorContext(Arena, Stream, sizeof(Stream));
+        string Output;
+        Output = SimulateStep(&Context); AssertEqualString(String("mov bp, 256 ; bp:0x0->0x100 ip:0x0->0x3"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov dx, 64 ; dx:0x0->0x40 ip:0x3->0x6"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov cx, 64 ; cx:0x0->0x40 ip:0x6->0x9"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp], cl ; ip:0x9->0xc"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+1], 0 ; ip:0xc->0x10"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+2], dl ; ip:0x10->0x13"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+3], 255 ; ip:0x13->0x17"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add bp, 4 ; bp:0x100->0x104 ip:0x17->0x1a"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("loop $-17 ; cx:0x40->0x3f ip:0x1a->0x9"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp], cl ; ip:0x9->0xc"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+1], 0 ; ip:0xc->0x10"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+2], dl ; ip:0x10->0x13"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+3], 255 ; ip:0x13->0x17"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add bp, 4 ; bp:0x104->0x108 ip:0x17->0x1a"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("loop $-17 ; cx:0x3f->0x3e ip:0x1a->0x9"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp], cl ; ip:0x9->0xc"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+1], 0 ; ip:0xc->0x10"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+2], dl ; ip:0x10->0x13"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+3], 255 ; ip:0x13->0x17"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add bp, 4 ; bp:0x108->0x10c ip:0x17->0x1a flags:->P"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("loop $-17 ; cx:0x3e->0x3d ip:0x1a->0x9"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp], cl ; ip:0x9->0xc"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+1], 0 ; ip:0xc->0x10"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+2], dl ; ip:0x10->0x13"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+3], 255 ; ip:0x13->0x17"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add bp, 4 ; bp:0x10c->0x110 ip:0x17->0x1a flags:P->A"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("loop $-17 ; cx:0x3d->0x3c ip:0x1a->0x9"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp], cl ; ip:0x9->0xc"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+1], 0 ; ip:0xc->0x10"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+2], dl ; ip:0x10->0x13"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+3], 255 ; ip:0x13->0x17"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add bp, 4 ; bp:0x110->0x114 ip:0x17->0x1a flags:A->P"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("loop $-17 ; cx:0x3c->0x3b ip:0x1a->0x9"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp], cl ; ip:0x9->0xc"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+1], 0 ; ip:0xc->0x10"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+2], dl ; ip:0x10->0x13"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+3], 255 ; ip:0x13->0x17"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add bp, 4 ; bp:0x114->0x118 ip:0x17->0x1a"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("loop $-17 ; cx:0x3b->0x3a ip:0x1a->0x9"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp], cl ; ip:0x9->0xc"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+1], 0 ; ip:0xc->0x10"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+2], dl ; ip:0x10->0x13"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+3], 255 ; ip:0x13->0x17"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add bp, 4 ; bp:0x118->0x11c ip:0x17->0x1a flags:P->"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("loop $-17 ; cx:0x3a->0x39 ip:0x1a->0x9"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp], cl ; ip:0x9->0xc"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+1], 0 ; ip:0xc->0x10"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+2], dl ; ip:0x10->0x13"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+3], 255 ; ip:0x13->0x17"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add bp, 4 ; bp:0x11c->0x120 ip:0x17->0x1a flags:->A"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("loop $-17 ; cx:0x39->0x38 ip:0x1a->0x9"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp], cl ; ip:0x9->0xc"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+1], 0 ; ip:0xc->0x10"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+2], dl ; ip:0x10->0x13"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+3], 255 ; ip:0x13->0x17"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add bp, 4 ; bp:0x120->0x124 ip:0x17->0x1a flags:A->P"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("loop $-17 ; cx:0x38->0x37 ip:0x1a->0x9"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp], cl ; ip:0x9->0xc"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+1], 0 ; ip:0xc->0x10"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+2], dl ; ip:0x10->0x13"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+3], 255 ; ip:0x13->0x17"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add bp, 4 ; bp:0x124->0x128 ip:0x17->0x1a"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("loop $-17 ; cx:0x37->0x36 ip:0x1a->0x9"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp], cl ; ip:0x9->0xc"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+1], 0 ; ip:0xc->0x10"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+2], dl ; ip:0x10->0x13"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+3], 255 ; ip:0x13->0x17"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add bp, 4 ; bp:0x128->0x12c ip:0x17->0x1a flags:P->"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("loop $-17 ; cx:0x36->0x35 ip:0x1a->0x9"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp], cl ; ip:0x9->0xc"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+1], 0 ; ip:0xc->0x10"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+2], dl ; ip:0x10->0x13"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+3], 255 ; ip:0x13->0x17"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add bp, 4 ; bp:0x12c->0x130 ip:0x17->0x1a flags:->PA"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("loop $-17 ; cx:0x35->0x34 ip:0x1a->0x9"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp], cl ; ip:0x9->0xc"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+1], 0 ; ip:0xc->0x10"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+2], dl ; ip:0x10->0x13"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+3], 255 ; ip:0x13->0x17"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add bp, 4 ; bp:0x130->0x134 ip:0x17->0x1a flags:PA->"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("loop $-17 ; cx:0x34->0x33 ip:0x1a->0x9"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp], cl ; ip:0x9->0xc"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+1], 0 ; ip:0xc->0x10"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+2], dl ; ip:0x10->0x13"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+3], 255 ; ip:0x13->0x17"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add bp, 4 ; bp:0x134->0x138 ip:0x17->0x1a"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("loop $-17 ; cx:0x33->0x32 ip:0x1a->0x9"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp], cl ; ip:0x9->0xc"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+1], 0 ; ip:0xc->0x10"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+2], dl ; ip:0x10->0x13"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+3], 255 ; ip:0x13->0x17"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add bp, 4 ; bp:0x138->0x13c ip:0x17->0x1a flags:->P"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("loop $-17 ; cx:0x32->0x31 ip:0x1a->0x9"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp], cl ; ip:0x9->0xc"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+1], 0 ; ip:0xc->0x10"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+2], dl ; ip:0x10->0x13"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov byte [bp+3], 255 ; ip:0x13->0x17"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add bp, 4 ; bp:0x13c->0x140 ip:0x17->0x1a flags:P->A"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("loop $-17 ; cx:0x31->0x30 ip:0x1a->0x9"), Output);
+        // NOTE(kstandbridge): This goes on for 25k lines
+        EndTemporaryMemory(MemoryFlush);
+    }
 }
 
 void

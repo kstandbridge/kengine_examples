@@ -1243,9 +1243,28 @@ SimulateStep(simulator_context *Context)
     
     switch(Instruction.Type)
     {
+        case Instruction_Loop:
+        {
+            s16 ValueBefore = Context->Registers[RegisterWord_CX];
+            --Context->Registers[RegisterWord_CX];
+            s16 ValueAfter = Context->Registers[RegisterWord_CX];
+            
+            AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(RegisterWord_CX), ValueBefore, ValueAfter);
+            
+            if(Context->Registers[RegisterWord_CX] != 0)
+            {
+                s8 Offset = *(u8 *)&Instruction.Bits[Encoding_IP_INC8];
+                Context->InstructionStreamAt += Offset;
+            }
+        } break;
+        
         case Instruction_Loopnz:
         {
+            s16 ValueBefore = Context->Registers[RegisterWord_CX];
             --Context->Registers[RegisterWord_CX];
+            s16 ValueAfter = Context->Registers[RegisterWord_CX];
+            
+            AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(RegisterWord_CX), ValueBefore, ValueAfter);
             
             if(Context->Registers[RegisterWord_CX] != 0)
             {
