@@ -732,6 +732,14 @@ typedef struct instruction_table_entry
     encoding Fields[7];
 } instruction_table_entry;
 
+inline simulator_context
+GetSimulatorContext(memory_arena *Arena, u8 *InstructionStream, umm InstructionStreamSize);
+
+internal string
+GetRegisterDetails(simulator_context *Context);
+
+internal string
+SimulateStep(simulator_context *Context);
 
 #define SIM8086_H
 #endif //SIM8086_H

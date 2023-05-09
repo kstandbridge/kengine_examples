@@ -1061,6 +1061,7 @@ GetSimulatorContext(memory_arena *Arena, u8 *InstructionStream, umm InstructionS
     
     return Result;
 }
+
 internal string
 StreamToAssembly(memory_arena *Arena, u8 *InstructionStream, umm InstructionStreamSize)
 {
@@ -1190,6 +1191,40 @@ SimulateArithmetic(simulator_context *Context, sub_op_type Op, u16 A, u16 B)
 }
 
 internal string
+GetRegisterDetails(simulator_context *Context)
+{
+    string Result;
+    format_string_state StringState = BeginFormatString();
+    
+    for(register_word_type RegisterIndex = 0;
+        RegisterIndex < RegisterWord_Count;
+        ++RegisterIndex)
+    {
+        u16 Value = Context->Registers[RegisterIndex];
+        if(Value != 0)
+        {
+            AppendFormatString(&StringState, "\t\t%S: %04x (%u)\n", RegisterWordToString(RegisterIndex), Value, Value);
+        }
+    }
+    AppendFormatString(&StringState, "\t\tip: %04x (%u)\n", Context->InstructionStreamAt, Context->InstructionStreamAt);
+    if(Context->Flags != 0)
+    {
+        AppendFormatString(&StringState, "\tflags: ");
+    }
+    if(Context->Flags & Flag_CF) AppendFormatString(&StringState, "C");
+    if(Context->Flags & Flag_PF) AppendFormatString(&StringState, "P");
+    if(Context->Flags & Flag_AF) AppendFormatString(&StringState, "A");
+    if(Context->Flags & Flag_ZF) AppendFormatString(&StringState, "Z");
+    if(Context->Flags & Flag_SF) AppendFormatString(&StringState, "S");
+    if(Context->Flags & Flag_IF) AppendFormatString(&StringState, "I");
+    if(Context->Flags & Flag_DF) AppendFormatString(&StringState, "D");
+    if(Context->Flags & Flag_OF) AppendFormatString(&StringState, "O");
+    
+    Result = EndFormatString(&StringState, Context->Arena);
+    return Result;
+}
+
+internal string
 SimulateStep(simulator_context *Context)
 {
     string Result;
@@ -1197,536 +1232,509 @@ SimulateStep(simulator_context *Context)
     
     umm InstructionPointerBefore = Context->InstructionStreamAt;
     instruction Instruction = GetNextInstruction(Context);
-    if(Instruction.Type == Instruction_NOP)
+    register_flags FlagsBefore = Context->Flags;
+    AppendFormatString(&StringState, "%S ;", InstructionToAssembly(Context, Instruction));
+    
+    switch(Instruction.Type)
     {
-        AppendFormatString(&StringState, "\n\nFinal registers:\n");
-        for(register_word_type RegisterIndex = 0;
-            RegisterIndex < RegisterWord_Count;
-            ++RegisterIndex)
+        case Instruction_Loopnz:
         {
-            u16 Value = Context->Registers[RegisterIndex];
-            if(Value != 0)
-            {
-                AppendFormatString(&StringState, "\t\t%S: %04x (%u)\n", RegisterWordToString(RegisterIndex), Value, Value);
-            }
-        }
-        AppendFormatString(&StringState, "\t\tip: %04x (%u)\n", Context->InstructionStreamAt, Context->InstructionStreamAt);
-        AppendFormatString(&StringState, "\tflags: ");
-        if(Context->Flags & Flag_CF) AppendFormatString(&StringState, "C");
-        if(Context->Flags & Flag_PF) AppendFormatString(&StringState, "P");
-        if(Context->Flags & Flag_AF) AppendFormatString(&StringState, "A");
-        if(Context->Flags & Flag_ZF) AppendFormatString(&StringState, "Z");
-        if(Context->Flags & Flag_SF) AppendFormatString(&StringState, "S");
-        if(Context->Flags & Flag_IF) AppendFormatString(&StringState, "I");
-        if(Context->Flags & Flag_DF) AppendFormatString(&StringState, "D");
-        if(Context->Flags & Flag_OF) AppendFormatString(&StringState, "O");
-    }
-    else
-    {   
-        register_flags FlagsBefore = Context->Flags;
-        AppendFormatString(&StringState, "%S ;", InstructionToAssembly(Context, Instruction));
-        
-        switch(Instruction.Type)
-        {
-            case Instruction_Loopnz:
-            {
-                --Context->Registers[RegisterWord_CX];
-                
-                if(Context->Registers[RegisterWord_CX] != 0)
-                {
-                    if((Context->Flags & Flag_ZF) == 0)
-                    {
-                        s8 Offset = *(u8 *)&Instruction.Bits[Encoding_IP_INC8];
-                        Context->InstructionStreamAt += Offset;
-                    }
-                }
-            } break;
+            --Context->Registers[RegisterWord_CX];
             
-            case Instruction_Jne:
+            if(Context->Registers[RegisterWord_CX] != 0)
             {
                 if((Context->Flags & Flag_ZF) == 0)
                 {
                     s8 Offset = *(u8 *)&Instruction.Bits[Encoding_IP_INC8];
                     Context->InstructionStreamAt += Offset;
                 }
-            } break;
-            
-            case Instruction_Je:
+            }
+        } break;
+        
+        case Instruction_Jne:
+        {
+            if((Context->Flags & Flag_ZF) == 0)
             {
-                if(Context->Flags & Flag_ZF)
-                {
-                    s8 Offset = *(u8 *)&Instruction.Bits[Encoding_IP_INC8];
-                    Context->InstructionStreamAt += Offset;
-                }
-            } break;
-            
-            case Instruction_Jb:
+                s8 Offset = *(u8 *)&Instruction.Bits[Encoding_IP_INC8];
+                Context->InstructionStreamAt += Offset;
+            }
+        } break;
+        
+        case Instruction_Je:
+        {
+            if(Context->Flags & Flag_ZF)
             {
-                if(Context->Flags & Flag_CF)
-                {
-                    s8 Offset = *(u8 *)&Instruction.Bits[Encoding_IP_INC8];
-                    Context->InstructionStreamAt += Offset;
-                }
-            } break;
-            
-            case Instruction_Jp:
+                s8 Offset = *(u8 *)&Instruction.Bits[Encoding_IP_INC8];
+                Context->InstructionStreamAt += Offset;
+            }
+        } break;
+        
+        case Instruction_Jb:
+        {
+            if(Context->Flags & Flag_CF)
             {
-                if(Context->Flags & Flag_PF)
-                {
-                    s8 Offset = *(u8 *)&Instruction.Bits[Encoding_IP_INC8];
-                    Context->InstructionStreamAt += Offset;
-                }
-            } break;
-            
-            case Instruction_Immediate:
+                s8 Offset = *(u8 *)&Instruction.Bits[Encoding_IP_INC8];
+                Context->InstructionStreamAt += Offset;
+            }
+        } break;
+        
+        case Instruction_Jp:
+        {
+            if(Context->Flags & Flag_PF)
             {
-                Context->Flags = 0;
+                s8 Offset = *(u8 *)&Instruction.Bits[Encoding_IP_INC8];
+                Context->InstructionStreamAt += Offset;
+            }
+        } break;
+        
+        case Instruction_Immediate:
+        {
+            Context->Flags = 0;
+            
+            sub_op_type Op = Instruction.Bits[Encoding_REG];
+            
+            u8 HighPart = Instruction.Bits[Encoding_DATA_IF_W];
+            u8 LowPart = Instruction.Bits[Encoding_DATA];
+            u16 Source = PackU16(HighPart, LowPart);
+            u16 Destination = Context->Registers[Instruction.Bits[Encoding_RM]];
+            
+            b32 Auxiliary = false;
+            
+            if(Instruction.Flags & Flag_S)
+            {
+                // NOTE(kstandbridge): This is not wide
+                s8 SignedSource = *(u8 *)&Instruction.Bits[Encoding_DATA];
+                s16 SignedDestination = *(u16 *)&Destination;
+                s16 SignedOutput = SignedDestination;
                 
-                sub_op_type Op = Instruction.Bits[Encoding_REG];
-                
-                u8 HighPart = Instruction.Bits[Encoding_DATA_IF_W];
-                u8 LowPart = Instruction.Bits[Encoding_DATA];
-                u16 Source = PackU16(HighPart, LowPart);
-                u16 Destination = Context->Registers[Instruction.Bits[Encoding_RM]];
-                
-                b32 Auxiliary = false;
-                
-                if(Instruction.Flags & Flag_S)
+                if(Op == SubOp_Add)
                 {
-                    // NOTE(kstandbridge): This is not wide
-                    s8 SignedSource = *(u8 *)&Instruction.Bits[Encoding_DATA];
-                    s16 SignedDestination = *(u16 *)&Destination;
-                    s16 SignedOutput = SignedDestination;
-                    
-                    if(Op == SubOp_Add)
+                    if(SignedSource > 0)
                     {
-                        if(SignedSource > 0)
-                        {
-                            if((GetBits(UnpackU16Low(SignedSource), 3, 1) == 0b1) &&
-                               (GetBits(UnpackU16Low(SignedDestination), 3, 1) == 0b1))
-                            {
-                                Auxiliary = true;
-                            }
-                        }
-                        else
-                        {
-                            if(GetBits(UnpackU16Low(SignedSource), 3, 1) != GetBits(UnpackU16Low(SignedDestination), 3, 1))
-                            {
-                                Auxiliary = true;
-                            }
-                        }
-                        
-                        SignedOutput = SignedSource + SignedDestination;
-                        
-                        
-                        if(SignedOutput < SignedDestination)
-                        {
-                            Context->Flags |= Flag_CF;
-                        }
-                        
-                    }
-                    else if(Op == SubOp_Sub)
-                    {
-                        SignedOutput = SignedDestination - SignedSource;
-                        
-                        u8 HighResult = GetBits(UnpackU16Low(SignedOutput), 3, 4);
-                        u8 HighA = GetBits(UnpackU16Low(SignedDestination), 3, 4);
-                        if(HighResult > HighA)
+                        if((GetBits(UnpackU16Low(SignedSource), 3, 1) == 0b1) &&
+                           (GetBits(UnpackU16Low(SignedDestination), 3, 1) == 0b1))
                         {
                             Auxiliary = true;
                         }
-                        
-                        if(GetBits(UnpackU16High(SignedOutput), 7, 1) != GetBits(UnpackU16High(SignedDestination), 7, 1))
-                        {
-                            Context->Flags |= Flag_CF;
-                        }
-                        
-                    }
-                    
-                    if(Auxiliary)
-                    {
-                        Context->Flags |= Flag_AF;
-                    }
-                    
-                    u8 Low = UnpackU16Low(SignedOutput);
-                    u8 LowBits = (u8)CountSetBits(Low);
-                    if(LowBits % 2 == 0)
-                    {
-                        Context->Flags |= Flag_PF;
-                    }
-                    
-                    if(SignedOutput < 0)
-                    {
-                        Context->Flags |= Flag_SF;
-                    }
-                    
-                    b32 DestinationNegative = SignedDestination < 0;
-                    b32 OutputNegative = SignedOutput < 0;
-                    if(Context->Flags & Flag_CF)
-                    {
-                        Context->Flags &= ~Flag_OF;
-                    }
-                    else if(DestinationNegative != OutputNegative)
-                    {
-                        Context->Flags |= Flag_OF;
-                    }
-                    
-                    if(SignedOutput == 0)
-                    {
-                        Context->Flags |= Flag_ZF;
-                    }
-                    
-                    u16 ValueBefore = Context->Registers[Instruction.Bits[Encoding_RM]];
-                    Context->Registers[Instruction.Bits[Encoding_RM]] = *(u16 *)&SignedOutput;
-                    u16 ValueAfter = Context->Registers[Instruction.Bits[Encoding_RM]];
-                    if(ValueBefore != ValueAfter)
-                    {
-                        AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.Bits[Encoding_RM]), ValueBefore, ValueAfter);
-                    }
-                    
-                    
-                }
-                else
-                {
-                    u16 Output = SimulateArithmetic(Context, Op, Destination, Source);
-                    
-                    u16 ValueBefore = Context->Registers[Instruction.Bits[Encoding_RM]];
-                    Context->Registers[Instruction.Bits[Encoding_RM]] = Output;        
-                    u16 ValueAfter = Context->Registers[Instruction.Bits[Encoding_RM]];
-                    if(ValueBefore != ValueAfter)
-                    {
-                        AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.Bits[Encoding_RM]), ValueBefore, ValueAfter);
-                    }
-                    
-                }
-                
-                
-            } break;
-            
-            case Instruction_Add:
-            case Instruction_Sub:
-            case Instruction_Cmp:
-            {
-                Context->Flags = 0;
-                
-                sub_op_type Op = SubOp_Cmp;
-                
-                if(Instruction.Type == Instruction_Add)
-                {
-                    Op = SubOp_Add;
-                }
-                else if(Instruction.Type == Instruction_Sub)
-                {
-                    Op = SubOp_Sub;
-                } 
-                
-                switch(Instruction.Bits[Encoding_MOD])
-                {
-                    case Mod_MemoryMode:
-                    {                
-                        u16 Offset = 0;
-                        switch(Instruction.Bits[Encoding_RM])
-                        {
-                            case EffectiveAddress_BX_SI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_SI]; } break;
-                            case EffectiveAddress_BX_DI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_DI]; } break;
-                            case EffectiveAddress_BP_SI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_SI]; } break;
-                            case EffectiveAddress_BP_DI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_DI]; } break;
-                            case EffectiveAddress_SI:    { Offset = Context->Registers[RegisterWord_SI]; } break;
-                            case EffectiveAddress_DI:    { Offset = Context->Registers[RegisterWord_DI]; } break;
-                            case EffectiveAddress_BP:    { Offset = Context->Registers[RegisterWord_BP]; } break;
-                            case EffectiveAddress_BX:    { Offset = Context->Registers[RegisterWord_BX]; } break;
-                        }
-                        
-                        u8 Data = Context->Memory[Offset];
-                        
-                        if(Instruction.Flags & Flag_D)
-                        {
-                            u16 Source = Context->Registers[Instruction.Bits[Encoding_REG]];
-                            u16 Output = SimulateArithmetic(Context, Op, Data, Source);
-                            
-                            if(Instruction.Type != Instruction_Cmp)
-                            {
-                                u16 ValueBefore = Context->Registers[Instruction.Bits[Encoding_REG]];
-                                Context->Registers[Instruction.Bits[Encoding_REG]] = Output;
-                                u16 ValueAfter = Context->Registers[Instruction.Bits[Encoding_REG]];
-                                if(ValueBefore != ValueAfter)
-                                {
-                                    AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.Bits[Encoding_REG]), ValueBefore, ValueAfter);
-                                }
-                                
-                            }
-                        }
-                        
-                    } break;
-                    
-                    case Mod_8BitDisplace:
-                    case Mod_16BitDisplace:
-                    {
-                    } break;
-                    
-                    case Mod_RegisterMode:
-                    {
-                        if(Instruction.Flags & Flag_D)
-                        {
-                            u16 Source = Context->Registers[Instruction.Bits[Encoding_RM]];
-                            u16 Destination = Context->Registers[Instruction.Bits[Encoding_REG]];
-                            u16 Output = SimulateArithmetic(Context, Op, Destination, Source);
-                            if(Instruction.Type != Instruction_Cmp)
-                            {
-                                u16 ValueBefore = Context->Registers[Instruction.Bits[Encoding_REG]];
-                                Context->Registers[Instruction.Bits[Encoding_REG]] = Output;
-                                u16 ValueAfter = Context->Registers[Instruction.Bits[Encoding_REG]];
-                                if(ValueBefore != ValueAfter)
-                                {
-                                    AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.Bits[Encoding_REG]), ValueBefore, ValueAfter);
-                                }
-                            }
-                        }
-                        else 
-                        {
-                            u16 Source = Context->Registers[Instruction.Bits[Encoding_REG]];
-                            u16 Destination = Context->Registers[Instruction.Bits[Encoding_RM]];
-                            u16 Output = SimulateArithmetic(Context, Op, Destination, Source);
-                            if(Instruction.Type != Instruction_Cmp)
-                            {
-                                u16 ValueBefore = Context->Registers[Instruction.Bits[Encoding_RM]];
-                                Context->Registers[Instruction.Bits[Encoding_RM]] = Output;
-                                u16 ValueAfter = Context->Registers[Instruction.Bits[Encoding_RM]];
-                                if(ValueBefore != ValueAfter)
-                                {
-                                    AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.Bits[Encoding_RM]), ValueBefore, ValueAfter);
-                                }
-                            }
-                        }
-                    } break;
-                }
-            } break;
-            
-            case Instruction_MovImmediateMemory:
-            {
-                switch(Instruction.Bits[Encoding_MOD])
-                {
-                    case Mod_MemoryMode:
-                    {                
-                        if(Instruction.Bits[Encoding_RM] == EffectiveAddress_DirectAddress)
-                        {
-                            u8 HighPart = Instruction.Bits[Encoding_DISP_HI];
-                            u8 LowPart = Instruction.Bits[Encoding_DISP_LO];
-                            u16 Displacement  = PackU16(HighPart, LowPart);
-                            
-                            u8 Data = Instruction.Bits[Encoding_DATA];
-                            
-                            Context->Memory[Displacement] = Data;
-                        }
-                    } break;
-                    
-                    case Mod_8BitDisplace:
-                    case Mod_16BitDisplace:
-                    {
-                        
-                        u8 HighPart = Instruction.Bits[Encoding_DISP_HI];
-                        u8 LowPart = Instruction.Bits[Encoding_DISP_LO];
-                        u16 Displacement  = PackU16(HighPart, LowPart);
-                        
-                        
-                        u16 Offset = 0;
-                        switch(Instruction.Bits[Encoding_RM])
-                        {
-                            case EffectiveAddress_BX_SI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_SI]; } break;
-                            case EffectiveAddress_BX_DI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_DI]; } break;
-                            case EffectiveAddress_BP_SI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_SI]; } break;
-                            case EffectiveAddress_BP_DI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_DI]; } break;
-                            case EffectiveAddress_SI:    { Offset = Context->Registers[RegisterWord_SI]; } break;
-                            case EffectiveAddress_DI:    { Offset = Context->Registers[RegisterWord_DI]; } break;
-                            case EffectiveAddress_BP:    { Offset = Context->Registers[RegisterWord_BP]; } break;
-                            case EffectiveAddress_BX:    { Offset = Context->Registers[RegisterWord_BX]; } break;
-                        }
-                        
-                        u8 Data = Instruction.Bits[Encoding_DATA];
-                        
-                        Context->Memory[Displacement + Offset] = Data;
-                        
-                    } break;
-                    
-                }
-                
-            } break;
-            
-            case Instruction_MovImmediate:
-            {
-                if(Instruction.Flags & Flag_W)
-                {
-                    u16 ValueBefore = Context->Registers[Instruction.RegisterWord];
-                    Context->Registers[Instruction.RegisterWord] = PackU16(Instruction.Bits[Encoding_DATA_IF_W], Instruction.Bits[Encoding_DATA]);
-                    u16 ValueAfter = Context->Registers[Instruction.RegisterWord];
-                    
-                    if(ValueBefore != ValueAfter)
-                    {
-                        AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.RegisterWord), ValueBefore, ValueAfter);
-                    }
-                }
-                else
-                {
-                    u8 HighPart;
-                    u8 LowPart;
-                    
-                    u8 RegisterIndex = Instruction.RegisterByte;
-                    if(RegisterIndex > 4)
-                    {
-                        RegisterIndex -= 4;
-                        HighPart = Instruction.Bits[Encoding_DATA];
-                        LowPart = UnpackU16Low(Context->Registers[RegisterIndex]);
                     }
                     else
                     {
-                        HighPart = UnpackU16High(Context->Registers[RegisterIndex]);
-                        LowPart = Instruction.Bits[Encoding_DATA];
+                        if(GetBits(UnpackU16Low(SignedSource), 3, 1) != GetBits(UnpackU16Low(SignedDestination), 3, 1))
+                        {
+                            Auxiliary = true;
+                        }
                     }
                     
-                    Context->Registers[RegisterIndex] = PackU16(HighPart, LowPart);
+                    SignedOutput = SignedSource + SignedDestination;
+                    
+                    
+                    if(SignedOutput < SignedDestination)
+                    {
+                        Context->Flags |= Flag_CF;
+                    }
+                    
                 }
-            } break;
-            
-            case Instruction_MovRegisterSegment:
-            {
-                Context->Flags = 0;
+                else if(Op == SubOp_Sub)
+                {
+                    SignedOutput = SignedDestination - SignedSource;
+                    
+                    u8 HighResult = GetBits(UnpackU16Low(SignedOutput), 3, 4);
+                    u8 HighA = GetBits(UnpackU16Low(SignedDestination), 3, 4);
+                    if(HighResult > HighA)
+                    {
+                        Auxiliary = true;
+                    }
+                    
+                    if(GetBits(UnpackU16High(SignedOutput), 7, 1) != GetBits(UnpackU16High(SignedDestination), 7, 1))
+                    {
+                        Context->Flags |= Flag_CF;
+                    }
+                    
+                }
                 
-                if(Instruction.Flags & Flag_D)
+                if(Auxiliary)
                 {
-                    Context->SegmentRegisters[Instruction.Bits[Encoding_REG]] = Context->Registers[Instruction.Bits[Encoding_RM]];
+                    Context->Flags |= Flag_AF;
                 }
-                else
+                
+                u8 Low = UnpackU16Low(SignedOutput);
+                u8 LowBits = (u8)CountSetBits(Low);
+                if(LowBits % 2 == 0)
                 {
-                    Context->Registers[Instruction.Bits[Encoding_RM]] = Context->SegmentRegisters[Instruction.Bits[Encoding_REG]];
+                    Context->Flags |= Flag_PF;
                 }
-            } break;
-            
-            case Instruction_Mov:
+                
+                if(SignedOutput < 0)
+                {
+                    Context->Flags |= Flag_SF;
+                }
+                
+                b32 DestinationNegative = SignedDestination < 0;
+                b32 OutputNegative = SignedOutput < 0;
+                if(Context->Flags & Flag_CF)
+                {
+                    Context->Flags &= ~Flag_OF;
+                }
+                else if(DestinationNegative != OutputNegative)
+                {
+                    Context->Flags |= Flag_OF;
+                }
+                
+                if(SignedOutput == 0)
+                {
+                    Context->Flags |= Flag_ZF;
+                }
+                
+                u16 ValueBefore = Context->Registers[Instruction.Bits[Encoding_RM]];
+                Context->Registers[Instruction.Bits[Encoding_RM]] = *(u16 *)&SignedOutput;
+                u16 ValueAfter = Context->Registers[Instruction.Bits[Encoding_RM]];
+                if(ValueBefore != ValueAfter)
+                {
+                    AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.Bits[Encoding_RM]), ValueBefore, ValueAfter);
+                }
+                
+                
+            }
+            else
             {
-                switch(Instruction.Bits[Encoding_MOD])
+                u16 Output = SimulateArithmetic(Context, Op, Destination, Source);
+                
+                u16 ValueBefore = Context->Registers[Instruction.Bits[Encoding_RM]];
+                Context->Registers[Instruction.Bits[Encoding_RM]] = Output;        
+                u16 ValueAfter = Context->Registers[Instruction.Bits[Encoding_RM]];
+                if(ValueBefore != ValueAfter)
                 {
-                    case Mod_MemoryMode:
+                    AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.Bits[Encoding_RM]), ValueBefore, ValueAfter);
+                }
+                
+            }
+            
+            
+        } break;
+        
+        case Instruction_Add:
+        case Instruction_Sub:
+        case Instruction_Cmp:
+        {
+            Context->Flags = 0;
+            
+            sub_op_type Op = SubOp_Cmp;
+            
+            if(Instruction.Type == Instruction_Add)
+            {
+                Op = SubOp_Add;
+            }
+            else if(Instruction.Type == Instruction_Sub)
+            {
+                Op = SubOp_Sub;
+            } 
+            
+            switch(Instruction.Bits[Encoding_MOD])
+            {
+                case Mod_MemoryMode:
+                {                
+                    u16 Offset = 0;
+                    switch(Instruction.Bits[Encoding_RM])
                     {
-                        u8 HighPart = Instruction.Bits[Encoding_DISP_HI];
-                        u8 LowPart = Instruction.Bits[Encoding_DISP_LO];
-                        u16 Displacement  = PackU16(HighPart, LowPart);
+                        case EffectiveAddress_BX_SI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_SI]; } break;
+                        case EffectiveAddress_BX_DI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_DI]; } break;
+                        case EffectiveAddress_BP_SI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_SI]; } break;
+                        case EffectiveAddress_BP_DI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_DI]; } break;
+                        case EffectiveAddress_SI:    { Offset = Context->Registers[RegisterWord_SI]; } break;
+                        case EffectiveAddress_DI:    { Offset = Context->Registers[RegisterWord_DI]; } break;
+                        case EffectiveAddress_BP:    { Offset = Context->Registers[RegisterWord_BP]; } break;
+                        case EffectiveAddress_BX:    { Offset = Context->Registers[RegisterWord_BX]; } break;
+                    }
+                    
+                    u8 Data = Context->Memory[Offset];
+                    
+                    if(Instruction.Flags & Flag_D)
+                    {
+                        u16 Source = Context->Registers[Instruction.Bits[Encoding_REG]];
+                        u16 Output = SimulateArithmetic(Context, Op, Data, Source);
                         
-                        
-                        u16 Offset = 0;
-                        switch(Instruction.Bits[Encoding_RM])
+                        if(Instruction.Type != Instruction_Cmp)
                         {
-                            case EffectiveAddress_BX_SI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_SI]; } break;
-                            case EffectiveAddress_BX_DI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_DI]; } break;
-                            case EffectiveAddress_BP_SI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_SI]; } break;
-                            case EffectiveAddress_BP_DI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_DI]; } break;
-                            case EffectiveAddress_SI:    { Offset = Context->Registers[RegisterWord_SI]; } break;
-                            case EffectiveAddress_DI:    { Offset = Context->Registers[RegisterWord_DI]; } break;
-                            case EffectiveAddress_BP:    { Offset = Context->Registers[RegisterWord_BP]; } break;
-                            case EffectiveAddress_BX:    { Offset = Context->Registers[RegisterWord_BX]; } break;
-                        }
-                        
-                        if(Instruction.Flags & Flag_D)
-                        {
-                            Context->Registers[Instruction.Bits[Encoding_REG]] = Context->Memory[Displacement + Offset];
-                        }
-                        else
-                        {
-                            u8 *Target = Context->Memory + Displacement + Offset;
-                            *Target = (u8)Context->Registers[Instruction.Bits[Encoding_REG]];
-                        }
-                        
-                    } break;
-                    case Mod_8BitDisplace:
-                    {
-                    } break;
-                    case Mod_16BitDisplace:
-                    {
-                    } break;
-                    case Mod_RegisterMode:
-                    {
-                        if(Instruction.Flags & Flag_W)
-                        {                        
-                            u16 Source = Context->Registers[Instruction.Bits[Encoding_REG]];
+                            u16 ValueBefore = Context->Registers[Instruction.Bits[Encoding_REG]];
+                            Context->Registers[Instruction.Bits[Encoding_REG]] = Output;
+                            u16 ValueAfter = Context->Registers[Instruction.Bits[Encoding_REG]];
+                            if(ValueBefore != ValueAfter)
+                            {
+                                AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.Bits[Encoding_REG]), ValueBefore, ValueAfter);
+                            }
                             
+                        }
+                    }
+                    
+                } break;
+                
+                case Mod_8BitDisplace:
+                case Mod_16BitDisplace:
+                {
+                } break;
+                
+                case Mod_RegisterMode:
+                {
+                    if(Instruction.Flags & Flag_D)
+                    {
+                        u16 Source = Context->Registers[Instruction.Bits[Encoding_RM]];
+                        u16 Destination = Context->Registers[Instruction.Bits[Encoding_REG]];
+                        u16 Output = SimulateArithmetic(Context, Op, Destination, Source);
+                        if(Instruction.Type != Instruction_Cmp)
+                        {
+                            u16 ValueBefore = Context->Registers[Instruction.Bits[Encoding_REG]];
+                            Context->Registers[Instruction.Bits[Encoding_REG]] = Output;
+                            u16 ValueAfter = Context->Registers[Instruction.Bits[Encoding_REG]];
+                            if(ValueBefore != ValueAfter)
+                            {
+                                AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.Bits[Encoding_REG]), ValueBefore, ValueAfter);
+                            }
+                        }
+                    }
+                    else 
+                    {
+                        u16 Source = Context->Registers[Instruction.Bits[Encoding_REG]];
+                        u16 Destination = Context->Registers[Instruction.Bits[Encoding_RM]];
+                        u16 Output = SimulateArithmetic(Context, Op, Destination, Source);
+                        if(Instruction.Type != Instruction_Cmp)
+                        {
                             u16 ValueBefore = Context->Registers[Instruction.Bits[Encoding_RM]];
-                            Context->Registers[Instruction.Bits[Encoding_RM]] = Source;
+                            Context->Registers[Instruction.Bits[Encoding_RM]] = Output;
                             u16 ValueAfter = Context->Registers[Instruction.Bits[Encoding_RM]];
-                            
                             if(ValueBefore != ValueAfter)
                             {
                                 AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.Bits[Encoding_RM]), ValueBefore, ValueAfter);
                             }
-                            
-                            
+                        }
+                    }
+                } break;
+            }
+        } break;
+        
+        case Instruction_MovImmediateMemory:
+        {
+            switch(Instruction.Bits[Encoding_MOD])
+            {
+                case Mod_MemoryMode:
+                {                
+                    if(Instruction.Bits[Encoding_RM] == EffectiveAddress_DirectAddress)
+                    {
+                        u8 HighPart = Instruction.Bits[Encoding_DISP_HI];
+                        u8 LowPart = Instruction.Bits[Encoding_DISP_LO];
+                        u16 Displacement  = PackU16(HighPart, LowPart);
+                        
+                        u8 Data = Instruction.Bits[Encoding_DATA];
+                        
+                        Context->Memory[Displacement] = Data;
+                    }
+                } break;
+                
+                case Mod_8BitDisplace:
+                case Mod_16BitDisplace:
+                {
+                    
+                    u8 HighPart = Instruction.Bits[Encoding_DISP_HI];
+                    u8 LowPart = Instruction.Bits[Encoding_DISP_LO];
+                    u16 Displacement  = PackU16(HighPart, LowPart);
+                    
+                    
+                    u16 Offset = 0;
+                    switch(Instruction.Bits[Encoding_RM])
+                    {
+                        case EffectiveAddress_BX_SI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_SI]; } break;
+                        case EffectiveAddress_BX_DI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_DI]; } break;
+                        case EffectiveAddress_BP_SI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_SI]; } break;
+                        case EffectiveAddress_BP_DI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_DI]; } break;
+                        case EffectiveAddress_SI:    { Offset = Context->Registers[RegisterWord_SI]; } break;
+                        case EffectiveAddress_DI:    { Offset = Context->Registers[RegisterWord_DI]; } break;
+                        case EffectiveAddress_BP:    { Offset = Context->Registers[RegisterWord_BP]; } break;
+                        case EffectiveAddress_BX:    { Offset = Context->Registers[RegisterWord_BX]; } break;
+                    }
+                    
+                    u8 Data = Instruction.Bits[Encoding_DATA];
+                    
+                    Context->Memory[Displacement + Offset] = Data;
+                    
+                } break;
+                
+            }
+            
+        } break;
+        
+        case Instruction_MovImmediate:
+        {
+            if(Instruction.Flags & Flag_W)
+            {
+                u16 ValueBefore = Context->Registers[Instruction.RegisterWord];
+                Context->Registers[Instruction.RegisterWord] = PackU16(Instruction.Bits[Encoding_DATA_IF_W], Instruction.Bits[Encoding_DATA]);
+                u16 ValueAfter = Context->Registers[Instruction.RegisterWord];
+                
+                if(ValueBefore != ValueAfter)
+                {
+                    AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.RegisterWord), ValueBefore, ValueAfter);
+                }
+            }
+            else
+            {
+                u8 HighPart;
+                u8 LowPart;
+                
+                u8 RegisterIndex = Instruction.RegisterByte;
+                if(RegisterIndex > 4)
+                {
+                    RegisterIndex -= 4;
+                    HighPart = Instruction.Bits[Encoding_DATA];
+                    LowPart = UnpackU16Low(Context->Registers[RegisterIndex]);
+                }
+                else
+                {
+                    HighPart = UnpackU16High(Context->Registers[RegisterIndex]);
+                    LowPart = Instruction.Bits[Encoding_DATA];
+                }
+                
+                Context->Registers[RegisterIndex] = PackU16(HighPart, LowPart);
+            }
+        } break;
+        
+        case Instruction_MovRegisterSegment:
+        {
+            Context->Flags = 0;
+            
+            if(Instruction.Flags & Flag_D)
+            {
+                Context->SegmentRegisters[Instruction.Bits[Encoding_REG]] = Context->Registers[Instruction.Bits[Encoding_RM]];
+            }
+            else
+            {
+                Context->Registers[Instruction.Bits[Encoding_RM]] = Context->SegmentRegisters[Instruction.Bits[Encoding_REG]];
+            }
+        } break;
+        
+        case Instruction_Mov:
+        {
+            switch(Instruction.Bits[Encoding_MOD])
+            {
+                case Mod_MemoryMode:
+                {
+                    u8 HighPart = Instruction.Bits[Encoding_DISP_HI];
+                    u8 LowPart = Instruction.Bits[Encoding_DISP_LO];
+                    u16 Displacement  = PackU16(HighPart, LowPart);
+                    
+                    
+                    u16 Offset = 0;
+                    switch(Instruction.Bits[Encoding_RM])
+                    {
+                        case EffectiveAddress_BX_SI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_SI]; } break;
+                        case EffectiveAddress_BX_DI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_DI]; } break;
+                        case EffectiveAddress_BP_SI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_SI]; } break;
+                        case EffectiveAddress_BP_DI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_DI]; } break;
+                        case EffectiveAddress_SI:    { Offset = Context->Registers[RegisterWord_SI]; } break;
+                        case EffectiveAddress_DI:    { Offset = Context->Registers[RegisterWord_DI]; } break;
+                        case EffectiveAddress_BP:    { Offset = Context->Registers[RegisterWord_BP]; } break;
+                        case EffectiveAddress_BX:    { Offset = Context->Registers[RegisterWord_BX]; } break;
+                    }
+                    
+                    if(Instruction.Flags & Flag_D)
+                    {
+                        Context->Registers[Instruction.Bits[Encoding_REG]] = Context->Memory[Displacement + Offset];
+                    }
+                    else
+                    {
+                        u8 *Target = Context->Memory + Displacement + Offset;
+                        *Target = (u8)Context->Registers[Instruction.Bits[Encoding_REG]];
+                    }
+                    
+                } break;
+                case Mod_8BitDisplace:
+                {
+                } break;
+                case Mod_16BitDisplace:
+                {
+                } break;
+                case Mod_RegisterMode:
+                {
+                    if(Instruction.Flags & Flag_W)
+                    {                        
+                        u16 Source = Context->Registers[Instruction.Bits[Encoding_REG]];
+                        
+                        u16 ValueBefore = Context->Registers[Instruction.Bits[Encoding_RM]];
+                        Context->Registers[Instruction.Bits[Encoding_RM]] = Source;
+                        u16 ValueAfter = Context->Registers[Instruction.Bits[Encoding_RM]];
+                        
+                        if(ValueBefore != ValueAfter)
+                        {
+                            AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.Bits[Encoding_RM]), ValueBefore, ValueAfter);
+                        }
+                        
+                        
+                    }
+                    else
+                    {
+                        u8 DestIndex = Instruction.Bits[Encoding_RM];
+                        u8 SourceIndex = Instruction.Bits[Encoding_REG];
+                        if(SourceIndex > 3)
+                        {
+                            SourceIndex -= 4;
+                            u8 LowPart = UnpackU16High(Context->Registers[SourceIndex]);
+                            u8 HighPart = UnpackU16High(Context->Registers[DestIndex]);
+                            Context->Registers[DestIndex] = PackU16(HighPart, LowPart);
                         }
                         else
                         {
-                            u8 DestIndex = Instruction.Bits[Encoding_RM];
-                            u8 SourceIndex = Instruction.Bits[Encoding_REG];
-                            if(SourceIndex > 3)
+                            u8 LowPart = UnpackU16Low(Context->Registers[SourceIndex]);
+                            u8 HighPart;
+                            if(DestIndex > 3)
                             {
-                                SourceIndex -= 4;
-                                u8 LowPart = UnpackU16High(Context->Registers[SourceIndex]);
-                                u8 HighPart = UnpackU16High(Context->Registers[DestIndex]);
-                                Context->Registers[DestIndex] = PackU16(HighPart, LowPart);
+                                DestIndex -= 4;
+                                HighPart = UnpackU16Low(Context->Registers[DestIndex]);
                             }
                             else
                             {
-                                u8 LowPart = UnpackU16Low(Context->Registers[SourceIndex]);
-                                u8 HighPart;
-                                if(DestIndex > 3)
-                                {
-                                    DestIndex -= 4;
-                                    HighPart = UnpackU16Low(Context->Registers[DestIndex]);
-                                }
-                                else
-                                {
-                                    HighPart = UnpackU16High(Context->Registers[DestIndex]);
-                                }
-                                
-                                Context->Registers[DestIndex] = PackU16(LowPart, HighPart);
+                                HighPart = UnpackU16High(Context->Registers[DestIndex]);
                             }
+                            
+                            Context->Registers[DestIndex] = PackU16(LowPart, HighPart);
                         }
-                    } break;
-                    
-                    InvalidDefaultCase;
-                }
-            } break;
-        }
-        
-        umm InstructionPointerAfter = Context->InstructionStreamAt;
-        AppendFormatString(&StringState, " ip:%x->%x", InstructionPointerBefore, InstructionPointerAfter);
-        register_flags FlagsAfter = Context->Flags;
-        
-        if(FlagsBefore != FlagsAfter)
-        {
-            switch(Instruction.Type)
-            {
-                case Instruction_Immediate:
-                case Instruction_Add:
-                case Instruction_Sub:
-                case Instruction_Cmp:
-                {
-                    AppendFormatString(&StringState, " flags:");
-                    if(FlagsBefore & Flag_CF) AppendFormatString(&StringState, "C");
-                    if(FlagsBefore & Flag_PF) AppendFormatString(&StringState, "P");
-                    if(FlagsBefore & Flag_AF) AppendFormatString(&StringState, "A");
-                    if(FlagsBefore & Flag_ZF) AppendFormatString(&StringState, "Z");
-                    if(FlagsBefore & Flag_SF) AppendFormatString(&StringState, "S");
-                    if(FlagsBefore & Flag_IF) AppendFormatString(&StringState, "I");
-                    if(FlagsBefore & Flag_DF) AppendFormatString(&StringState, "D");
-                    if(FlagsBefore & Flag_OF) AppendFormatString(&StringState, "O");
-                    AppendFormatString(&StringState, "->");
-                    if(FlagsAfter & Flag_CF) AppendFormatString(&StringState, "C");
-                    if(FlagsAfter & Flag_PF) AppendFormatString(&StringState, "P");
-                    if(FlagsAfter & Flag_AF) AppendFormatString(&StringState, "A");
-                    if(FlagsAfter & Flag_ZF) AppendFormatString(&StringState, "Z");
-                    if(FlagsAfter & Flag_SF) AppendFormatString(&StringState, "S");
-                    if(FlagsAfter & Flag_IF) AppendFormatString(&StringState, "I");
-                    if(FlagsAfter & Flag_DF) AppendFormatString(&StringState, "D");
-                    if(FlagsAfter & Flag_OF) AppendFormatString(&StringState, "O");
+                    }
                 } break;
+                
+                InvalidDefaultCase;
             }
+        } break;
+    }
+    
+    umm InstructionPointerAfter = Context->InstructionStreamAt;
+    AppendFormatString(&StringState, " ip:%x->%x", InstructionPointerBefore, InstructionPointerAfter);
+    register_flags FlagsAfter = Context->Flags;
+    
+    if(FlagsBefore != FlagsAfter)
+    {
+        switch(Instruction.Type)
+        {
+            case Instruction_Immediate:
+            case Instruction_Add:
+            case Instruction_Sub:
+            case Instruction_Cmp:
+            {
+                AppendFormatString(&StringState, " flags:");
+                if(FlagsBefore & Flag_CF) AppendFormatString(&StringState, "C");
+                if(FlagsBefore & Flag_PF) AppendFormatString(&StringState, "P");
+                if(FlagsBefore & Flag_AF) AppendFormatString(&StringState, "A");
+                if(FlagsBefore & Flag_ZF) AppendFormatString(&StringState, "Z");
+                if(FlagsBefore & Flag_SF) AppendFormatString(&StringState, "S");
+                if(FlagsBefore & Flag_IF) AppendFormatString(&StringState, "I");
+                if(FlagsBefore & Flag_DF) AppendFormatString(&StringState, "D");
+                if(FlagsBefore & Flag_OF) AppendFormatString(&StringState, "O");
+                AppendFormatString(&StringState, "->");
+                if(FlagsAfter & Flag_CF) AppendFormatString(&StringState, "C");
+                if(FlagsAfter & Flag_PF) AppendFormatString(&StringState, "P");
+                if(FlagsAfter & Flag_AF) AppendFormatString(&StringState, "A");
+                if(FlagsAfter & Flag_ZF) AppendFormatString(&StringState, "Z");
+                if(FlagsAfter & Flag_SF) AppendFormatString(&StringState, "S");
+                if(FlagsAfter & Flag_IF) AppendFormatString(&StringState, "I");
+                if(FlagsAfter & Flag_DF) AppendFormatString(&StringState, "D");
+                if(FlagsAfter & Flag_OF) AppendFormatString(&StringState, "O");
+            } break;
         }
     }
     
@@ -1737,12 +1745,8 @@ SimulateStep(simulator_context *Context)
 internal void
 Simulate(simulator_context *Context)
 {
-    for(;;)
+    while(Context->InstructionStreamAt < Context->InstructionStreamSize)
     {
         SimulateStep(Context);
-        if(Context->InstructionStreamAt >= Context->InstructionStreamSize)
-        {
-            break;
-        } 
     }
 }

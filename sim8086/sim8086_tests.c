@@ -3598,8 +3598,8 @@ RunSimulateTests(memory_arena *Arena)
         Output = SimulateStep(&Context);
         AssertEqualString(String("jne $-5 ; ip:0x1f->0x21"), Output);
         
-        Output = SimulateStep(&Context);
-        AssertEqualString(String("\n\nFinal registers:\n\t\tdx: 0x0006 (6)\n\t\tbx: 0x0006 (6)\n\t\tbp: 0x03e6 (998)\n\t\tip: 0x0021 (33)\n\tflags: PZ"), Output);
+        Output = GetRegisterDetails(&Context);
+        AssertEqualString(String("\t\tdx: 0x0006 (6)\n\t\tbx: 0x0006 (6)\n\t\tbp: 0x03e6 (998)\n\t\tip: 0x0021 (33)\n\tflags: PZ"), Output);
         
         EndTemporaryMemory(MemoryFlush);
     }
