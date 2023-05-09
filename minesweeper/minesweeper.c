@@ -18,10 +18,13 @@ InitApp(app_memory *AppMemory)
     Assert(AppState);
     AppState->RandomState.Value = (u32)PlatformGetSystemTimestamp();
     
-    sprite_sheet *Sprite = &AppState->Sprite;
-    stbi_uc *Bytes = stbi_load("sprite.png", &Sprite->Width, &Sprite->Height, &Sprite->Comp, 4);
-    Sprite->Handle = DirectXLoadTexture(Sprite->Width, Sprite->Height, (u32 *)Bytes);
-    free(Bytes);
+    // TODO(kstandbridge): Move spritesheet loading to thread?
+    {    
+        sprite_sheet *Sprite = &AppState->Sprite;
+        stbi_uc *Bytes = stbi_load("sprite.png", &Sprite->Width, &Sprite->Height, &Sprite->Comp, 4);
+        Sprite->Handle = DirectXLoadTexture(Sprite->Width, Sprite->Height, (u32 *)Bytes);
+        free(Bytes);
+    }
     
     AppState->WorkQueue = PlatformMakeWorkQueue(&AppState->Arena, 4);
     
@@ -31,8 +34,7 @@ InitApp(app_memory *AppMemory)
     
     PlatformSetWindowSize(V2(322, 464));
     
-    
-    // NOTE(kstandbridge): Loading a glyph sprite sheet
+    // TODO(kstandbridge): Move loading a glyph sprite sheet to thread in engine?
     {
         ui_state *UIState = AppState->UIState;
         LogDebug("Loading a glyph sprite sheet");
@@ -46,12 +48,11 @@ InitApp(app_memory *AppMemory)
         
 #if 1
         u32 FirstChar = 0;
-        u32 LastChar = 256;
+        u32 LastChar = 255;
 #else
         u32 FirstChar = 0x0400;
         u32 LastChar = FirstChar + 255;
 #endif
-        
         s32 MaxWidth = 0;
         s32 MaxHeight = 0;
         s32 TotalWidth = 0;
@@ -170,7 +171,6 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     BeginUI(UIState, Input, RenderGroup);
     
 #if 0
-    
     {    
         v2 P = V2(0, 0);
         v2 Size = UIState->SpriteSheetSize;
@@ -183,22 +183,15 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
         PushRenderCommandSprite(RenderGroup, P, 3.0f, Size, V4(1, 1, 1, 1), V4(0, 0, 1, 1), UIState->GlyphSheetHandle);
     }
     
-#if 0
-    string LoremIpsum = String("Lorem Ipsum is simply dummy text of the printing and typesetting\nindustry. Lorem Ipsum has been the industry's standard dummy\ntext ever since the 1500s, when an unknown printer took a galley\nof type and scrambled it to make a type specimen book. It has\nsurvived not only five centuries, but also the leap into electronic\ntypesetting, remaining essentially unchanged. It was popularised in\nthe 1960s with the release of Letraset sheets containing Lorem\nIpsum passages, and more recently with desktop publishing\nsoftware like Aldus PageMaker including versions of Lorem Ipsum.");
-#else
     string LoremIpsum = String("Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.");
-#endif
-    
     rectangle2 Bounds = Rectangle2(Input->MouseP, V2(RenderGroup->Width, RenderGroup->Height));
-    
     DrawTextAt(UIState, Bounds, 4.0f, GlobalScale, V4(0.3f, 0, 0.3f, 1), LoremIpsum);
-    
 #else
-    
     v2 WorkingArea = V2(316, 436);
     v2 OffSet = V2((RenderGroup->Width * 0.5f) - (WorkingArea.X * 0.5f),
                    (RenderGroup->Height * 0.5f) - (WorkingArea.Y * 0.5f));
     rectangle2 Bounds = Rectangle2(OffSet, V2Add(OffSet, WorkingArea));
+    
     BeginGrid(UIState, Bounds, 1, 2);
     {
         GridSetRowHeight(UIState, 0, 28.0f);
@@ -269,8 +262,6 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                 GridSetColumnWidth(UIState, 1, (26.0f + 8.0f)*GlobalScale);
                 
                 rectangle2 MineCountBounds = GridGetCellBounds(UIState, 0, 0, 16.0f);
-                PushRenderCommandAlternateRectOutline(RenderGroup, MineCountBounds, 1.0f, 1.0f,
-                                                      RGBv4(128, 128, 128), RGBv4(255, 255, 255));
                 DrawNumber(RenderGroup, &AppState->Sprite, MineCountBounds, (AppState->RemainingTiles == 0) ? 0 : AppState->MinesRemaining);
                 
                 rectangle2 FaceButtonBounds = GridGetCellBounds(UIState, 1, 0, 16.0f);
@@ -285,6 +276,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                 {
                     InitGame(AppState);
                 }
+                
                 ui_interaction_state InteractionState = AddUIInteraction(UIState, FaceButtonBounds, Interaction);
                 if(InteractionState == UIInteractionState_HotClicked)
                 {
@@ -308,8 +300,6 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                 }
                 
                 rectangle2 TimerBounds = GridGetCellBounds(UIState, 2, 0, 16.0f);
-                PushRenderCommandAlternateRectOutline(RenderGroup, TimerBounds, 1.0f, 1.0f,
-                                                      RGBv4(128, 128, 128), RGBv4(255, 255, 255));
                 DrawNumber(RenderGroup, &AppState->Sprite, TimerBounds, (u32)AppState->Timer);
             }
             EndGrid(UIState);
@@ -348,7 +338,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                             };
                             
                             if(((Flags & TileFlag_Flag) == 0) &&
-                               ((Flags & TileFlag_Unkown) == 0))
+                               ((Flags & TileFlag_Unknown) == 0))
                             {                                
                                 if(InteractionsAreEqual(Interaction, UIState->ToExecute))
                                 {
@@ -368,12 +358,12 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                                     if(Flags & TileFlag_Flag)
                                     {
                                         Flags &= ~TileFlag_Flag;
-                                        Flags |= TileFlag_Unkown;
+                                        Flags |= TileFlag_Unknown;
                                         ++AppState->MinesRemaining;
                                     }
-                                    else if(Flags & TileFlag_Unkown)
+                                    else if(Flags & TileFlag_Unknown)
                                     {
-                                        Flags &= ~TileFlag_Unkown;
+                                        Flags &= ~TileFlag_Unknown;
                                     }
                                     else
                                     {
@@ -425,15 +415,15 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                             DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 0);
                         }
 #endif
-                        else if(Flags & TileFlag_Flag)
-                        {
-                            DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 4);
-                        }
                         else if(Flags & TileFlag_Visited)
                         {
                             DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, Mines % 8);
                         }
-                        else if(Flags & TileFlag_Unkown)
+                        else if(Flags & TileFlag_Flag)
+                        {
+                            DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 4);
+                        }
+                        else if(Flags & TileFlag_Unknown)
                         {
                             DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 3);
                         }
@@ -454,7 +444,6 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     
     EndUI(UIState);
     CheckArena(&AppState->Arena);
-    
 }
 
 #include "minesweeper_rendering.c"

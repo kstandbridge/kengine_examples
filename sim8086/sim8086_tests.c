@@ -2974,23 +2974,16 @@ RunIPRegisterTests(memory_arena *Arena)
                           StreamToAssembly(MemoryFlush.Arena, Stream, sizeof(Stream)));
         EndTemporaryMemory(MemoryFlush); MemoryFlush = BeginTemporaryMemory(Arena);
         simulator_context Context = GetSimulatorContext(MemoryFlush.Arena, Stream, sizeof(Stream));
-        SimulateStep(&Context);
-        AssertEqualHex(0xc8, Context.Registers[RegisterWord_CX]);
-        AssertEqualHex(0x3, Context.InstructionStreamAt);
-        AssertEqualBits16((0), Context.Flags);
-        SimulateStep(&Context);
-        AssertEqualHex(0xc8, Context.Registers[RegisterWord_BX]);
-        AssertEqualHex(0x5, Context.InstructionStreamAt);
-        AssertEqualBits16((0), Context.Flags);
-        SimulateStep(&Context);
-        AssertEqualHex(0x4b0, Context.Registers[RegisterWord_CX]);
-        AssertEqualHex(0x9, Context.InstructionStreamAt);
-        AssertEqualBits16((Flag_AF), Context.Flags);
-        SimulateStep(&Context);
-        AssertEqualHex(0x7d0, Context.Registers[RegisterWord_BX]);
-        AssertEqualHex(0xc, Context.InstructionStreamAt);
-        AssertEqualBits16((0), Context.Flags);
-        SimulateStep(&Context);
+        string Output = SimulateStep(&Context);
+        AssertEqualString(String("mov cx, -56 ; cx:0x0->0xc8 ip:0x0->0x3"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("mov bx, cx ; bx:0x0->0xc8 ip:0x3->0x5"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("add cx, 1000 ; cx:0xc8->0x4b0 ip:0x5->0x9 flags:->A"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("mov bx, 2000 ; bx:0xc8->0x7d0 ip:0x9->0xc"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("sub cx, bx ; cx:0x4b0->0xfce0 ip:0xc->0xe flags:A->CS"), Output);
         AssertEqualHex(0xfce0, Context.Registers[RegisterWord_CX]);
         AssertEqualHex(0xe, Context.InstructionStreamAt);
         AssertEqualBits16((Flag_CF|Flag_SF), Context.Flags);
@@ -3538,13 +3531,86 @@ RunMemoryAddLoopTests(memory_arena *Arena)
     
 }
 
+inline void
+RunSimulateTests(memory_arena *Arena)
+{
+    {
+        temporary_memory MemoryFlush = BeginTemporaryMemory(Arena);
+        u8 Stream[] = 
+        { 
+            0b10111010, 0b00000110, 0b00000000, 0b10111101, 0b11101000, 0b00000011, 0b10111110, 0b00000000, 0b00000000, 0b10001001, 0b00110010, 0b10000011, 0b11000110, 0b00000010, 0b00111001, 0b11010110, 0b01110101, 0b11110111, 0b10111011, 0b00000000, 0b00000000, 0b10001001, 0b11010110, 0b10000011, 0b11101101, 0b00000010, 0b00000011, 0b00011010, 0b10000011, 0b11101110, 0b00000010, 0b01110101, 0b11111001
+        };
+        
+        simulator_context Context = GetSimulatorContext(Arena, Stream, sizeof(Stream));
+        
+        string Output = SimulateStep(&Context); // mov dx, 6
+        AssertEqualString(String("mov dx, 6 ; dx:0x0->0x6 ip:0x0->0x3"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("mov bp, 1000 ; bp:0x0->0x3e8 ip:0x3->0x6"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("mov si, 0 ; ip:0x6->0x9"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("mov word [bp + si], si ; ip:0x9->0xb"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("add si, 2 ; si:0x0->0x2 ip:0xb->0xe"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("cmp si, dx ; ip:0xe->0x10 flags:->CPAS"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("jne $-7 ; ip:0x10->0x9"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("mov word [bp + si], si ; ip:0x9->0xb"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("add si, 2 ; si:0x2->0x4 ip:0xb->0xe flags:CPAS->"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("cmp si, dx ; ip:0xe->0x10 flags:->CAS"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("jne $-7 ; ip:0x10->0x9"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("mov word [bp + si], si ; ip:0x9->0xb"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("add si, 2 ; si:0x4->0x6 ip:0xb->0xe flags:CAS->P"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("cmp si, dx ; ip:0xe->0x10 flags:P->PZ"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("jne $-7 ; ip:0x10->0x12"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("mov bx, 0 ; ip:0x12->0x15"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("mov si, dx ; ip:0x15->0x17"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("sub bp, 2 ; bp:0x3e8->0x3e6 ip:0x17->0x1a flags:PZ->"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("add bx, word [bp + si] ; bx:0x0->0x4 ip:0x1a->0x1c"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("sub si, 2 ; si:0x6->0x4 ip:0x1c->0x1f"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("jne $-5 ; ip:0x1f->0x1a"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("add bx, word [bp + si] ; bx:0x4->0x6 ip:0x1a->0x1c flags:->P"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("sub si, 2 ; si:0x4->0x2 ip:0x1c->0x1f flags:P->"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("jne $-5 ; ip:0x1f->0x1a"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("add bx, word [bp + si] ; ip:0x1a->0x1c flags:->P"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("sub si, 2 ; si:0x2->0x0 ip:0x1c->0x1f flags:P->PZ"), Output);
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("jne $-5 ; ip:0x1f->0x21"), Output);
+        
+        Output = SimulateStep(&Context);
+        AssertEqualString(String("\n\nFinal registers:\n\t\tdx: 0x0006 (6)\n\t\tbx: 0x0006 (6)\n\t\tbp: 0x03e6 (998)\n\t\tip: 0x0021 (33)\n\tflags: PZ"), Output);
+        
+        EndTemporaryMemory(MemoryFlush);
+    }
+}
+
 void
 RunAllTests(memory_arena *Arena)
 {
     RunInstructionTableTests();
     RunDisassembleTests();
     RunDisassembleToAssemblyTests(Arena);
-    
     RunImmediateMovTests(Arena);
     RunRegisterMovTests(Arena);
     RunAddSubCmpTests(Arena);
@@ -3552,6 +3618,7 @@ RunAllTests(memory_arena *Arena)
     RunIPConditionalJumpTests(Arena);
     RunMemoryMovTests(Arena);
     RunMemoryAddLoopTests(Arena);
+    RunSimulateTests(Arena);
     
 #if 0
     PlatformConsoleOut("\n");

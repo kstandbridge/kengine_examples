@@ -1,0 +1,2 @@
+feat: console app with output
+feat: dump memory flag

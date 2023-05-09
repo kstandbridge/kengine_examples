@@ -66,6 +66,8 @@ SegmentRegisterToString(segment_register_type Type)
 
 typedef struct simulator_context
 {
+    memory_arena *Arena;
+    
     b32 IsNextOpLock;
     b32 IsNextOpSegment;
     u8 NextOpSegment;

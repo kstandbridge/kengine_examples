@@ -5,7 +5,7 @@ typedef enum tile_flag
     TileFlag_Visited = (1 << 0),
     TileFlag_Mine =    (1 << 1),
     TileFlag_Flag =    (1 << 2),
-    TileFlag_Unkown =  (1 << 3),
+    TileFlag_Unknown =  (1 << 3),
 } tile_flag;
 
 internal void

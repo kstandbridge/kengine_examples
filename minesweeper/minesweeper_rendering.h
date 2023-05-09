@@ -6,7 +6,6 @@ typedef struct sprite_sheet
     s32 Height;
     s32 Comp;
     void *Handle;
-    
 } sprite_sheet;
 
 inline void
