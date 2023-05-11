@@ -7,6 +7,7 @@ typedef struct app_state
     ui_state *UIState;
     random_state RandomState;
     sprite_sheet Sprite;
+    ticket_mutex AssetLock;
     
     f32 Timer;
     

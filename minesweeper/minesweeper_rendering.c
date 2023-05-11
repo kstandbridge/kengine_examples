@@ -1,6 +1,18 @@
-inline void
-DrawSprite(render_group *RenderGroup, sprite_sheet *Sprite, f32 OffsetY, u32 Index, v2 Size, v2 P)
+internal void
+LoadSpriteSheetThread(memory_arena *TransientArena, sprite_sheet *Sprite)
 {
+    string File = PlatformReadEntireFile(TransientArena, String("sprite.png"));
+    stbi_uc *Bytes = stbi_load_from_memory(File.Data, (s32)File.Size, &Sprite->Width, &Sprite->Height, &Sprite->Comp, 4);
+    Sprite->Handle = DirectXLoadTexture(Sprite->Width, Sprite->Height, (u32 *)Bytes);
+    
+    Sprite->StateType = AssetState_Loaded;
+}
+
+inline void
+DrawSprite(app_state *AppState, render_group *RenderGroup, f32 OffsetY, u32 Index, v2 Size, v2 P)
+{
+    sprite_sheet *Sprite = &AppState->Sprite;
+    
     v4 UV = V4((Index*Size.X), 
                OffsetY, 
                ((Index+1)*Size.X), 
@@ -12,50 +24,62 @@ DrawSprite(render_group *RenderGroup, sprite_sheet *Sprite, f32 OffsetY, u32 Ind
     
     Size = V2Multiply(Size, V2Set1(GlobalScale));
     
-    PushRenderCommandSprite(RenderGroup, P, 1.0f, Size, V4(1, 1, 1, 1), UV, Sprite->Handle);
+    BeginTicketMutex(&AppState->AssetLock);
+    
+    if(Sprite->StateType == AssetState_Loaded)
+    {
+        PushRenderCommandSprite(RenderGroup, P, 1.0f, Size, V4(1, 1, 1, 1), UV, Sprite->Handle);
+    }
+    else if(Sprite->StateType == AssetState_Unloaded)
+    {
+        Sprite->StateType = AssetState_Queued;
+        PlatformAddWorkEntry(AppState->WorkQueue, LoadSpriteSheetThread, Sprite);
+    }
+    
+    EndTicketMutex(&AppState->AssetLock);
 }
 
 inline void
-DrawNumber_(render_group *RenderGroup, sprite_sheet *Sprite, v2 P, u32 Index)
+DrawNumber_(app_state *AppState, render_group *RenderGroup, v2 P, u32 Index)
 {
     f32 OffsetY = 32.0f;
     v2 Size = V2(13.0f, 23.0f);
-    DrawSprite(RenderGroup, Sprite, OffsetY, Index, Size, P);
+    DrawSprite(AppState, RenderGroup, OffsetY, Index, Size, P);
 }
 
 inline void
-DrawNumber(render_group *RenderGroup, sprite_sheet *Sprite, rectangle2 Bounds, u32 Number)
+DrawNumber(app_state *AppState, render_group *RenderGroup, rectangle2 Bounds, u32 Number)
 {
     PushRenderCommandAlternateRectOutline(RenderGroup, Bounds, 1.0f, 1.0f,
                                           RGBv4(128, 128, 128), RGBv4(255, 255, 255));
     v2 P = Bounds.Min; P.X += 1; P.Y += 1;
-    DrawNumber_(RenderGroup, Sprite, P, (Number/100) % 10);
+    DrawNumber_(AppState, RenderGroup, P, (Number/100) % 10);
     P.X += 13.0f*GlobalScale;
-    DrawNumber_(RenderGroup, Sprite, P, (Number/10) % 10);
+    DrawNumber_(AppState, RenderGroup, P, (Number/10) % 10);
     P.X += 13.0f*GlobalScale;
-    DrawNumber_(RenderGroup, Sprite, P, Number % 10);
+    DrawNumber_(AppState, RenderGroup, P, Number % 10);
 }
 
 inline void
-DrawFace(render_group *RenderGroup, sprite_sheet *Sprite, v2 P, u32 Index)
+DrawFace(app_state *AppState, render_group *RenderGroup, v2 P, u32 Index)
 {
     f32 OffsetY = 55.0f;
     v2 Size = V2(26.0f, 26.0f);
-    DrawSprite(RenderGroup, Sprite, OffsetY, Index, Size, P);
+    DrawSprite(AppState, RenderGroup, OffsetY, Index, Size, P);
 }
 
 inline void
-DrawButton(render_group *RenderGroup, sprite_sheet *Sprite, v2 P, u32 Index)
+DrawButton(app_state *AppState, render_group *RenderGroup, v2 P, u32 Index)
 {
     f32 OffsetY = 16.0f;
     v2 Size = V2(16.0f, 16.0f);
-    DrawSprite(RenderGroup, Sprite, OffsetY, Index, Size, P);
+    DrawSprite(AppState, RenderGroup, OffsetY, Index, Size, P);
 }
 
 inline void
-DrawButtonNumber(render_group *RenderGroup, sprite_sheet *Sprite, v2 P, u32 Index)
+DrawButtonNumber(app_state *AppState, render_group *RenderGroup, v2 P, u32 Index)
 {
     f32 OffsetY = 0.0f;
     v2 Size = V2(16.0f, 16.0f);
-    DrawSprite(RenderGroup, Sprite, OffsetY, Index, Size, P);
+    DrawSprite(AppState, RenderGroup, OffsetY, Index, Size, P);
 }

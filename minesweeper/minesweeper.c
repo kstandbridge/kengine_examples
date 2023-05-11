@@ -20,13 +20,6 @@ InitApp(app_memory *AppMemory)
     
     AppState->WorkQueue = PlatformMakeWorkQueue(&AppState->Arena, 16);
     
-    // TODO(kstandbridge): Move spritesheet loading to thread?
-    {    
-        sprite_sheet *Sprite = &AppState->Sprite;
-        stbi_uc *Bytes = stbi_load("sprite.png", &Sprite->Width, &Sprite->Height, &Sprite->Comp, 4);
-        Sprite->Handle = DirectXLoadTexture(Sprite->Width, Sprite->Height, (u32 *)Bytes);
-        free(Bytes);
-    }
     
     InitUI(&AppState->UIState);
     
@@ -264,7 +257,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                 GridSetColumnWidth(UIState, 1, (26.0f + 8.0f)*GlobalScale);
                 
                 rectangle2 MineCountBounds = GridGetCellBounds(UIState, 0, 0, 16.0f);
-                DrawNumber(RenderGroup, &AppState->Sprite, MineCountBounds, (AppState->RemainingTiles == 0) ? 0 : AppState->MinesRemaining);
+                DrawNumber(AppState, RenderGroup, MineCountBounds, (AppState->RemainingTiles == 0) ? 0 : AppState->MinesRemaining);
                 
                 rectangle2 FaceButtonBounds = GridGetCellBounds(UIState, 1, 0, 16.0f);
                 
@@ -282,27 +275,27 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                 ui_interaction_state InteractionState = AddUIInteraction(UIState, FaceButtonBounds, Interaction);
                 if(InteractionState == UIInteractionState_HotClicked)
                 {
-                    DrawFace(RenderGroup, &AppState->Sprite, FaceButtonBounds.Min, 0);
+                    DrawFace(AppState, RenderGroup, FaceButtonBounds.Min, 0);
                 }
                 else if(AppState->RemainingTiles == 0)
                 {
-                    DrawFace(RenderGroup, &AppState->Sprite, FaceButtonBounds.Min, 4);
+                    DrawFace(AppState, RenderGroup, FaceButtonBounds.Min, 4);
                 }
                 else if(AppState->IsGameOver)
                 {
-                    DrawFace(RenderGroup, &AppState->Sprite, FaceButtonBounds.Min, 3);
+                    DrawFace(AppState, RenderGroup, FaceButtonBounds.Min, 3);
                 }
                 else if(UIState->Interaction.Target == AppState->Tiles)
                 {
-                    DrawFace(RenderGroup, &AppState->Sprite, FaceButtonBounds.Min, 2);
+                    DrawFace(AppState, RenderGroup, FaceButtonBounds.Min, 2);
                 }
                 else
                 {
-                    DrawFace(RenderGroup, &AppState->Sprite, FaceButtonBounds.Min, 1);
+                    DrawFace(AppState, RenderGroup, FaceButtonBounds.Min, 1);
                 }
                 
                 rectangle2 TimerBounds = GridGetCellBounds(UIState, 2, 0, 16.0f);
-                DrawNumber(RenderGroup, &AppState->Sprite, TimerBounds, (u32)AppState->Timer);
+                DrawNumber(AppState, RenderGroup, TimerBounds, (u32)AppState->Timer);
             }
             EndGrid(UIState);
             
@@ -387,55 +380,55 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                             {
                                 if((Flags & TileFlag_Mine) == 0)
                                 {
-                                    DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 1);
+                                    DrawButton(AppState, RenderGroup, TileBounds.Min, 1);
                                 }
                                 else
                                 {
-                                    DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 4);
+                                    DrawButton(AppState, RenderGroup, TileBounds.Min, 4);
                                 }
                             } 
                             else if(Flags & TileFlag_Mine)
                             {
                                 if(Flags & TileFlag_Visited)
                                 {
-                                    DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 2);
+                                    DrawButton(AppState, RenderGroup, TileBounds.Min, 2);
                                 }
                                 else
                                 {
-                                    DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 0);
+                                    DrawButton(AppState, RenderGroup, TileBounds.Min, 0);
                                 }
                             }
                             else
                             {
-                                DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, Mines % 8);
+                                DrawButtonNumber(AppState, RenderGroup, TileBounds.Min, Mines % 8);
                             }
                         }
 #if KENGINE_INTERNAL
                         else if((Flags & TileFlag_Mine) &&
                                 (AppState->DEBUGShowMines))
                         {
-                            DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 0);
+                            DrawButton(AppState, RenderGroup, TileBounds.Min, 0);
                         }
                         else if(AppState->DEBUGShowMineCounts)
                         {
-                            DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, Mines % 8);
+                            DrawButtonNumber(AppState, RenderGroup, TileBounds.Min, Mines % 8);
                         }
 #endif
                         else if(Flags & TileFlag_Visited)
                         {
-                            DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, Mines % 8);
+                            DrawButtonNumber(AppState, RenderGroup, TileBounds.Min, Mines % 8);
                         }
                         else if(Flags & TileFlag_Flag)
                         {
-                            DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 4);
+                            DrawButton(AppState, RenderGroup, TileBounds.Min, 4);
                         }
                         else if(Flags & TileFlag_Unknown)
                         {
-                            DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 3);
+                            DrawButton(AppState, RenderGroup, TileBounds.Min, 3);
                         }
                         else
                         {
-                            DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 5);
+                            DrawButton(AppState, RenderGroup, TileBounds.Min, 5);
                         }
                     }
                 }
@@ -449,14 +442,6 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
 #endif
     EndUI(UIState);
     CheckArena(&AppState->Arena);
-    
-#if KENGINE_INTERNAL
-    if(!AppState->DEBUGSlowSimulation)
-#endif
-    {    
-        Win32CompleteAllWork(AppState->WorkQueue);
-    }
-    
 }
 
 #include "minesweeper_rendering.c"
