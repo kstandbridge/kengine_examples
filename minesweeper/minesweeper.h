@@ -5,13 +5,16 @@ typedef struct app_state
     memory_arena Arena;
     
     ui_state *UIState;
+    app_assets *Assets;
+    
     random_state RandomState;
     sprite_sheet Sprite;
     ticket_mutex AssetLock;
     
     f32 Timer;
     
-    platform_work_queue *WorkQueue;
+    platform_work_queue *FrameQueue;
+    platform_work_queue *BackgroundQueue;
     
     memory_arena TransientArena;
     temporary_memory MemoryFlush;

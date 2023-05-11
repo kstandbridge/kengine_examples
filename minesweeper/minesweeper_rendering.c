@@ -1,11 +1,13 @@
 internal void
 LoadSpriteSheetThread(memory_arena *TransientArena, sprite_sheet *Sprite)
 {
+    Sprite->AssetState = AssetState_Processing;
+    
     string File = PlatformReadEntireFile(TransientArena, String("sprite.png"));
     stbi_uc *Bytes = stbi_load_from_memory(File.Data, (s32)File.Size, &Sprite->Width, &Sprite->Height, &Sprite->Comp, 4);
     Sprite->Handle = DirectXLoadTexture(Sprite->Width, Sprite->Height, (u32 *)Bytes);
     
-    Sprite->StateType = AssetState_Loaded;
+    Sprite->AssetState = AssetState_Loaded;
 }
 
 inline void
@@ -26,14 +28,14 @@ DrawSprite(app_state *AppState, render_group *RenderGroup, f32 OffsetY, u32 Inde
     
     BeginTicketMutex(&AppState->AssetLock);
     
-    if(Sprite->StateType == AssetState_Loaded)
+    if(Sprite->AssetState == AssetState_Loaded)
     {
         PushRenderCommandSprite(RenderGroup, P, 1.0f, Size, V4(1, 1, 1, 1), UV, Sprite->Handle);
     }
-    else if(Sprite->StateType == AssetState_Unloaded)
+    else if(Sprite->AssetState == AssetState_Unloaded)
     {
-        Sprite->StateType = AssetState_Queued;
-        PlatformAddWorkEntry(AppState->WorkQueue, LoadSpriteSheetThread, Sprite);
+        Sprite->AssetState = AssetState_Queued;
+        PlatformAddWorkEntry(AppState->BackgroundQueue, LoadSpriteSheetThread, Sprite);
     }
     
     EndTicketMutex(&AppState->AssetLock);

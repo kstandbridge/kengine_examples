@@ -1,22 +1,5 @@
 #ifndef MINESWEEPER_RENDERING_H
 
-typedef enum asset_state_type
-{
-    AssetState_Unloaded,
-    AssetState_Queued,
-    AssetState_Loaded,
-} asset_state_type;
-
-typedef struct sprite_sheet
-{
-    asset_state_type StateType;
-    
-    s32 Width;
-    s32 Height;
-    s32 Comp;
-    void *Handle;
-} sprite_sheet;
-
 inline void
 DrawNumber(struct app_state *AppState, render_group *RenderGroup, rectangle2 Bounds, u32 Number);
 

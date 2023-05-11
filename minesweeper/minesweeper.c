@@ -18,133 +18,15 @@ InitApp(app_memory *AppMemory)
     Assert(AppState);
     AppState->RandomState.Value = (u32)PlatformGetSystemTimestamp();
     
-    AppState->WorkQueue = PlatformMakeWorkQueue(&AppState->Arena, 16);
+    AppState->FrameQueue = PlatformMakeWorkQueue(&AppState->Arena, 6);
+    AppState->BackgroundQueue = PlatformMakeWorkQueue(&AppState->Arena, 2);
     
-    InitUI(&AppState->UIState);
+    InitAssets(&AppState->Assets, AppState->BackgroundQueue);
+    InitUI(&AppState->UIState, AppState->Assets);
     
     InitGame(AppState);
     
     PlatformSetWindowSize(V2(322, 464));
-    
-    // TODO(kstandbridge): Move loading a glyph sprite sheet to thread in engine?
-    {
-        ui_state *UIState = AppState->UIState;
-        LogDebug("Loading a glyph sprite sheet");
-        
-        string FontData = PlatformReadEntireFile(&AppState->Arena, String("C:\\Windows\\Fonts\\segoeui.ttf"));
-        stbtt_InitFont(&UIState->FontInfo, FontData.Data, 0);
-        
-        f32 MaxFontHeightInPixels = 12.0f;
-        UIState->FontScale = stbtt_ScaleForPixelHeight(&UIState->FontInfo, MaxFontHeightInPixels);
-        stbtt_GetFontVMetrics(&UIState->FontInfo, &UIState->FontAscent, &UIState->FontDescent, &UIState->FontLineGap);
-        
-#if 1
-        u32 FirstChar = 0;
-        u32 LastChar = 255;
-#else
-        u32 FirstChar = 0x0400;
-        u32 LastChar = FirstChar + 255;
-#endif
-        s32 MaxWidth = 0;
-        s32 MaxHeight = 0;
-        s32 TotalWidth = 0;
-        s32 TotalHeight = 0;
-        u32 ColumnAt = 0;
-        u32 RowCount = 1;
-        
-        glyph_info *GlyphInfo = UIState->GlyphInfos;
-        
-        for(u32 CodePoint = FirstChar;
-            CodePoint < LastChar;
-            ++CodePoint)
-        {                
-            s32 Padding = (s32)(MaxFontHeightInPixels / 3.0f);
-            u8 OnEdgeValue = (u8)(0.8f*255.0f);
-            f32 PixelDistanceScale = (f32)OnEdgeValue/(f32)Padding;
-            GlyphInfo->Data = stbtt_GetCodepointSDF(&UIState->FontInfo, UIState->FontScale, CodePoint, Padding, OnEdgeValue, PixelDistanceScale, 
-                                                    &GlyphInfo->Width, &GlyphInfo->Height, 
-                                                    &GlyphInfo->XOffset, &GlyphInfo->YOffset);
-            
-            stbtt_GetCodepointHMetrics(&UIState->FontInfo, CodePoint, &GlyphInfo->AdvanceWidth, &GlyphInfo->LeftSideBearing);
-            
-            GlyphInfo->CodePoint = CodePoint;
-            
-            if(GlyphInfo->Data)
-            {
-                TotalWidth += GlyphInfo->Width;
-                ++ColumnAt;
-                
-                if(GlyphInfo->Height > MaxHeight)
-                {
-                    MaxHeight = GlyphInfo->Height;
-                }
-            }
-            
-            if((ColumnAt % 16) == 0)
-            {
-                ++RowCount;
-                ColumnAt = 0;
-                if(TotalWidth > MaxWidth)
-                {
-                    MaxWidth = TotalWidth;
-                }
-                TotalWidth = 0;
-            }
-            
-            ++GlyphInfo;
-        }
-        
-        TotalWidth = MaxWidth;
-        TotalHeight = MaxHeight*RowCount;
-        
-        umm TextureSize = TotalWidth*TotalHeight*sizeof(u32);
-        // TODO(kstandbridge): Temp memory here
-        u32 *TextureBytes = PushSize(&AppState->Arena, TextureSize);
-        
-        u32 AtX = 0;
-        u32 AtY = 0;
-        
-        ColumnAt = 0;
-        
-        for(u32 Index = 0;
-            Index < ArrayCount(UIState->GlyphInfos);
-            ++Index)
-        {
-            GlyphInfo = UIState->GlyphInfos + Index;
-            
-            GlyphInfo->UV = V4((f32)AtX / (f32)TotalWidth, (f32)AtY / (f32)TotalHeight,
-                               ((f32)AtX + (f32)GlyphInfo->Width) / (f32)TotalWidth, 
-                               ((f32)AtY + (f32)GlyphInfo->Height) / (f32)TotalHeight);
-            
-            for(s32 Y = 0;
-                Y < GlyphInfo->Height;
-                ++Y)
-            {
-                for(s32 X = 0;
-                    X < GlyphInfo->Width;
-                    ++X)
-                {
-                    u32 Alpha = (u32)GlyphInfo->Data[(Y*GlyphInfo->Width) + X];
-                    TextureBytes[(Y + AtY)*TotalWidth + (X + AtX)] = 0x00FFFFFF | (u32)((Alpha) << 24);
-                }
-            }
-            
-            AtX += GlyphInfo->Width;
-            
-            ++ColumnAt;
-            
-            if((ColumnAt % 16) == 0)
-            {
-                AtY += MaxHeight;
-                AtX = 0;
-            }
-            
-            stbtt_FreeSDF(GlyphInfo->Data, 0);
-        }
-        
-        UIState->SpriteSheetSize = V2(TotalWidth, TotalHeight);
-        UIState->GlyphSheetHandle = DirectXLoadTexture(TotalWidth, TotalHeight, TextureBytes);
-    }
 }
 
 extern void
@@ -160,25 +42,62 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     }
     Assert(AppState);
     ui_state *UIState = AppState->UIState;
+    
+    
+    
     BeginUI(UIState, Input, RenderGroup);
+#if 0
+    
+    
+    
+    BeginTicketMutex(&AppState->Assets->AssetLock);
+    
+    v2 P = V2(0, 0);
+    f32 Scale = 2.0f;
+    P;
+    Scale;
+#if 0   
+    DrawFace(AppState, RenderGroup, P, 0);
+    P.X += (26.0f + 50) * Scale;
+    
+    {
+        sprite_sheet *Sprite = &AppState->Sprite;
+        if(Sprite->AssetState == AssetState_Loaded)
+        {
+            v2 Size = V2(Sprite->Width, Sprite->Height);
+            PushRenderCommandSprite(RenderGroup, P, 3.0f, V2Multiply(Size, V2Set1(Scale)), V4(1, 1, 1, 1), V4(0, 0, 1, 1), Sprite->Handle);
+            P.X += (Size.X + 10) * Scale;
+        }
+    }
+#endif
+    
+#if 0   
+    for(glyph_sprite_sheet *Sprite = AppState->Assets->GlyphSpriteSheets;
+        Sprite;
+        Sprite = Sprite->Next)
+    {
+        if(Sprite->AssetState == AssetState_Loaded)
+        {
+            
+            PushRenderCommandGlyph(RenderGroup, P, 3.0f, V2Multiply(Sprite->Size, V2Set1(Scale)), V4(1, 1, 1, 1), V4(0, 0, 1, 1), Sprite->Handle);
+            P.X += (Sprite->Size.X + 10) * Scale;
+        }
+    }
+#endif
+    
+    EndTicketMutex(&AppState->Assets->AssetLock);
     
 #if 0
-    {    
-        v2 P = V2(0, 0);
-        v2 Size = UIState->SpriteSheetSize;
-        PushRenderCommandGlyph(RenderGroup, P, 3.0f, Size, V4(1, 1, 1, 1), V4(0, 0, 1, 1), UIState->GlyphSheetHandle);
-    }
-    
-    {    
-        v2 P = V2(10 + UIState->SpriteSheetSize.X, 0);
-        v2 Size = UIState->SpriteSheetSize;
-        PushRenderCommandSprite(RenderGroup, P, 3.0f, Size, V4(1, 1, 1, 1), V4(0, 0, 1, 1), UIState->GlyphSheetHandle);
-    }
-    
-    string LoremIpsum = String("Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.");
-    rectangle2 Bounds = Rectangle2(Input->MouseP, V2(RenderGroup->Width, RenderGroup->Height));
-    DrawTextAt(UIState, Bounds, 4.0f, GlobalScale, V4(0.3f, 0, 0.3f, 1), LoremIpsum);
+    string LoremIpsum = String("\\u0400 \\u2714 Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer \\u2715 took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.");
 #else
+    string LoremIpsum = String("before \\u2714 after");
+#endif
+    
+    rectangle2 Bounds = Rectangle2(UIState->MouseP, V2(RenderGroup->Width, RenderGroup->Height));
+    
+    DrawTextAt(UIState, Bounds, 4.0f, 2.0f, V4(0.3f, 0, 0.3f, 1), LoremIpsum);
+#else
+    
     v2 WorkingArea = V2(316, 436);
     v2 OffSet = V2((RenderGroup->Width * 0.5f) - (WorkingArea.X * 0.5f),
                    (RenderGroup->Height * 0.5f) - (WorkingArea.Y * 0.5f));
@@ -194,7 +113,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
             GridSetColumnWidth(UIState, 1, 54.0f);
             GridSetColumnWidth(UIState, 2, 72.0f);
             
-            if(BeginMenu(UIState, GridGetCellBounds(UIState, 0, 0, 0.0f), GlobalScale, String("Game"), 5, 120))
+            if(BeginMenu(UIState, GridGetCellBounds(UIState, 0, 0, 0.0f), GlobalScale, String("Game"), 5, 240))
             {
                 if(MenuButton(UIState, 0, GlobalScale, String("New")))
                 {
@@ -340,7 +259,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                                     NewWork->AppState = AppState;
                                     NewWork->Column = Column;
                                     NewWork->Row = Row;
-                                    PlatformAddWorkEntry(AppState->WorkQueue, SimulateGameThread, NewWork);
+                                    PlatformAddWorkEntry(AppState->BackgroundQueue, SimulateGameThread, NewWork);
                                 }
                             }
                             
@@ -439,6 +358,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     }
     EndGrid(UIState);
 #endif
+    
     EndUI(UIState);
     CheckArena(&AppState->Arena);
 }
