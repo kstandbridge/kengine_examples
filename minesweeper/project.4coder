@@ -23,9 +23,11 @@ blacklist_patterns =
 {
     ".*",
 };
+
 load_paths = {
     {
 		{
+            {"", .relative = true, .recursive = false, },
             {"../kengine", .relative = true, .recursive = true, }
 		}, .os = "win"
 	}

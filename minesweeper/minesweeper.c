@@ -18,6 +18,8 @@ InitApp(app_memory *AppMemory)
     Assert(AppState);
     AppState->RandomState.Value = (u32)PlatformGetSystemTimestamp();
     
+    AppState->WorkQueue = PlatformMakeWorkQueue(&AppState->Arena, 16);
+    
     // TODO(kstandbridge): Move spritesheet loading to thread?
     {    
         sprite_sheet *Sprite = &AppState->Sprite;
@@ -25,8 +27,6 @@ InitApp(app_memory *AppMemory)
         Sprite->Handle = DirectXLoadTexture(Sprite->Width, Sprite->Height, (u32 *)Bytes);
         free(Bytes);
     }
-    
-    AppState->WorkQueue = PlatformMakeWorkQueue(&AppState->Arena, 4);
     
     InitUI(&AppState->UIState);
     
@@ -235,10 +235,12 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
             }
             
 #if KENGINE_INTERNAL
-            if(BeginMenu(UIState, GridGetCellBounds(UIState, 2, 0, 0.0f), GlobalScale, String("Debug"), 2, 140))
+            if(BeginMenu(UIState, GridGetCellBounds(UIState, 2, 0, 0.0f), GlobalScale, String("Debug"), 4, 240))
             {
                 MenuCheck(UIState, 0, GlobalScale, String("Show Mines"), &AppState->DEBUGShowMines);
-                if(MenuButton(UIState, 1, GlobalScale, String("Reset Timer")))
+                MenuCheck(UIState, 1, GlobalScale, String("Show Mine Counts"), &AppState->DEBUGShowMineCounts);
+                MenuCheck(UIState, 2, GlobalScale, String("Slow Simulation"), &AppState->DEBUGSlowSimulation);
+                if(MenuButton(UIState, 3, GlobalScale, String("Reset Timer")))
                 {
                     AppState->Timer = 0.0f;
                 }
@@ -414,6 +416,10 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                         {
                             DrawButton(RenderGroup, &AppState->Sprite, TileBounds.Min, 0);
                         }
+                        else if(AppState->DEBUGShowMineCounts)
+                        {
+                            DrawButtonNumber(RenderGroup, &AppState->Sprite, TileBounds.Min, Mines % 8);
+                        }
 #endif
                         else if(Flags & TileFlag_Visited)
                         {
@@ -441,9 +447,16 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     }
     EndGrid(UIState);
 #endif
-    
     EndUI(UIState);
     CheckArena(&AppState->Arena);
+    
+#if KENGINE_INTERNAL
+    if(!AppState->DEBUGSlowSimulation)
+#endif
+    {    
+        Win32CompleteAllWork(AppState->WorkQueue);
+    }
+    
 }
 
 #include "minesweeper_rendering.c"

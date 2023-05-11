@@ -18,6 +18,15 @@ GenerateBoard(app_state *AppState, u8 FirstMoveColumn, u8 FirstMoveRow)
                 --AppState->RemainingTiles;
                 ++AppState->MinesRemaining;
                 AppState->Tiles[Random] = PackU8(TileFlag_Mine, 0);
+                
+                
+#if KENGINE_INTERNAL
+                if(AppState->DEBUGSlowSimulation)
+                {
+                    Sleep(50);
+                }
+#endif
+                
             }
         }
     }
@@ -57,6 +66,12 @@ GenerateBoard(app_state *AppState, u8 FirstMoveColumn, u8 FirstMoveRow)
                     }
                 }
                 AppState->Tiles[Index] = PackU8(Flags, Mines);
+#if KENGINE_INTERNAL
+                if(AppState->DEBUGSlowSimulation)
+                {
+                    Sleep(50);
+                }
+#endif
             }
         }
     }
@@ -66,7 +81,7 @@ GenerateBoard(app_state *AppState, u8 FirstMoveColumn, u8 FirstMoveRow)
 }
 
 internal void
-SimulateGameThread(simulate_game_work *Work)
+SimulateGameThread(memory_arena *TransientArena, simulate_game_work *Work)
 {
     app_state *AppState = Work->AppState;
     u8 Column = Work->Column;
@@ -86,6 +101,13 @@ SimulateGameThread(simulate_game_work *Work)
     {
         Flags |= TileFlag_Visited;
         AppState->Tiles[Index] = PackU8(Flags, Mines);
+        
+#if KENGINE_INTERNAL
+        if(AppState->DEBUGSlowSimulation)
+        {
+            Sleep(50);
+        }
+#endif
         
         if(Flags & TileFlag_Mine)
         {
@@ -118,7 +140,7 @@ SimulateGameThread(simulate_game_work *Work)
                                     .Column = Column + X,
                                     .Row = Row + Y,
                                 };
-                                SimulateGameThread(&NewWork);
+                                SimulateGameThread(TransientArena, &NewWork);
                             }
                         }
                     }

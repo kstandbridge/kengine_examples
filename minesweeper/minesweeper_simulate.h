@@ -19,7 +19,7 @@ typedef struct simulate_game_work
 } simulate_game_work;
 
 internal void
-SimulateGameThread(simulate_game_work *Work);
+SimulateGameThread(memory_arena *TransientArena, simulate_game_work *Work);
 
 #define MINESWEEPER_SIMULATE_H
 #endif //MINESWEEPER_SIMULATE_H
