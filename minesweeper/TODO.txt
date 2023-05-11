@@ -1,3 +1,6 @@
+feat: sprite loading moved to engine
+feat: support any resolution with centre game board only
+feat: OptionMenu
 feat: menu Game>Beginner
 feat: menu Game>Intermediate
 feat: menu Game>Expert
@@ -8,9 +11,6 @@ feat: menu Game>Exit
 feat: menu Help>About
 
 feat: application title
-feat: OptionMenu
-feat: sprite sheet loading
-feat: glyph generation
 feat: stb malloc/free
 feat: load bmp
 feat: load png
