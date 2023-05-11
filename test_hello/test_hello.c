@@ -8,10 +8,8 @@ RunAllTests(memory_arena *Arena)
 {
     AssertTrue(Arena);
     
-    {
-        string Expected = String("Hello,");
-        string Actual = String("world!");
-        AssertEqualString(Expected, Actual);
-    }
+    string Expected = String("Hello, world!");
+    string Actual = String("Hello, world!");
+    AssertEqualString(Expected, Actual);
     
 }

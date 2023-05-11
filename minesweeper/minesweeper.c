@@ -20,7 +20,6 @@ InitApp(app_memory *AppMemory)
     
     AppState->WorkQueue = PlatformMakeWorkQueue(&AppState->Arena, 16);
     
-    
     InitUI(&AppState->UIState);
     
     InitGame(AppState);
