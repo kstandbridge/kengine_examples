@@ -1,8 +1,5 @@
 feat: sprite loading moved to engine
 feat: OptionMenu
-feat: menu Game>Beginner
-feat: menu Game>Intermediate
-feat: menu Game>Expert
 feat: menu Game>Marks?
 feat: menu Game>Color
 feat: menu Game>Best Times

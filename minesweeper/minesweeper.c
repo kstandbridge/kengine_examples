@@ -21,12 +21,12 @@ InitApp(app_memory *AppMemory)
     AppState->FrameQueue = PlatformMakeWorkQueue(&AppState->Arena, 6);
     AppState->BackgroundQueue = PlatformMakeWorkQueue(&AppState->Arena, 2);
     
+    AppState->GameDifficulty = GameDifficulty_Expert;
+    
     InitAssets(&AppState->Assets, AppState->BackgroundQueue);
     InitUI(&AppState->UIState, AppState->Assets);
     
     InitGame(AppState);
-    
-    PlatformSetWindowSize(V2(312, 458));
 }
 
 extern void
@@ -47,8 +47,6 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     
     BeginUI(UIState, Input, RenderGroup);
 #if 0
-    
-    
     
     BeginTicketMutex(&AppState->Assets->AssetLock);
     

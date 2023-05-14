@@ -1,5 +1,14 @@
 #ifndef MINESWEEPER_H
 
+typedef enum game_difficulty_type
+{
+    GameDifficulty_Unknown,
+    
+    GameDifficulty_Beginner,
+    GameDifficulty_Intermediate,
+    GameDifficulty_Expert,
+} game_difficulty_type;
+
 typedef struct app_state
 {
     memory_arena Arena;
@@ -18,14 +27,16 @@ typedef struct app_state
     
     memory_arena TransientArena;
     temporary_memory MemoryFlush;
+    
     b32 IsInitialized;
     b32 IsGameOver;
+    game_difficulty_type GameDifficulty;
     u8 Mines;
     u8 MinesRemaining;
     u8 Columns;
     u8 Rows;
     u8 *Tiles;
-    u8 RemainingTiles;
+    u32 RemainingTiles;
     
 #if KENGINE_INTERNAL
     b32 DEBUGShowMines;
