@@ -46,55 +46,6 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     
     game_difficulty_type CurrentDifficult = AppState->GameDifficulty;
     BeginUI(UIState, Input, RenderGroup);
-#if 0
-    
-    BeginTicketMutex(&AppState->Assets->AssetLock);
-    
-    v2 P = V2(0, 0);
-    f32 Scale = 2.0f;
-    P;
-    Scale;
-#if 0   
-    DrawFace(AppState, RenderGroup, P, 0);
-    P.X += (26.0f + 50) * Scale;
-    
-    {
-        sprite_sheet *Sprite = &AppState->Sprite;
-        if(Sprite->AssetState == AssetState_Loaded)
-        {
-            v2 Size = V2(Sprite->Width, Sprite->Height);
-            PushRenderCommandSprite(RenderGroup, P, 3.0f, V2Multiply(Size, V2Set1(Scale)), V4(1, 1, 1, 1), V4(0, 0, 1, 1), Sprite->Handle);
-            P.X += (Size.X + 10) * Scale;
-        }
-    }
-#endif
-    
-#if 0   
-    for(glyph_sprite_sheet *Sprite = AppState->Assets->GlyphSpriteSheets;
-        Sprite;
-        Sprite = Sprite->Next)
-    {
-        if(Sprite->AssetState == AssetState_Loaded)
-        {
-            
-            PushRenderCommandGlyph(RenderGroup, P, 3.0f, V2Multiply(Sprite->Size, V2Set1(Scale)), V4(1, 1, 1, 1), V4(0, 0, 1, 1), Sprite->Handle);
-            P.X += (Sprite->Size.X + 10) * Scale;
-        }
-    }
-#endif
-    
-    EndTicketMutex(&AppState->Assets->AssetLock);
-    
-#if 0
-    string LoremIpsum = String("\\u0400 \\u2714 Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer \\u2715 took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.");
-#else
-    string LoremIpsum = String("before \\u2714 after");
-#endif
-    
-    rectangle2 Bounds = Rectangle2(UIState->MouseP, V2(RenderGroup->Width, RenderGroup->Height));
-    
-    DrawTextAt(UIState, Bounds, 4.0f, 2.0f, V4(0.3f, 0, 0.3f, 1), LoremIpsum);
-#else
     
     v2 WorkingArea = V2(RenderGroup->Width, RenderGroup->Height);
     v2 OffSet = V2((RenderGroup->Width * 0.5f) - (WorkingArea.X * 0.5f),
@@ -357,8 +308,6 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
         
     }
     EndGrid(UIState);
-#endif
-    
     EndUI(UIState);
     
     // NOTE(kstandbridge): User switched difficulty this frame
