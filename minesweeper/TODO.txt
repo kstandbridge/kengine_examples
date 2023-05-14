@@ -1,5 +1,4 @@
 feat: sprite loading moved to engine
-feat: support any resolution with centre game board only
 feat: OptionMenu
 feat: menu Game>Beginner
 feat: menu Game>Intermediate

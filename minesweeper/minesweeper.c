@@ -26,7 +26,7 @@ InitApp(app_memory *AppMemory)
     
     InitGame(AppState);
     
-    PlatformSetWindowSize(V2(322, 464));
+    PlatformSetWindowSize(V2(312, 458));
 }
 
 extern void
@@ -98,7 +98,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     DrawTextAt(UIState, Bounds, 4.0f, 2.0f, V4(0.3f, 0, 0.3f, 1), LoremIpsum);
 #else
     
-    v2 WorkingArea = V2(316, 436);
+    v2 WorkingArea = V2(RenderGroup->Width, RenderGroup->Height);
     v2 OffSet = V2((RenderGroup->Width * 0.5f) - (WorkingArea.X * 0.5f),
                    (RenderGroup->Height * 0.5f) - (WorkingArea.Y * 0.5f));
     rectangle2 Bounds = Rectangle2(OffSet, V2Add(OffSet, WorkingArea));
@@ -170,14 +170,17 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
             rectangle2 ScoreBounds = GridGetCellBounds(UIState, 0, 0, 16.0f);
             PushRenderCommandAlternateRectOutline(RenderGroup, ScoreBounds, 1.0f, 4.0f, 
                                                   RGBv4(128, 128, 128), RGBv4(255, 255, 255));
-            BeginGrid(UIState, ScoreBounds, 3, 1);
+            BeginGrid(UIState, ScoreBounds, 5, 1);
             {
-                GridSetColumnWidth(UIState, 1, (26.0f + 8.0f)*GlobalScale);
+                GridSetColumnWidth(UIState, 1, (39.0f + 9.0f)*GlobalScale);
+                GridSetColumnWidth(UIState, 2, (26.0f + 8.0f)*GlobalScale);
+                GridSetColumnWidth(UIState, 3, (39.0f + 9.0f)*GlobalScale);
                 
-                rectangle2 MineCountBounds = GridGetCellBounds(UIState, 0, 0, 16.0f);
+                
+                rectangle2 MineCountBounds = GridGetCellBounds(UIState, 1, 0, 16.0f);
                 DrawNumber(AppState, RenderGroup, MineCountBounds, (AppState->RemainingTiles == 0) ? 0 : AppState->MinesRemaining);
                 
-                rectangle2 FaceButtonBounds = GridGetCellBounds(UIState, 1, 0, 16.0f);
+                rectangle2 FaceButtonBounds = GridGetCellBounds(UIState, 2, 0, 16.0f);
                 
                 ui_interaction Interaction =
                 {
@@ -212,7 +215,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                     DrawFace(AppState, RenderGroup, FaceButtonBounds.Min, 1);
                 }
                 
-                rectangle2 TimerBounds = GridGetCellBounds(UIState, 2, 0, 16.0f);
+                rectangle2 TimerBounds = GridGetCellBounds(UIState, 3, 0, 16.0f);
                 DrawNumber(AppState, RenderGroup, TimerBounds, (u32)AppState->Timer);
             }
             EndGrid(UIState);
@@ -222,8 +225,22 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                                                   RGBv4(128, 128, 128), RGBv4(255, 255, 255));
             BoardBounds = Rectangle2AddRadiusTo(BoardBounds, -4.0f);
             
-            BeginGrid(UIState, BoardBounds, AppState->Columns, AppState->Rows);
+            BeginGrid(UIState, BoardBounds, AppState->Columns + 2, AppState->Rows + 2);
             {
+                for(u8 Row = 0;
+                    Row < AppState->Rows;
+                    ++Row)
+                {
+                    GridSetRowHeight(UIState, Row + 1, 16.0f*GlobalScale);
+                }
+                
+                for(u8 Column = 0;
+                    Column < AppState->Columns;
+                    ++Column)
+                {
+                    GridSetColumnWidth(UIState, Column + 1, 16.0f*GlobalScale);
+                }
+                
                 for(u8 Row = 0;
                     Row < AppState->Rows;
                     ++Row)
@@ -232,7 +249,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                         Column < AppState->Columns;
                         ++Column)
                     {
-                        rectangle2 TileBounds = GridGetCellBounds(UIState, Column, Row, 0.0f);
+                        rectangle2 TileBounds = GridGetCellBounds(UIState, Column + 1, Row + 1, 0.0f);
                         
                         u32 Index = (Row * AppState->Columns) + Column;
                         u8 Tile = AppState->Tiles[Index];
