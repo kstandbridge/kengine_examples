@@ -105,37 +105,31 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     {
         GridSetRowHeight(UIState, 0, 28.0f);
         rectangle2 MenuBounds = GridGetCellBounds(UIState, 0, 0, 1.0f);
-        BeginGrid(UIState, MenuBounds, 4, 1);
+        BeginGrid(UIState, MenuBounds, 3, 1);
         {
             GridSetColumnWidth(UIState, 0, 66.0f);
-            GridSetColumnWidth(UIState, 1, 54.0f);
-            GridSetColumnWidth(UIState, 2, 72.0f);
+            GridSetColumnWidth(UIState, 1, 72.0f);
             
-            if(BeginMenu(UIState, GridGetCellBounds(UIState, 0, 0, 0.0f), GlobalScale, String("Game"), 5, 240))
+            if(BeginMenu(UIState, GridGetCellBounds(UIState, 0, 0, 0.0f), GlobalScale, String("Game"), 7, 240))
             {
                 if(MenuButton(UIState, 0, GlobalScale, String("New")))
                 {
                     InitGame(AppState);
                 }
-                MenuOption(UIState, 1, GlobalScale, String("Beginner"), &AppState->GameDifficulty, GameDifficulty_Beginner);
-                MenuOption(UIState, 2, GlobalScale, String("Intermediate"), &AppState->GameDifficulty, GameDifficulty_Intermediate);
-                MenuOption(UIState, 3, GlobalScale, String("Expert"), &AppState->GameDifficulty, GameDifficulty_Expert);
-                if(MenuButton(UIState, 4, GlobalScale, String("Custom...")))
+                MenuSplit(UIState, 1, GlobalScale);
+                MenuOption(UIState, 2, GlobalScale, String("Beginner"), &AppState->GameDifficulty, GameDifficulty_Beginner);
+                MenuOption(UIState, 3, GlobalScale, String("Intermediate"), &AppState->GameDifficulty, GameDifficulty_Intermediate);
+                MenuOption(UIState, 4, GlobalScale, String("Expert"), &AppState->GameDifficulty, GameDifficulty_Expert);
+                MenuSplit(UIState, 5, GlobalScale);
+                if(MenuButton(UIState, 6, GlobalScale, String("Exit")))
                 {
-                    LogDebug("Set Custom level");
+                    PlatformExitApp(0);
                 }
                 EndMenu(UIState);
             }
             
-            if(BeginMenu(UIState, GridGetCellBounds(UIState, 1, 0, 0.0f), GlobalScale, String("Help"), 2, 160))
-            {
-                MenuButton(UIState, 0, GlobalScale, String("How to play?"));
-                MenuButton(UIState, 1, GlobalScale, String("About"));
-                EndMenu(UIState);
-            }
-            
 #if KENGINE_INTERNAL
-            if(BeginMenu(UIState, GridGetCellBounds(UIState, 2, 0, 0.0f), GlobalScale, String("Debug"), 4, 240))
+            if(BeginMenu(UIState, GridGetCellBounds(UIState, 1, 0, 0.0f), GlobalScale, String("Debug"), 4, 240))
             {
                 MenuCheck(UIState, 0, GlobalScale, String("Show Mines"), &AppState->DEBUGShowMines);
                 MenuCheck(UIState, 1, GlobalScale, String("Show Mine Counts"), &AppState->DEBUGShowMineCounts);
