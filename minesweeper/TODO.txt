@@ -1,4 +1,3 @@
-feat: sprite loading moved to engine
 feat: OptionMenu
 feat: menu Game>Marks?
 feat: menu Game>Color
@@ -6,6 +5,7 @@ feat: menu Game>Best Times
 feat: menu Game>Exit
 feat: menu Help>About
 
+feat: sprite loading moved to engine
 feat: application title
 feat: stb malloc/free
 feat: load bmp

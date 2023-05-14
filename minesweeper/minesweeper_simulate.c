@@ -157,7 +157,6 @@ InitGame(app_state *AppState)
     {
         case GameDifficulty_Beginner:
         {
-            PlatformSetWindowSize(V2(312, 458));
             AppState->Columns = 8;
             AppState->Rows = 8;
             AppState->Mines = 10;
@@ -165,7 +164,6 @@ InitGame(app_state *AppState)
         
         case GameDifficulty_Intermediate:
         {
-            PlatformSetWindowSize(V2(564, 712));
             AppState->Columns = 16;
             AppState->Rows = 16;
             AppState->Mines = 40;
@@ -173,17 +171,16 @@ InitGame(app_state *AppState)
         
         case GameDifficulty_Expert:
         {
-            PlatformSetWindowSize(V2(1016, 712));
             AppState->Columns = 30;
             AppState->Rows = 16;
             AppState->Mines = 99;
         } break;
-        
-        default:
-        {
-            
-        } break;
     }
+    
+    f32 Width = (AppState->Columns * 16.0f * GlobalScale) + 56.0f;
+    f32 Height = (AppState->Rows * 16.0f * GlobalScale) + 202.0f;
+    PlatformSetWindowSize(V2(Width, Height));
+    
     
     AppState->MinesRemaining = AppState->Mines;
     AppState->RemainingTiles = AppState->Rows * AppState->Columns;

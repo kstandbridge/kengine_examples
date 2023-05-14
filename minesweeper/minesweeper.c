@@ -21,7 +21,7 @@ InitApp(app_memory *AppMemory)
     AppState->FrameQueue = PlatformMakeWorkQueue(&AppState->Arena, 6);
     AppState->BackgroundQueue = PlatformMakeWorkQueue(&AppState->Arena, 2);
     
-    AppState->GameDifficulty = GameDifficulty_Expert;
+    AppState->GameDifficulty = GameDifficulty_Beginner;
     
     InitAssets(&AppState->Assets, AppState->BackgroundQueue);
     InitUI(&AppState->UIState, AppState->Assets);
