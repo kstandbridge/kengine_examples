@@ -44,7 +44,7 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
     ui_state *UIState = AppState->UIState;
     
     
-    
+    game_difficulty_type CurrentDifficult = AppState->GameDifficulty;
     BeginUI(UIState, Input, RenderGroup);
 #if 0
     
@@ -117,18 +117,9 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
                 {
                     InitGame(AppState);
                 }
-                if(MenuButton(UIState, 1, GlobalScale, String("Beginner")))
-                {
-                    LogDebug("Set beginner level");
-                }
-                if(MenuButton(UIState, 2, GlobalScale, String("Intermediate")))
-                {
-                    LogDebug("Set Intermediate level");
-                }
-                if(MenuButton(UIState, 3, GlobalScale, String("Expert")))
-                {
-                    LogDebug("Set Expert level");
-                }
+                MenuOption(UIState, 1, GlobalScale, String("Beginner"), &AppState->GameDifficulty, GameDifficulty_Beginner);
+                MenuOption(UIState, 2, GlobalScale, String("Intermediate"), &AppState->GameDifficulty, GameDifficulty_Intermediate);
+                MenuOption(UIState, 3, GlobalScale, String("Expert"), &AppState->GameDifficulty, GameDifficulty_Expert);
                 if(MenuButton(UIState, 4, GlobalScale, String("Custom...")))
                 {
                     LogDebug("Set Custom level");
@@ -375,6 +366,13 @@ AppUpdateFrame(app_memory *AppMemory, render_group *RenderGroup, app_input *Inpu
 #endif
     
     EndUI(UIState);
+    
+    // NOTE(kstandbridge): User switched difficulty this frame
+    if(CurrentDifficult != AppState->GameDifficulty)
+    {
+        InitGame(AppState);
+    }
+    
     CheckArena(&AppState->Arena);
 }
 
