@@ -60,7 +60,7 @@ MainLoop(app_memory *AppMemory)
     PlatformConsoleOut("Hello, world!");                  
     return Result;
 }
-                  ```
+```
                   
 Notice we have a KENGINE_CONSOLE define, this tells kengine to do the boilerplate code for creating a console application, then you are expecting to create the main application loop:
 ```
@@ -112,13 +112,32 @@ This is the message pump, you can handle any message or pass them to the DefWind
 Similar to KENGINE_WINDOW mentioned above, the KENGINE_HEADLESS will be almost identical however this doesn't create a visible window for the user. Handy for a none visual application.
 
 ## Unit Tests
-                   
-                   
+[test_hello.c](https://github.com/kstandbridge/kengine_examples/blob/main/test_hello/test_hello.c)
 
-## Kengine Unit Tests
+```
+#define KENGINE_WIN32
+#define KENGINE_TEST
+#define KENGINE_IMPLEMENTATION
+#include "kengine.h"
+
+void
+RunAllTests(memory_arena *Arena)
+{
+    string Expected = String("Hello, world!");
+    string Actual = String("Hello, world!");
+    AssertEqualString(Expected, Actual);
+}
+```
+Here we define KENGINE_TEST, which in a sense just creates a console application so we can output text if a test fails. The AssertEqualX macros will output the file, line etc if the assertion fails, at the end of execution the total and failed number of tests are display.
+
+## kengine Unit Tests
+[kengine_tests.c](https://github.com/kstandbridge/kengine_examples/blob/main/kengine_tests/kengine_tests.c)
+Rather than having the kengine repository grow with test code, I decided to instead keep it as lean as possible and any code used to develop be placed within these examples projects, here is actually all of the unit tests for kengine. If I'm working on an area of the engine I feel will benefit from tests, this file will continue to grow.
 
 ## Preprocessor
-## Kengine Preprocessor
+
+
+## kengine Preprocessor
 
 ## Sim8086
 ## Minesweeper
