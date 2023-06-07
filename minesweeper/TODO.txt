@@ -1,3 +1,5 @@
+feat: custom board size
+
 
 feat: sprite loading moved to engine
 feat: application title

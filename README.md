@@ -27,6 +27,7 @@ pch.c
 #define KENGINE_IMPLEMENTATION
 #include "kengine.h"
 ```
+
 main.c
 ```
 #define KENGINE_WIN32
@@ -43,26 +44,83 @@ This way the entire of the kengine library can be compiled once and reused in in
 ## API calls you
 This may seem backwards to some, but platforms can be quite different and trying to design an engine that supports all of them forces you to include platform specific concepts into your library. For example creating a window or the message pump, while this is boilerplate code on some platforms its not even the case at all on others. So rather than focing consumers to write this plumming of create window, handle message, etc, all of this logic is buried in the engine. Instead you can just focus on what you need for your application/game, such as what needs to be rendered this frame? What sounds need to be playing?
 
-## ConsoleApp
-[console_hello.c](https://github.com/kstandbridge/kengine_examples/blob/main/console_hello/console_hello.c)
+## Console
 
+[console_hello.c](https://github.com/kstandbridge/kengine_examples/blob/main/console_hello/console_hello.c)                 
 ```
 #define KENGINE_WIN32
 #define KENGINE_CONSOLE
 #define KENGINE_IMPLEMENTATION
 #include "kengine.h"
-
+                  
 s32
 MainLoop(app_memory *AppMemory)
 {
     s32 Result = 0;
-    
-    PlatformConsoleOut("Hello, world!");
-    
+    PlatformConsoleOut("Hello, world!");                  
     return Result;
 }
-```
+                  ```
+                  
 Notice we have a KENGINE_CONSOLE define, this tells kengine to do the boilerplate code for creating a console application, then you are expecting to create the main application loop:
 ```
 s32 MainLoop(app_memory *AppMemory);
 ```
+
+## Window
+
+[window_hello.c](https://github.com/kstandbridge/kengine_examples/blob/main/window_hello/window_hello.c)
+```
+#define KENGINE_WIN32
+#define KENGINE_WINDOW
+#define KENGINE_IMPLEMENTATION
+#include "kengine.h"
+
+typedef struct app_state
+{
+    memory_arena Arena;
+} app_state;
+
+void
+InitApp(app_memory *AppMemory)
+{
+    AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
+}
+
+LRESULT
+MainWindowCallback(app_memory *AppMemory, HWND Window, UINT Message, WPARAM WParam, LPARAM LParam)
+{
+    LRESULT Result = DefWindowProcA(Window, Message, WParam, LParam);
+    return Result;
+}
+```
+Here we define KENGINE_WINDOW, which when combined with KENGINE_WIN32 creates the basic Win32. Theres two places the engine calls you
+
+```
+void InitApp(app_memory *AppMemory);
+```
+This is called once at the start on the application, this is a good place to setup your application state, create any controls, etc.
+
+```
+LRESULT MainWindowCallback(app_memory *AppMemory, HWND Window, UINT Message, WPARAM WParam, LPARAM LParam);
+```
+This is the message pump, you can handle any message or pass them to the DefWindowProc. The additional first parameter app_memory also contains your app_state defined in InitApp
+
+## Headless
+[headless_hello.c](https://github.com/kstandbridge/kengine_examples/blob/main/headless_hello/headless_hello.c)
+                   
+Similar to KENGINE_WINDOW mentioned above, the KENGINE_HEADLESS will be almost identical however this doesn't create a visible window for the user. Handy for a none visual application.
+
+## Unit Tests
+                   
+                   
+
+## Kengine Unit Tests
+
+## Preprocessor
+## Kengine Preprocessor
+
+## Sim8086
+## Minesweeper
+
+## DirectX

@@ -160,6 +160,7 @@ InitGame(app_state *AppState)
             AppState->Columns = 8;
             AppState->Rows = 8;
             AppState->Mines = 10;
+            
         } break;
         
         case GameDifficulty_Intermediate:
