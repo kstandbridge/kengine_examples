@@ -83,6 +83,7 @@ typedef struct simulator_context
     
     u32 TotalClocks;
     b32 DisplayClocks;
+    b32 Is8088;
     
     u8 *Memory;
     
@@ -464,6 +465,7 @@ typedef struct instruction
     
     u8 Clocks;
     u8 EAComponent;
+    u8 POffset;
     
 } instruction;
 

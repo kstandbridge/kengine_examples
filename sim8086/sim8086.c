@@ -366,7 +366,6 @@ GetNextInstruction(simulator_context *Context)
             BitsAt -= Field.Size;
         }
         
-        
         // NOTE(kstandbridge): Figure out clocks?
         switch(Result.Type)
         {
@@ -379,6 +378,11 @@ GetNextInstruction(simulator_context *Context)
                     case Mod_RegisterMode: { Result.Clocks = 3; } break;
                     default:
                     { 
+                        if(Context->Is8088)
+                        {
+                            Result.POffset += 4;
+                        }
+                        
                         if(Result.Flags & Flag_D)
                         {
                             Result.Clocks = 9;
@@ -398,6 +402,11 @@ GetNextInstruction(simulator_context *Context)
                                 if(Result.Bits[Encoding_DISP_LO] ||
                                    Result.Bits[Encoding_DISP_HI])
                                 {
+                                    if(Context->Is8088)
+                                    {
+                                        Result.POffset += 4;
+                                    }
+                                    
                                     Result.EAComponent = 9; 
                                 }
                                 else
@@ -422,6 +431,15 @@ GetNextInstruction(simulator_context *Context)
                     case Mod_RegisterMode: { Result.Clocks = 2; } break;
                     case Mod_MemoryMode:
                     { 
+                        if(Context->Is8088)
+                        {
+                            if(Result.Bits[Encoding_DISP_LO] ||
+                               Result.Bits[Encoding_DISP_HI])
+                            {
+                                Result.POffset += 4;
+                            }
+                        }
+                        
                         if(Result.Flags & Flag_D)
                         {
                             Result.Clocks = 8;
@@ -437,6 +455,11 @@ GetNextInstruction(simulator_context *Context)
                             case EffectiveAddress_SI:
                             case EffectiveAddress_DI:
                             {
+                                if(Context->Is8088)
+                                {
+                                    Result.POffset += 4;
+                                }
+                                
                                 Result.EAComponent = 5; 
                             } break;
                             
@@ -466,6 +489,11 @@ GetNextInstruction(simulator_context *Context)
                             case EffectiveAddress_DI:
                             case EffectiveAddress_BP:
                             {
+                                if(Context->Is8088)
+                                {
+                                    Result.POffset += 4;
+                                }
+                                
                                 if(Result.Bits[Encoding_DISP_LO] ||
                                    Result.Bits[Encoding_DISP_HI])
                                 {
@@ -488,7 +516,7 @@ GetNextInstruction(simulator_context *Context)
                 
             } break;
         }
-        Context->TotalClocks += Result.Clocks + Result.EAComponent;
+        Context->TotalClocks += Result.Clocks + Result.EAComponent + Result.POffset;
     }
     
     return Result;
@@ -1367,16 +1395,21 @@ SimulateStep(simulator_context *Context)
     
     if(Context->DisplayClocks)
     {
+        AppendFormatString(&StringState, " Clocks: +%u = %u", 
+                           Instruction.Clocks + Instruction.EAComponent + Instruction.POffset, 
+                           Context->TotalClocks);
         if(Instruction.EAComponent)
         {
-            AppendFormatString(&StringState, " Clocks: +%u = %u (%u + %uea) |", 
-                               Instruction.Clocks + Instruction.EAComponent, Context->TotalClocks,
-                               Instruction.Clocks, Instruction.EAComponent);
+            AppendFormatString(&StringState, " (%u + %uea", Instruction.Clocks, Instruction.EAComponent);
+            if(Instruction.POffset)
+            {
+                AppendFormatString(&StringState, " + %up", Instruction.POffset);
+            }
+            AppendFormatString(&StringState, ")");
         }
-        else
-        {
-            AppendFormatString(&StringState, " Clocks: +%u = %u |", Instruction.Clocks, Context->TotalClocks);
-        }
+        
+        AppendFormatString(&StringState, " |");
+        
     }
     
     switch(Instruction.Type)
