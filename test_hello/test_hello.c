@@ -11,5 +11,4 @@ RunAllTests(memory_arena *Arena)
     string Expected = String("Hello, world!");
     string Actual = String("Hello, world!");
     AssertEqualString(Expected, Actual);
-    
 }

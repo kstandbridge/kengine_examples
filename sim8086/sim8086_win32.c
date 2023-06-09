@@ -19,6 +19,7 @@ MainLoop(app_memory *AppMemory)
     
     string_list *Args = PlatformGetCommandLineArgs(&AppState->Arena);
     string FilePath = {0};
+    b32 DisplayClocks = false;
     b32 DumpMemory = false;
     
     for(string_list *Arg = Args;
@@ -28,6 +29,10 @@ MainLoop(app_memory *AppMemory)
         if(StringsAreEqual(Arg->Entry, String("-dump")))
         {
             DumpMemory = true;
+        }
+        else if(StringsAreEqual(Arg->Entry, String("-clocks")))
+        {
+            DisplayClocks = true;
         }
         else
         {
@@ -44,6 +49,7 @@ MainLoop(app_memory *AppMemory)
     {
         string File = PlatformReadEntireFile(&AppState->Arena, FilePath);
         simulator_context Context = GetSimulatorContext(&AppState->Arena, File.Data, File.Size);
+        Context.DisplayClocks = DisplayClocks;
         
         while(Context.InstructionStreamAt < Context.InstructionStreamSize)
         {        

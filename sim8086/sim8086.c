@@ -365,6 +365,130 @@ GetNextInstruction(simulator_context *Context)
             Result.Bits[Field.Type] = Bits;
             BitsAt -= Field.Size;
         }
+        
+        
+        // NOTE(kstandbridge): Figure out clocks?
+        switch(Result.Type)
+        {
+            case Instruction_MovImmediate: { Result.Clocks = 4; } break;
+            case Instruction_Immediate:    { Result.Clocks = 4; } break;
+            case Instruction_Add:
+            { 
+                switch(Result.Bits[Encoding_MOD])
+                {
+                    case Mod_RegisterMode: { Result.Clocks = 3; } break;
+                    default:
+                    { 
+                        if(Result.Flags & Flag_D)
+                        {
+                            Result.Clocks = 9;
+                        }
+                        else
+                        {
+                            Result.Clocks = 16;
+                        }
+                        
+                        switch(Result.Bits[Encoding_RM])
+                        {
+                            case EffectiveAddress_BX:
+                            case EffectiveAddress_SI:
+                            case EffectiveAddress_DI:
+                            case EffectiveAddress_BP:
+                            {
+                                if(Result.Bits[Encoding_DISP_LO] ||
+                                   Result.Bits[Encoding_DISP_HI])
+                                {
+                                    Result.EAComponent = 9; 
+                                }
+                                else
+                                {
+                                    Result.EAComponent = 5;
+                                }
+                            } break;
+                            
+                            default:
+                            {
+                                // NOTE(kstandbridge): Displacement Only
+                                Result.EAComponent = 5; 
+                            }
+                        }
+                    }
+                }
+            } break;
+            case Instruction_Mov:
+            { 
+                switch(Result.Bits[Encoding_MOD])
+                {
+                    case Mod_RegisterMode: { Result.Clocks = 2; } break;
+                    case Mod_MemoryMode:
+                    { 
+                        if(Result.Flags & Flag_D)
+                        {
+                            Result.Clocks = 8;
+                        }
+                        else
+                        {
+                            Result.Clocks = 9;
+                        }
+                        
+                        switch(Result.Bits[Encoding_RM])
+                        {
+                            case EffectiveAddress_BX:
+                            case EffectiveAddress_SI:
+                            case EffectiveAddress_DI:
+                            {
+                                Result.EAComponent = 5; 
+                            } break;
+                            
+                            default:
+                            {
+                                // NOTE(kstandbridge): Displacement Only
+                                Result.EAComponent = 6; 
+                            }
+                        }
+                    } break;
+                    
+                    default:
+                    {
+                        if(Result.Flags & Flag_D)
+                        {
+                            Result.Clocks = 8;
+                        }
+                        else
+                        {
+                            Result.Clocks = 9;
+                        }
+                        
+                        switch(Result.Bits[Encoding_RM])
+                        {
+                            case EffectiveAddress_BX:
+                            case EffectiveAddress_SI:
+                            case EffectiveAddress_DI:
+                            case EffectiveAddress_BP:
+                            {
+                                if(Result.Bits[Encoding_DISP_LO] ||
+                                   Result.Bits[Encoding_DISP_HI])
+                                {
+                                    Result.EAComponent = 9; 
+                                }
+                                else
+                                {
+                                    Result.EAComponent = 5;
+                                }
+                            } break;
+                            
+                            default:
+                            {
+                                // NOTE(kstandbridge): Displacement Only
+                                Result.EAComponent = 5; 
+                            }
+                        }
+                    }
+                }
+                
+            } break;
+        }
+        Context->TotalClocks += Result.Clocks + Result.EAComponent;
     }
     
     return Result;
@@ -1241,6 +1365,20 @@ SimulateStep(simulator_context *Context)
     register_flags FlagsBefore = Context->Flags;
     AppendFormatString(&StringState, "%S ;", InstructionToAssembly(Context, Instruction));
     
+    if(Context->DisplayClocks)
+    {
+        if(Instruction.EAComponent)
+        {
+            AppendFormatString(&StringState, " Clocks: +%u = %u (%u + %uea) |", 
+                               Instruction.Clocks + Instruction.EAComponent, Context->TotalClocks,
+                               Instruction.Clocks, Instruction.EAComponent);
+        }
+        else
+        {
+            AppendFormatString(&StringState, " Clocks: +%u = %u |", Instruction.Clocks, Context->TotalClocks);
+        }
+    }
+    
     switch(Instruction.Type)
     {
         case Instruction_Loop:
@@ -1364,6 +1502,7 @@ SimulateStep(simulator_context *Context)
                 }
                 else
                 {
+                    
                     SignedOutput = SignedDestination - SignedSource;
                     
                     u8 HighResult = GetBits(UnpackU16Low(SignedOutput), 3, 4);
@@ -1604,6 +1743,7 @@ SimulateStep(simulator_context *Context)
             }
             else
             {
+                
                 u8 HighPart;
                 u8 LowPart;
                 
@@ -1664,7 +1804,10 @@ SimulateStep(simulator_context *Context)
                     
                     if(Instruction.Flags & Flag_D)
                     {
+                        u16 ValueBefore = Context->Registers[Instruction.Bits[Encoding_REG]];
                         Context->Registers[Instruction.Bits[Encoding_REG]] = Context->Memory[Displacement + Offset];
+                        u16 ValueAfter = Context->Registers[Instruction.Bits[Encoding_REG]];
+                        AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.Bits[Encoding_REG]), ValueBefore, ValueAfter);
                     }
                     else
                     {

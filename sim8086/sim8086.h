@@ -81,6 +81,9 @@ typedef struct simulator_context
     
     register_flags Flags;
     
+    u32 TotalClocks;
+    b32 DisplayClocks;
+    
     u8 *Memory;
     
 } simulator_context;
@@ -458,6 +461,9 @@ typedef struct instruction
     u8 Bits[Encoding_Count];
     
     u8 Size;
+    
+    u8 Clocks;
+    u8 EAComponent;
     
 } instruction;
 
