@@ -370,7 +370,79 @@ GetNextInstruction(simulator_context *Context)
         switch(Result.Type)
         {
             case Instruction_MovImmediate: { Result.Clocks = 4; } break;
-            case Instruction_Immediate:    { Result.Clocks = 4; } break;
+            
+            case Instruction_Immediate:
+            {
+                switch(Result.Bits[Encoding_MOD])
+                {
+                    case Mod_RegisterMode: { Result.Clocks = 4; } break;
+                    default:
+                    {
+                        Result.Clocks = 17;
+                        
+                        switch(Result.Bits[Encoding_RM])
+                        {
+                            case EffectiveAddress_BX:
+                            case EffectiveAddress_SI:
+                            case EffectiveAddress_DI:
+                            case EffectiveAddress_BP:
+                            {
+                                if(Result.Bits[Encoding_DISP_LO] ||
+                                   Result.Bits[Encoding_DISP_HI])
+                                {
+                                    if(Context->Is8088)
+                                    {
+                                        Result.POffset += 4;
+                                    }
+                                    
+                                    Result.EAComponent = 9; 
+                                }
+                                else
+                                {
+                                    Result.EAComponent = 5;
+                                }
+                            } break;
+                            
+                            case EffectiveAddress_BP_DI:
+                            case EffectiveAddress_BX_SI:
+                            {
+                                if(Result.Bits[Encoding_DISP_LO] ||
+                                   Result.Bits[Encoding_DISP_HI])
+                                {
+                                    Result.EAComponent = 11; 
+                                }
+                                else
+                                {
+                                    Result.EAComponent = 7;
+                                }
+                            } break;
+                            
+                            case EffectiveAddress_BP_SI:
+                            case EffectiveAddress_BX_DI:
+                            {
+                                if(Result.Bits[Encoding_DISP_LO] ||
+                                   Result.Bits[Encoding_DISP_HI])
+                                {
+                                    Result.EAComponent = 12; 
+                                }
+                                else
+                                {
+                                    Result.EAComponent = 8;
+                                }
+                            } break;
+                            
+                            default:
+                            {
+                                // NOTE(kstandbridge): Displacement Only
+                                Result.EAComponent = 5; 
+                            }
+                        }
+                        
+                    }
+                }
+                
+            } break;
+            
             case Instruction_Add:
             { 
                 switch(Result.Bits[Encoding_MOD])
@@ -412,6 +484,34 @@ GetNextInstruction(simulator_context *Context)
                                 else
                                 {
                                     Result.EAComponent = 5;
+                                }
+                            } break;
+                            
+                            case EffectiveAddress_BP_DI:
+                            case EffectiveAddress_BX_SI:
+                            {
+                                if(Result.Bits[Encoding_DISP_LO] ||
+                                   Result.Bits[Encoding_DISP_HI])
+                                {
+                                    Result.EAComponent = 11; 
+                                }
+                                else
+                                {
+                                    Result.EAComponent = 7;
+                                }
+                            } break;
+                            
+                            case EffectiveAddress_BP_SI:
+                            case EffectiveAddress_BX_DI:
+                            {
+                                if(Result.Bits[Encoding_DISP_LO] ||
+                                   Result.Bits[Encoding_DISP_HI])
+                                {
+                                    Result.EAComponent = 12; 
+                                }
+                                else
+                                {
+                                    Result.EAComponent = 8;
                                 }
                             } break;
                             
@@ -463,6 +563,18 @@ GetNextInstruction(simulator_context *Context)
                                 Result.EAComponent = 5; 
                             } break;
                             
+                            case EffectiveAddress_BP_DI:
+                            case EffectiveAddress_BX_SI:
+                            {
+                                Result.EAComponent = 7;
+                            } break;
+                            
+                            case EffectiveAddress_BP_SI:
+                            case EffectiveAddress_BX_DI:
+                            {
+                                Result.EAComponent = 8;
+                            } break;
+                            
                             default:
                             {
                                 // NOTE(kstandbridge): Displacement Only
@@ -505,6 +617,34 @@ GetNextInstruction(simulator_context *Context)
                                 }
                             } break;
                             
+                            case EffectiveAddress_BP_DI:
+                            case EffectiveAddress_BX_SI:
+                            {
+                                if(Result.Bits[Encoding_DISP_LO] ||
+                                   Result.Bits[Encoding_DISP_HI])
+                                {
+                                    Result.EAComponent = 11; 
+                                }
+                                else
+                                {
+                                    Result.EAComponent = 7;
+                                }
+                            } break;
+                            
+                            case EffectiveAddress_BP_SI:
+                            case EffectiveAddress_BX_DI:
+                            {
+                                if(Result.Bits[Encoding_DISP_LO] ||
+                                   Result.Bits[Encoding_DISP_HI])
+                                {
+                                    Result.EAComponent = 12; 
+                                }
+                                else
+                                {
+                                    Result.EAComponent = 8;
+                                }
+                            } break;
+                            
                             default:
                             {
                                 // NOTE(kstandbridge): Displacement Only
@@ -515,6 +655,14 @@ GetNextInstruction(simulator_context *Context)
                 }
                 
             } break;
+        }
+        u8 HighPart = Result.Bits[Encoding_DISP_HI];
+        u8 LowPart = Result.Bits[Encoding_DISP_LO];
+        u16 Displacement  = PackU16(HighPart, LowPart);
+        if(Displacement % 2 == 1)
+        {
+            // NOTE(kstandbridge): On 8086 four clocks added for each reference to a word operand located at an odd memory address
+            Result.POffset += 4;
         }
         Context->TotalClocks += Result.Clocks + Result.EAComponent + Result.POffset;
     }
@@ -1587,13 +1735,52 @@ SimulateStep(simulator_context *Context)
                 
                 if(Op != SubOp_Cmp)
                 {
-                    u16 ValueBefore = Context->Registers[Instruction.Bits[Encoding_RM]];
-                    Context->Registers[Instruction.Bits[Encoding_RM]] = *(u16 *)&SignedOutput;
-                    u16 ValueAfter = Context->Registers[Instruction.Bits[Encoding_RM]];
-                    if(ValueBefore != ValueAfter)
+                    if(Instruction.Bits[Encoding_MOD] == Mod_MemoryMode)
                     {
-                        AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.Bits[Encoding_RM]), ValueBefore, ValueAfter);
+                        u16 Offset = 0;
+                        switch(Instruction.Bits[Encoding_RM])
+                        {
+                            case EffectiveAddress_BX_SI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_SI]; } break;
+                            case EffectiveAddress_BX_DI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_DI]; } break;
+                            case EffectiveAddress_BP_SI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_SI]; } break;
+                            case EffectiveAddress_BP_DI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_DI]; } break;
+                            case EffectiveAddress_SI:    { Offset = Context->Registers[RegisterWord_SI]; } break;
+                            case EffectiveAddress_DI:    { Offset = Context->Registers[RegisterWord_DI]; } break;
+                            case EffectiveAddress_BP:    { Offset = Context->Registers[RegisterWord_BP]; } break;
+                            case EffectiveAddress_BX:    { Offset = Context->Registers[RegisterWord_BX]; } break;
+                        }
+                        
+                        u8 Data = Context->Memory[Offset];
+                        
+                        if(Instruction.Flags & Flag_D)
+                        {
+                            Source = Context->Registers[Instruction.Bits[Encoding_REG]];
+                            u16 Output = SimulateArithmetic(Context, Op, Data, Source);
+                            
+                            if(Instruction.Type != Instruction_Cmp)
+                            {
+                                u16 ValueBefore = Context->Registers[Instruction.Bits[Encoding_REG]];
+                                Context->Registers[Instruction.Bits[Encoding_REG]] = Output;
+                                u16 ValueAfter = Context->Registers[Instruction.Bits[Encoding_REG]];
+                                if(ValueBefore != ValueAfter)
+                                {
+                                    AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.Bits[Encoding_REG]), ValueBefore, ValueAfter);
+                                }
+                                
+                            }
+                        }
                     }
+                    else
+                    {
+                        u16 ValueBefore = Context->Registers[Instruction.Bits[Encoding_RM]];
+                        Context->Registers[Instruction.Bits[Encoding_RM]] = *(u16 *)&SignedOutput;
+                        u16 ValueAfter = Context->Registers[Instruction.Bits[Encoding_RM]];
+                        if(ValueBefore != ValueAfter)
+                        {
+                            AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.Bits[Encoding_RM]), ValueBefore, ValueAfter);
+                        }
+                    }
+                    
                 }
             }
             else
@@ -1671,6 +1858,31 @@ SimulateStep(simulator_context *Context)
                 case Mod_8BitDisplace:
                 case Mod_16BitDisplace:
                 {
+                    
+                    u8 HighPart = Instruction.Bits[Encoding_DISP_HI];
+                    u8 LowPart = Instruction.Bits[Encoding_DISP_LO];
+                    u16 Displacement  = PackU16(HighPart, LowPart);
+                    
+                    
+                    u16 Offset = 0;
+                    switch(Instruction.Bits[Encoding_RM])
+                    {
+                        case EffectiveAddress_BX_SI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_SI]; } break;
+                        case EffectiveAddress_BX_DI: { Offset = Context->Registers[RegisterWord_BX] + Context->Registers[RegisterWord_DI]; } break;
+                        case EffectiveAddress_BP_SI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_SI]; } break;
+                        case EffectiveAddress_BP_DI: { Offset = Context->Registers[RegisterWord_BP] + Context->Registers[RegisterWord_DI]; } break;
+                        case EffectiveAddress_SI:    { Offset = Context->Registers[RegisterWord_SI]; } break;
+                        case EffectiveAddress_DI:    { Offset = Context->Registers[RegisterWord_DI]; } break;
+                        case EffectiveAddress_BP:    { Offset = Context->Registers[RegisterWord_BP]; } break;
+                        case EffectiveAddress_BX:    { Offset = Context->Registers[RegisterWord_BX]; } break;
+                    }
+                    
+                    u8 Data = Instruction.Bits[Encoding_DATA];
+                    
+                    u16 Output = SimulateArithmetic(Context, Op, Context->Memory[Displacement + Offset], Data);
+                    Context->Memory[Displacement + Offset] = UnpackU16High(Output);
+                    Context->Memory[Displacement + Offset + 1] = UnpackU16Low(Output);
+                    
                 } break;
                 
                 case Mod_RegisterMode:
@@ -1840,7 +2052,10 @@ SimulateStep(simulator_context *Context)
                         u16 ValueBefore = Context->Registers[Instruction.Bits[Encoding_REG]];
                         Context->Registers[Instruction.Bits[Encoding_REG]] = Context->Memory[Displacement + Offset];
                         u16 ValueAfter = Context->Registers[Instruction.Bits[Encoding_REG]];
-                        AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.Bits[Encoding_REG]), ValueBefore, ValueAfter);
+                        if(ValueBefore != ValueAfter)
+                        {
+                            AppendFormatString(&StringState, " %S:%x->%x", RegisterWordToString(Instruction.Bits[Encoding_REG]), ValueBefore, ValueAfter);
+                        }
                     }
                     else
                     {

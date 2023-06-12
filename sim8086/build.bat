@@ -15,7 +15,7 @@ pushd ..\bin
 REM call nasm ..\sim8086\test.asm -o test
 
 cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -Z7 %IncludeDirectories% ..\sim8086\sim8086_tests.c /Fe:sim8086_tests.exe /link %CommonLinkerFlags%
-cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -Z7 %IncludeDirectories% ..\sim8086\sim8086_win32.c /Fe:sim8086.exe /link %CommonLinkerFlags%
+REM cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -Z7 %IncludeDirectories% ..\sim8086\sim8086_win32.c /Fe:sim8086.exe /link %CommonLinkerFlags%
 
 del *.obj
 

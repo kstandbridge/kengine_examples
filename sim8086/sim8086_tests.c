@@ -3773,6 +3773,7 @@ RunDrawRectangleTests(memory_arena *Arena)
 inline void
 RunEstimateCyclesTests(memory_arena *Arena)
 {
+    // NOTE(kstandbridge): 8086
     {
         temporary_memory MemoryFlush = BeginTemporaryMemory(Arena);
         u8 Stream[] = 
@@ -3800,12 +3801,13 @@ RunEstimateCyclesTests(memory_arena *Arena)
         Output = SimulateStep(&Context); AssertEqualString(String("mov word [si+1000], cx ; Clocks: +18 = 142 (9 + 9ea) | ip:0x26->0x2a"), Output);
         Output = SimulateStep(&Context); AssertEqualString(String("mov word [di+1000], cx ; Clocks: +18 = 160 (9 + 9ea) | ip:0x2a->0x2e"), Output);
         Output = SimulateStep(&Context); AssertEqualString(String("add cx, dx ; Clocks: +3 = 163 | ip:0x2e->0x30 flags:->PZ"), Output);
-        Output = SimulateStep(&Context); AssertEqualString(String("add word [di+1000], cx ; Clocks: +25 = 188 (16 + 9ea) | ip:0x30->0x34 flags:PZ->"), Output);
-        Output = SimulateStep(&Context); AssertEqualString(String("add dx, 50 ; Clocks: +4 = 192 | dx:0x0->0x32 ip:0x34->0x37"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add word [di+1000], cx ; Clocks: +25 = 188 (16 + 9ea) | ip:0x30->0x34"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add dx, 50 ; Clocks: +4 = 192 | dx:0x0->0x32 ip:0x34->0x37 flags:PZ->"), Output);
         
         EndTemporaryMemory(MemoryFlush);
     }
     
+    // NOTE(kstandbridge): 8088
     {
         temporary_memory MemoryFlush = BeginTemporaryMemory(Arena);
         u8 Stream[] = 
@@ -3834,9 +3836,43 @@ RunEstimateCyclesTests(memory_arena *Arena)
         Output = SimulateStep(&Context); AssertEqualString(String("mov word [si+1000], cx ; Clocks: +22 = 174 (9 + 9ea + 4p) | ip:0x26->0x2a"), Output);
         Output = SimulateStep(&Context); AssertEqualString(String("mov word [di+1000], cx ; Clocks: +22 = 196 (9 + 9ea + 4p) | ip:0x2a->0x2e"), Output);
         Output = SimulateStep(&Context); AssertEqualString(String("add cx, dx ; Clocks: +3 = 199 | ip:0x2e->0x30 flags:->PZ"), Output);
-        Output = SimulateStep(&Context); AssertEqualString(String("add word [di+1000], cx ; Clocks: +33 = 232 (16 + 9ea + 8p) | ip:0x30->0x34 flags:PZ->"), Output);
-        Output = SimulateStep(&Context); AssertEqualString(String("add dx, 50 ; Clocks: +4 = 236 | dx:0x0->0x32 ip:0x34->0x37"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add word [di+1000], cx ; Clocks: +33 = 232 (16 + 9ea + 8p) | ip:0x30->0x34"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add dx, 50 ; Clocks: +4 = 236 | dx:0x0->0x32 ip:0x34->0x37 flags:PZ->"), Output);
         
+        EndTemporaryMemory(MemoryFlush);
+    }
+    
+    // NOTE(kstandbridge): 8086
+    {
+        temporary_memory MemoryFlush = BeginTemporaryMemory(Arena);
+        u8 Stream[] = 
+        { 
+            0b10111011, 0b11101000, 0b00000011, 0b10111101, 0b11010000, 0b00000111, 0b10111110, 0b10111000, 0b00001011, 0b10111111, 0b10100000, 0b00001111, 0b10001011, 0b00001011, 0b10001001, 0b00001000, 0b10001011, 0b00001010, 0b10001001, 0b00001001, 0b10001011, 0b10001011, 0b11101000, 0b00000011, 0b10001001, 0b10001000, 0b11101000, 0b00000011, 0b10001011, 0b10001010, 0b11101000, 0b00000011, 0b10001001, 0b10001001, 0b11101000, 0b00000011, 0b00000011, 0b10010010, 0b11101000, 0b00000011, 0b10000011, 0b00000010, 0b01001100, 0b00000011, 0b10010010, 0b11101001, 0b00000011, 0b00000001, 0b10010101, 0b11100111, 0b00000011, 0b10000011, 0b00000010, 0b01001011
+        };
+        
+        simulator_context Context = GetSimulatorContext(Arena, Stream, sizeof(Stream));
+        Context.DisplayClocks = true;
+        
+        string Output;
+        Output = SimulateStep(&Context); AssertEqualString(String("mov bx, 1000 ; Clocks: +4 = 4 | bx:0x0->0x3e8 ip:0x0->0x3"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov bp, 2000 ; Clocks: +4 = 8 | bp:0x0->0x7d0 ip:0x3->0x6"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov si, 3000 ; Clocks: +4 = 12 | si:0x0->0xbb8 ip:0x6->0x9"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov di, 4000 ; Clocks: +4 = 16 | di:0x0->0xfa0 ip:0x9->0xc"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov cx, word [bp + di] ; Clocks: +15 = 31 (8 + 7ea) | ip:0xc->0xe"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov word [bx + si], cx ; Clocks: +16 = 47 (9 + 7ea) | ip:0xe->0x10"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov cx, word [bp + si] ; Clocks: +16 = 63 (8 + 8ea) | ip:0x10->0x12"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov word [bx + di], cx ; Clocks: +17 = 80 (9 + 8ea) | ip:0x12->0x14"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov word cx, [bp + di+1000] ; Clocks: +19 = 99 (8 + 11ea) | ip:0x14->0x18"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov word [bx + si+1000], cx ; Clocks: +20 = 119 (9 + 11ea) | ip:0x18->0x1c"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov word cx, [bp + si+1000] ; Clocks: +20 = 139 (8 + 12ea) | ip:0x1c->0x20"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("mov word [bx + di+1000], cx ; Clocks: +21 = 160 (9 + 12ea) | ip:0x20->0x24"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add word dx, [bp + si+1000] ; Clocks: +21 = 181 (9 + 12ea) | ip:0x24->0x28 flags:->PZ"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add word [bp + si], 76 ; Clocks: +25 = 206 (17 + 8ea) | ip:0x28->0x2b flags:PZ->"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add word dx, [bp + si+1001] ; Clocks: +25 = 231 (9 + 12ea + 4p) | ip:0x2b->0x2f flags:->PZ"), Output);
+#if 0
+        Output = SimulateStep(&Context); AssertEqualString(String("add word [di+999], dx ; Clocks: +33 = 264 (16 + 9ea + 8p) | ip:0x2f->0x33 flags:PZ->P"), Output);
+        Output = SimulateStep(&Context); AssertEqualString(String("add word [bp + si], 75 ; Clocks: +25 = 289 (17 + 8ea) | ip:0x33->0x36 flags:P->A"), Output);
+#endif
         EndTemporaryMemory(MemoryFlush);
     }
 }

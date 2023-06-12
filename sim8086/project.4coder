@@ -1,4 +1,5 @@
-version(2);
+version(1);
+
 project_name = "sim8086";
 
 patterns =
@@ -22,9 +23,11 @@ blacklist_patterns =
     ".*",
 };
 
-load_paths =
-{
-    .win = {
-        { .path = "..\kengine", .recursive = true, .relative = true }
-    },
+load_paths = {
+    {
+		{
+            {"", .relative = true, .recursive = false, },
+            {"../kengine", .relative = true, .recursive = true, }
+		}, .os = "win"
+	}
 };
