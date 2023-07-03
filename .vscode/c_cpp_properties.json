@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "/usr/lib/gcc/x86_64-pc-linux-gnu/13.1.1/../../../../include/c++/13.1.1",
+                "/usr/lib/gcc/x86_64-pc-linux-gnu/13.1.1/../../../../include/c++/13.1.1/x86_64-pc-linux-gnu",
+                "/usr/lib/gcc/x86_64-pc-linux-gnu/13.1.1/../../../../include/c++/13.1.1/backward",
+                "/usr/lib/gcc/x86_64-pc-linux-gnu/13.1.1/include",
+                "/usr/local/include",
+                "/usr/lib/gcc/x86_64-pc-linux-gnu/13.1.1/include-fixed",
+                "/usr/include",
+                "${workspaceFolder}/kengine",
+                "${workspaceFolder}/**"
+            ],
+            "defines": ["KENGINE_LINUX=1", "KENGINE_IMPLEMENTATION=1"],
+            "cStandard": "c17",
+            "cppStandard": "c++14",
+            "intelliSenseMode": "linux-clang-x64"
+        }
+    ],
+    "version": 4
+}
