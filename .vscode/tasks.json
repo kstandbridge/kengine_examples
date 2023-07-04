@@ -13,7 +13,7 @@
 			"problemMatcher": "$gcc",
 			"type": "shell",
 			"options": {
-				"cwd": "${workspaceFolder}/"
+				"cwd": "${workspaceFolder}"
 			},
 			"presentation": {
 				"echo": true,
@@ -23,6 +23,22 @@
 				"showReuseMessage": true,
 				"clear": true
 			}
-		}
+		},
+		{
+			"label": "windows hello debug build",
+			"type": "cppbuild",
+			"command": "linux_hello\\build.bat",
+			"args": [],
+			"options": {
+			  "cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": ["$msCompile"],
+			"group": {
+			  "kind": "build",
+			  "isDefault": true
+			},
+			"detail": "compiler: cl.exe"
+		  }
+	  
     ]
 }

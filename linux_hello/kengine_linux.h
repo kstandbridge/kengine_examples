@@ -1,16 +1,5 @@
 #ifndef KENGINE_LINUX_H
 
-#include <stdarg.h>
-
-#define introspect(...)
-#include "kengine/kengine_types.h"
-#include "kengine/kengine_memory.h"
-#include "kengine/kengine_generated.h"
-#include "kengine/kengine_math.h"
-#include "kengine/kengine_string.h"
-
-#ifdef KENGINE_LINUX
-
 #include <sys/mman.h>
 #include <unistd.h>
 
@@ -32,17 +21,7 @@ LinuxAllocateMemory(umm Size, u64 Flags);
 #define PlatformDeallocateMemory(Block) LinuxDeallocateMemory(Block)
 void
 LinuxDeallocateMemory(platform_memory_block *Block);
-#endif // KENGINE_LINUX
 
-#ifdef KENGINE_IMPLEMENTATION
-#include "kengine/kengine_memory.c"
-#include "kengine/kengine_string.c"
-
-#ifdef KENGINE_LINUX
-#include "kengine_linux.c"
-#endif // KENGINE_LINUX
-
-#endif // KENGINE_IMPLEMENTATION
 
 #define KENGINE_LINUX_H
 #endif // KENGINE_LINUX_H

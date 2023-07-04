@@ -27,7 +27,18 @@
                     "ignoreFailures": true
                 }
             ]
-        }
+        },
+        {
+            "name": "windows_hello debug",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}\\bin\\linux_hello.exe",
+            "stopAtEntry": false,
+            "cwd": "${fileDirname}",
+            "environment": [],
+            "externalConsole": false
+          }
+      
 
     ]
 }
