@@ -6,14 +6,14 @@
         {
 			"label": "linux_hello debug build",
 			"group": "build",
-			"command": "./build.sh",
+			"command": "linux_hello/build.sh",
 			"args": [
 				"",
 			],
 			"problemMatcher": "$gcc",
 			"type": "shell",
 			"options": {
-				"cwd": "${workspaceFolder}/linux_hello"
+				"cwd": "${workspaceFolder}/"
 			},
 			"presentation": {
 				"echo": true,

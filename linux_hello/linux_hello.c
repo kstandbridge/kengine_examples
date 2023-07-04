@@ -1,10 +1,10 @@
-extern long write(int, const char *, unsigned long);
+#define KENGINE_LINUX
+#define KENGINE_IMPLEMENTATION
+#include "kengine_linux.h"
 
 int main(int argc, char *argv[])
 {
-    char str[] = "Hello.\n";
-
-    write(1, str, 7);
+    PlatformConsoleOut("Before %d after\n", 42);
 
     return 0;
 }

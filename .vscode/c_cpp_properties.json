@@ -16,7 +16,7 @@
             "defines": ["KENGINE_LINUX=1", "KENGINE_IMPLEMENTATION=1"],
             "cStandard": "c17",
             "cppStandard": "c++14",
-            "intelliSenseMode": "linux-clang-x64"
+            "intelliSenseMode": "linux-gcc-x64"
         }
     ],
     "version": 4
