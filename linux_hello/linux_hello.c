@@ -1,5 +1,3 @@
-#define KENGINE_LINUX
-//#define KENGINE_WIN32
 #define KENGINE_IMPLEMENTATION
 #include "kengine.h"
 

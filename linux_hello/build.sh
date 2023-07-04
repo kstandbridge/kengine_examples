@@ -1,13 +1,18 @@
 #!/bin/sh
 
 
-curDir=$(pwd)
-buildDir="$curDir/bin"
+CurDir=$(pwd)
+BuildDir="$CurDir/bin"
 
-[ -d $buildDir ] || mkdir -p $buildDir
+IncludeDirectories=-I $CurDir/kengine
+CommonCompilerFlags=-O2 -g -ggdb -msse4.2 -maes $IncludeDirectories
+CommonLinkerFlags=-pthread
+InternalCompilerFlags=-DKENGINE_LINUX -DKENGINE_INTERNAL -DKENGINE_SLOW
 
-pushd $buildDir > /dev/null
+[ -d $BuildDir ] || mkdir -p $BuildDir
 
-gcc -O2 -g -ggdb -msse4.2 -maes -I $curDir/kengine "$curDir/linux_hello/linux_hello.c" -o linux_hello
+pushd $BuildDir > /dev/null
+
+gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/linux_hello/linux_hello.c" -o linux_hello $CommonLinkerFlags
 
 popd > /dev/null
