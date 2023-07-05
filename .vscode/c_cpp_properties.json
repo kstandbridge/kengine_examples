@@ -14,8 +14,6 @@
                 "${workspaceFolder}/**"
             ],
             "defines": ["KENGINE_LINUX", "KENGINE_IMPLEMENTATION", "KENGINE_TEST", "KENGINE_INTERNAL=1", "KENGINE_SLOW=1"],
-            "cStandard": "c17",
-            "cppStandard": "c++14",
             "intelliSenseMode": "linux-gcc-x64"
         },
         {
@@ -25,8 +23,6 @@
                 "${workspaceFolder}/**"
             ],
             "defines": ["KENGINE_WIN32", "KENGINE_IMPLEMENTATION", "KENGINE_TEST", "KENGINE_INTERNAL=1", "KENGINE_SLOW=1"],
-            "cStandard": "c17",
-            "cppStandard": "c++14",
             "intelliSenseMode": "msvc-x64"
         }
     ],
