@@ -33,7 +33,7 @@
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
-            "externalConsole": false
+            "console": "integratedTerminal"
         },
 
         {
@@ -68,7 +68,7 @@
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],
-            "externalConsole": false
+            "console": "integratedTerminal"
         }
     ]
 }
