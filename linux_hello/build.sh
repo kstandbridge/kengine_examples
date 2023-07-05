@@ -5,7 +5,7 @@ CurDir=$(pwd)
 BuildDir="$CurDir/bin"
 
 IncludeDirectories="-I $CurDir/kengine"
-CommonCompilerFlags="-O2 -g -ggdb -msse4.2 -maes $IncludeDirectories"
+CommonCompilerFlags="-Og -g -ggdb -msse4.2 -maes $IncludeDirectories"
 CommonLinkerFlags="-pthread"
 InternalCompilerFlags="-DKENGINE_LINUX -DKENGINE_INTERNAL -DKENGINE_SLOW"
 
