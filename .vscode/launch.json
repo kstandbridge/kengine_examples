@@ -2,10 +2,10 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "linux_hello debug",
+            "name": "hello_console debug",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/linux_hello",
+            "program": "${workspaceFolder}/bin/hello_console",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
@@ -29,7 +29,7 @@
             "name": "windows_hello debug",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}\\bin\\linux_hello.exe",
+            "program": "${workspaceFolder}\\bin\\hello_console.exe",
             "stopAtEntry": false,
             "cwd": "${fileDirname}",
             "environment": [],

@@ -1,6 +1,5 @@
 #!/bin/sh
 
-
 CurDir=$(pwd)
 BuildDir="$CurDir/bin"
 
@@ -13,6 +12,6 @@ InternalCompilerFlags="-DKENGINE_LINUX -DKENGINE_INTERNAL -DKENGINE_SLOW"
 
 pushd $BuildDir > /dev/null
 
-gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/linux_hello/linux_hello.c" -o linux_hello $CommonLinkerFlags
+gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/hello_console/hello_console.c" -o hello_console $CommonLinkerFlags
 
 popd > /dev/null
