@@ -1,9 +1,8 @@
-#define KENGINE_WIN32
 #define KENGINE_TEST
 #define KENGINE_IMPLEMENTATION
 #include "kengine.h"
 
-inline void
+internal void
 RunGetBitsTests()
 {
     {
@@ -56,7 +55,7 @@ RunGetBitsTests()
     }
 }
 
-inline void
+internal void
 RunUnpackTests()
 {
     {
@@ -75,7 +74,8 @@ RunUnpackTests()
         AssertEqualU32(0xCD, Low);
     }
 }
-inline void
+
+internal void
 RunFormatStringHexTests(memory_arena *Arena)
 {
     
@@ -122,7 +122,7 @@ RunFormatStringHexTests(memory_arena *Arena)
 }
 
 
-inline void
+internal void
 RunStringsAreEqualTests()
 {
     AssertEqualString(String("Foo"), String("Foo"));
@@ -133,7 +133,7 @@ RunStringsAreEqualTests()
     AssertNotEqualString(String(""), String("Bas bar Foo"));
 }
 
-inline void
+internal void
 RunStringBeginsWithTests()
 {
     string HayStack = String("Content-Length: 256");
@@ -141,14 +141,14 @@ RunStringBeginsWithTests()
     AssertFalse(StringBeginsWith(String("256"), HayStack));
 }
 
-inline void
+internal void
 RunStringContainsTests()
 {
     AssertTrue(StringContains(String("foo"), String("Before foo after")));
     AssertFalse(StringContains(String("foo"), String("Before bar after")));
 }
 
-inline void
+internal void
 RunFormatStringSignedDecimalIntegerTests(memory_arena *Arena)
 {
     {
@@ -179,7 +179,7 @@ RunFormatStringSignedDecimalIntegerTests(memory_arena *Arena)
     }
 }
 
-inline void
+internal void
 RunFormatStringUnsignedDecimalIntegerTests(memory_arena *Arena)
 {
     {
@@ -201,7 +201,7 @@ RunFormatStringUnsignedDecimalIntegerTests(memory_arena *Arena)
     }
 }
 
-inline void
+internal void
 RunFormatStringDecimalFloatingPoint(memory_arena *Arena)
 {
     {
@@ -244,7 +244,7 @@ RunFormatStringDecimalFloatingPoint(memory_arena *Arena)
     }
 }
 
-inline void
+internal void
 RunFormatStringStringOfCharactersTests(memory_arena *Arena)
 {
     {
@@ -274,7 +274,7 @@ RunFormatStringStringOfCharactersTests(memory_arena *Arena)
     }
 }
 
-inline void
+internal void
 RunFormatStringStringTypeTests(memory_arena *Arena)
 {
     {
@@ -300,7 +300,7 @@ RunFormatStringStringTypeTests(memory_arena *Arena)
     
 }
 
-inline void
+internal void
 RunFormatStringPercentTests(memory_arena *Arena)
 {
     {
@@ -315,7 +315,7 @@ RunFormatStringPercentTests(memory_arena *Arena)
     }
 }
 
-inline void
+internal void
 RunFormatStringDateTests(memory_arena *Arena)
 {
     {
@@ -380,7 +380,7 @@ RunFormatStringDateTests(memory_arena *Arena)
     }
 }
 
-inline void
+internal void
 RunFormatStringBinaryTests(memory_arena *Arena)
 {
     {
@@ -400,7 +400,7 @@ RunFormatStringBinaryTests(memory_arena *Arena)
     }
 }
 
-inline void
+internal void
 RunFormatStringWithoutArenaTests()
 {
     {
@@ -423,7 +423,7 @@ RunFormatStringWithoutArenaTests()
     }
 }
 
-inline void
+internal void
 RunV2Tests()
 {
     {
@@ -453,7 +453,7 @@ RunV2Tests()
     }
 }
 
-inline void
+internal void
 RunUpperCamelCaseTests(memory_arena *Arena)
 {
     {
@@ -535,14 +535,15 @@ DebugClockEntryRadixSort(u32 Count, debug_clock_entry *First, debug_clock_entry 
     }
 }
 
-inline void
+internal void
 RunRadixSortTests(memory_arena *Arena)
 {
-    LARGE_INTEGER LastCounter;
-    QueryPerformanceCounter(&LastCounter);
-    random_state RandomState;
-    RandomState.Value = (u32)LastCounter.QuadPart;
-    
+    // TODO(kstandbridge): Seed random number, perhaps PlatformGetTimestamp?
+    random_state RandomState = 
+    {
+        .Value = 1234u
+    };
+            
     u32 Count = RandomU32(&RandomState) % 1000;
     debug_clock_entry *Entries = PushArray(Arena, Count, debug_clock_entry);
     for(u32 Index = 0;
@@ -578,7 +579,7 @@ RunRadixSortTests(memory_arena *Arena)
     }
 }
 
-inline void
+internal void
 RunParseFromStringTests()
 {
     {
@@ -626,7 +627,7 @@ RunParseFromStringTests()
     }
 }
 
-inline void
+internal void
 RunSha512Tests()
 {
     u8 Seed[32];
@@ -637,10 +638,10 @@ RunSha512Tests()
         Seed[Index] = Index;
     }
     
-    u8 Output[32];
+    u8 Output[64];
     ZeroSize(sizeof(Output), Output);
     Sha512(Seed, sizeof(Seed), Output);
-    
+        
     AssertEqualU32(Output[0], 0x3d);
     AssertEqualU32(Output[1], 0x94);
     AssertEqualU32(Output[2], 0xee);
@@ -673,15 +674,17 @@ RunSha512Tests()
     AssertEqualU32(Output[29], 0xff);
     AssertEqualU32(Output[30], 0x8e);
     AssertEqualU32(Output[31], 0x6f);
+
 }
 
-inline void
+internal void
 RunEdDSATests()
 {
-    LARGE_INTEGER LastCounter;
-    QueryPerformanceCounter(&LastCounter);
-    random_state RandomState;
-    RandomState.Value = (u32)LastCounter.QuadPart;
+    // TODO(kstandbridge): Seed random number, perhaps PlatformGetTimestamp?
+    random_state RandomState = 
+    {
+        .Value = 1234u
+    };
     
     ed25519_private_key PersistentKey;
     
@@ -726,7 +729,7 @@ typedef struct node
 
 // TODO(kstandbridge): Preprocessor code generation
 
-inline u32
+internal u32
 GetNodeCount(node *Head)
 {
     u32 Result = 0;
@@ -740,7 +743,7 @@ GetNodeCount(node *Head)
     return Result;
 }
 
-inline node *
+internal node *
 GetNodeByIndex(node *Head, s32 Index)
 {
     node *Result = Head;
@@ -757,7 +760,7 @@ GetNodeByIndex(node *Head, s32 Index)
     return Result;
 }
 
-inline s32
+internal s32
 GetIndexOfNode(node *Head, node *Node)
 {
     s32 Result = -1;
@@ -778,7 +781,7 @@ GetIndexOfNode(node *Head, node *Node)
 
 typedef b32 node_predicate(void *Context, node *A, node *B);
 
-inline node *
+internal node *
 GetNode(node *Head, node_predicate *Predicate, void *Context, node *Match)
 {
     node *Result = 0;
@@ -799,7 +802,7 @@ GetNode(node *Head, node_predicate *Predicate, void *Context, node *Match)
     return Result;
 }
 
-inline node *
+internal node *
 GetNodeTail(node *Head)
 {
     node *Result = Head;
@@ -815,7 +818,7 @@ GetNodeTail(node *Head)
     return Result;
 }
 
-inline node *
+internal node *
 PushNode(node **HeadRef, memory_arena *Arena)
 {
     node *Result = PushStruct(Arena, node);
@@ -826,7 +829,7 @@ PushNode(node **HeadRef, memory_arena *Arena)
     return Result;
 }
 
-inline node *
+internal node *
 PushbackNode(node **HeadRef, memory_arena *Arena)
 {
     node *Result = PushStruct(Arena, node);
@@ -845,7 +848,7 @@ PushbackNode(node **HeadRef, memory_arena *Arena)
     return Result;
 }
 
-inline node *
+internal node *
 NodeMergeSort_(node *Front, node *Back, node_predicate *Predicate, void *Context, sort_type SortType)
 {
     node *Result = 0;
@@ -883,7 +886,7 @@ NodeMergeSort_(node *Front, node *Back, node_predicate *Predicate, void *Context
     return Result;
 }
 
-inline void
+internal void
 NodeFrontBackSplit(node *Head, node **FrontRef, node **BackRef)
 {
     node *Fast;
@@ -906,7 +909,7 @@ NodeFrontBackSplit(node *Head, node **FrontRef, node **BackRef)
     Slow->Next = 0;
 }
 
-inline void
+internal void
 NodeMergeSort(node **HeadRef, node_predicate *Predicate, void *Context, sort_type SortType)
 {
     node *Head = *HeadRef;
@@ -926,11 +929,11 @@ NodeMergeSort(node **HeadRef, node_predicate *Predicate, void *Context, sort_typ
 }
 
 internal b32
-NodePredicate(node_predicate_type *Context, node *A, node *B)
+NodePredicate(void *Context, node *A, node *B)
 {
     b32 Result = false;
     
-    switch(*Context)
+    switch(*(node_predicate_type *)Context)
     {
         case NodePredicate_ByValue:
         {
@@ -960,7 +963,7 @@ NodePredicate(node_predicate_type *Context, node *A, node *B)
     return Result;
 }
 
-inline void
+internal void
 RunLinkedListMergeSortTests(memory_arena *Arena)
 {
     node *Head = 0;
@@ -1079,7 +1082,7 @@ RunLinkedListMergeSortTests(memory_arena *Arena)
     
 }
 
-inline void
+internal void
 RunNodeGetCountTests(memory_arena *Arena)
 {
     node *Head = 0;
@@ -1099,7 +1102,7 @@ RunNodeGetCountTests(memory_arena *Arena)
     AssertEqualU32(3, Actual);
 }
 
-inline void
+internal void
 RunGetNodeByIndexTests(memory_arena *Arena)
 {
     node *Head = 0;
@@ -1125,7 +1128,7 @@ RunGetNodeByIndexTests(memory_arena *Arena)
     AssertTrue(Actual == 0);
 }
 
-inline void
+internal void
 RunGetIndexOfNodeTests(memory_arena *Arena)
 {
     node *Head = 0;
@@ -1153,7 +1156,7 @@ RunGetIndexOfNodeTests(memory_arena *Arena)
     
 }
 
-inline void
+internal void
 RunGetNodeTests(memory_arena *Arena)
 {
     node *Head = 0;
@@ -1186,7 +1189,7 @@ RunGetNodeTests(memory_arena *Arena)
     AssertTrue(Actual == 0);
 }
 
-inline void
+internal void
 RunParseHtmlTest(memory_arena *Arena)
 {
     string HtmlData = String("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2 Final//EN\">\n"
@@ -1246,7 +1249,8 @@ RunParseHtmlTest(memory_arena *Arena)
     AssertEqualString(String("bas.wav"), HrefAttribute->Value);
 }
 
-inline void
+
+internal void
 RunParseXmlTest(memory_arena *Arena)
 {
     
