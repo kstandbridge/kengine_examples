@@ -46,7 +46,7 @@ This may seem backwards to some, but platforms can be quite different and trying
 
 ## Console
 
-[console_hello.c](https://github.com/kstandbridge/kengine_examples/blob/main/console_hello/console_hello.c)                 
+[hello_console.c](https://github.com/kstandbridge/kengine_examples/blob/main/hello_console/hello_console.c)                 
 ```
 #define KENGINE_WIN32
 #define KENGINE_CONSOLE

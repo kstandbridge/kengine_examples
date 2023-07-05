@@ -8,9 +8,11 @@ set CommonCompilerFlags=-Od -FC -Z7 -nologo %IncludeDirectories%
 set CommonLinkerFlags=-incremental:no -opt:ref
 set InternalCompilerFlags=-DKENGINE_WIN32 -DKENGINE_INTERNAL -DKENGINE_SLOW
 
+IF NOT EXIST %BuildDir% mkdir %BuildDir%
+
 pushd %BuildDir%
 
-cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\linux_hello\linux_hello.c /link %CommonLinkerFlags%
+cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\hello_console\hello_console.c /link %CommonLinkerFlags%
 
 popd
 

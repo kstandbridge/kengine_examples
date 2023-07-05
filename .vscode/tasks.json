@@ -4,12 +4,12 @@
     "version": "2.0.0",
     "tasks": [
 		{
-			"label": "linux_hello debug build",
+			"label": "hello_console linux debug build",
 			"group": {
 				"kind": "build",
 				"isDefault": true
 			},
-			"command": "linux_hello/build.sh",
+			"command": "hello_console/build.sh",
 			"args": [
 				""
 			],
@@ -28,9 +28,9 @@
 			}
 		},
 		{
-			"label": "windows hello debug build",
+			"label": "hello_console win32 debug build",
 			"type": "cppbuild",
-			"command": "linux_hello\\build.bat",
+			"command": "hello_console\\build.bat",
 			"args": [],
 			"options": {
 				"cwd": "${workspaceFolder}"
