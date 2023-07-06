@@ -105,16 +105,6 @@
             "environment": [],
             "console": "integratedTerminal"
         },
-        {
-            "name": "hello_preprocessor win32 debug",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}\\bin\\hello_preprocessor.exe",
-            "stopAtEntry": false,
-            "cwd": "${fileDirname}",
-            "environment": [],
-            "console": "integratedTerminal"
-        },
 
         {
             "name": "hello_preprocessor linux debug",
@@ -145,8 +135,9 @@
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}\\bin\\hello_preprocessor.exe",
+            "args": [ "hello_types.h" ],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+            "cwd": "${workspaceFolder}/hello_preprocessor",
             "environment": [],
             "console": "integratedTerminal"
         }
