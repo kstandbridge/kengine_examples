@@ -140,6 +140,42 @@
             "cwd": "${workspaceFolder}/hello_preprocessor",
             "environment": [],
             "console": "integratedTerminal"
+        },
+
+        {
+            "name": "kengine_preprocessor linux debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/kengine_preprocessor",
+            "args": [ "kengine_math.h", "kengine_types.h" ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/kengine/kengine",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "gdb",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for gdb",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Disassembly Flavor to Intel",
+                    "text": "-gdb-set disassembly-flavor intel",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
+            "name": "kengine_preprocessor win32 debug",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}\\bin\\kengine_preprocessor.exe",
+            "args": [ "kengine_math.h", "kengine_types.h" ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/kengine/kengine",
+            "environment": [],
+            "console": "integratedTerminal"
         }
     ]
 }
