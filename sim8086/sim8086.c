@@ -123,22 +123,22 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_PopRegister,            0b01011101, 0, 0b101,      { 0 } },
     { Instruction_PopRegister,            0b01011110, 0, 0b110,      { 0 } },
     { Instruction_PopRegister,            0b01011111, 0, 0b111,      { 0 } },
-    { Instruction_NOP,                    0b01100000, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b01100001, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b01100010, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b01100011, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b01100100, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b01100101, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b01100110, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b01100111, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b01101000, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b01101001, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b01101010, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b01101011, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b01101100, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b01101101, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b01101110, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b01101111, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01100000, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01100001, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01100010, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01100011, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01100100, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01100101, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01100110, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01100111, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01101000, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01101001, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01101010, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01101011, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01101100, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01101101, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01101110, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b01101111, 0, 0, { 0 } },
     { Instruction_Jo,                     0b01110000, 0, 0, { IP_INC8 } },
     { Instruction_Jno,                    0b01110001, 0, 0, { IP_INC8 } },
     { Instruction_Jb,                     0b01110010, 0, 0, { IP_INC8 } },
@@ -219,16 +219,16 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_MovImmediate,           0b10111101, Flag_W, 0b101, { DATA, DATA_IF_W } },
     { Instruction_MovImmediate,           0b10111110, Flag_W, 0b110, { DATA, DATA_IF_W } },
     { Instruction_MovImmediate,           0b10111111, Flag_W, 0b111, { DATA, DATA_IF_W } },
-    { Instruction_NOP,                    0b11000000, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b11000001, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11000000, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11000001, 0, 0, { 0 } },
     { Instruction_Ret,                    0b11000010, 0, 0, { DATA_LO, DATA_HI } },
     { Instruction_Ret,                    0b11000011, 0, 0, { 0 } },
     { Instruction_Les,                    0b11000100, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_Lds,                    0b11000101, 0, 0, { MOD, REG, RM, DISP_LO, DISP_HI } },
     { Instruction_MovImmediateMemory,     0b11000110, 0, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
     { Instruction_MovImmediateMemory,     0b11000111, Flag_W, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI, DATA, DATA_IF_W } },
-    { Instruction_NOP,                    0b11001000, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b11001001, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11001000, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11001001, 0, 0, { 0 } },
     { Instruction_RetfIntersegment,       0b11001010, 0, 0, { DATA_LO, DATA_HI } },
     { Instruction_Retf,                   0b11001011, 0, 0, { 0 } },
     { Instruction_Int3,                   0b11001100, 0, 0, { 0 } },
@@ -241,16 +241,16 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_Logic,                  0b11010011, Flag_W | Flag_V, 0, { MOD, TYPE, RM, DISP_LO, DISP_HI } },
     { Instruction_Aam,                    0b11010100, 0, 0, { DATA } },
     { Instruction_Aad,                    0b11010101, 0, 0, { DATA } },
-    { Instruction_NOP,                    0b11010110, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11010110, 0, 0, { 0 } },
     { Instruction_Xlat,                   0b11010111, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b11011000, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b11011001, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b11011010, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b11011011, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b11011100, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b11011101, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b11011110, 0, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b11011111, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11011000, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11011001, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11011010, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11011011, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11011100, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11011101, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11011110, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11011111, 0, 0, { 0 } },
     { Instruction_Loopnz,                 0b11100000, 0, 0, { IP_INC8 } },
     { Instruction_Loopz,                  0b11100001, 0, 0, { IP_INC8 } },
     { Instruction_Loop,                   0b11100010, 0, 0, { IP_INC8 } },
@@ -262,13 +262,13 @@ global instruction_table_entry GlobalInstructionTable[] =
     { Instruction_CallDirectWithin,       0b11101000, 0, 0, { IP_INC_LO, IP_INC_HI } },
     { Instruction_JmpDirectWithin,        0b11101001, 0, 0, { IP_INC_LO, IP_INC_HI } },
     { Instruction_JmpDirectIntersegment,  0b11101010, 0, 0, { IP_INC_LO, IP_INC_HI, CS_LO, CS_HI } },
-    { Instruction_NOP,                    0b11101011, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11101011, 0, 0, { 0 } },
     { Instruction_In,                     0b11101100, 0, 0, { 0 } },
     { Instruction_In,                     0b11101101, Flag_W, 0, { 0 } },
     { Instruction_Out,                    0b11101110, 0, 0, { 0 } },
     { Instruction_Out,                    0b11101111, Flag_W, 0, { 0 } },
     { Instruction_Lock,                   0b11110000, 0, 0, { 0 } },
-    { Instruction_NOP,                    0b11110001, 0, 0, 0, { 0 } },
+    { Instruction_NOP,                    0b11110001, 0, 0, { 0 } },
     { Instruction_Rep,                    0b11110010, 0, 0, { 0 } },
     { Instruction_Rep,                    0b11110011, Flag_V, 0, { 0 } },
     { Instruction_Hlt,                    0b11110100, 0, 0, { 0 } },
@@ -670,7 +670,7 @@ GetNextInstruction(simulator_context *Context)
     return Result;
 }
 
-inline string
+internal string
 InstructionToAssembly(simulator_context *Context, instruction Instruction)
 {
     string Result;
@@ -1085,8 +1085,8 @@ InstructionToAssembly(simulator_context *Context, instruction Instruction)
                                 AppendFormatString(&State, "%S [%u], al", Op, ValueWide);
                             }
                             else if((Instruction.Type == Instruction_Control) &&
-                                    ((Instruction.Bits[Encoding_REG]) == SubOp_Jmp) ||
-                                    ((Instruction.Bits[Encoding_REG]) == SubOp_Call))
+                                    (((Instruction.Bits[Encoding_REG]) == SubOp_Jmp) ||
+                                    ((Instruction.Bits[Encoding_REG]) == SubOp_Call)))
                             {
                                 AppendFormatString(&State, "%S [%u]", Op, ValueWide);
                             }
@@ -1352,7 +1352,7 @@ InstructionToAssembly(simulator_context *Context, instruction Instruction)
     return Result;
 }
 
-inline simulator_context
+internal simulator_context
 GetSimulatorContext(memory_arena *Arena, u8 *InstructionStream, umm InstructionStreamSize)
 {
     simulator_context Result =
@@ -1422,7 +1422,7 @@ StreamToAssembly(memory_arena *Arena, u8 *InstructionStream, umm InstructionStre
     return Result;
 }
 
-inline u16
+internal u16
 SimulateArithmetic(simulator_context *Context, sub_op_type Op, u16 A, u16 B)
 {
     u16 Result = A;
@@ -2158,6 +2158,8 @@ SimulateStep(simulator_context *Context)
                 if(FlagsAfter & Flag_DF) AppendFormatString(&StringState, "D");
                 if(FlagsAfter & Flag_OF) AppendFormatString(&StringState, "O");
             } break;
+
+            
         }
     }
     

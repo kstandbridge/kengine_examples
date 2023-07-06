@@ -49,7 +49,7 @@ typedef enum register_flags
     Flag_OF = (1 << 8)
 } register_flags;
 
-inline string
+internal string
 SegmentRegisterToString(segment_register_type Type)
 {
     string Result;
@@ -115,7 +115,7 @@ typedef enum encoding_type
     Encoding_Count,
 } encoding_type;
 
-inline string
+internal string
 RegisterByteToString(register_byte_type Type)
 {
     string Result;
@@ -134,7 +134,7 @@ RegisterByteToString(register_byte_type Type)
     return Result;
 }
 
-inline string
+internal string
 RegisterWordToString(register_word_type Type)
 {
     string Result;
@@ -174,7 +174,7 @@ typedef enum effective_address_type
     EffectiveAddress_BX            = 0b111,
 } effective_address_type;
 
-inline string
+internal string
 EffectiveAddressToString(effective_address_type Type)
 {
     string Result;
@@ -469,7 +469,7 @@ typedef struct instruction
     
 } instruction;
 
-inline string
+internal string
 InstructionToString(instruction Instruction)
 {
     string Result;
@@ -740,7 +740,7 @@ typedef struct instruction_table_entry
     encoding Fields[7];
 } instruction_table_entry;
 
-inline simulator_context
+internal simulator_context
 GetSimulatorContext(memory_arena *Arena, u8 *InstructionStream, umm InstructionStreamSize);
 
 internal string

@@ -1,4 +1,3 @@
-#define KENGINE_WIN32
 #define KENGINE_CONSOLE
 #define KENGINE_IMPLEMENTATION
 #include "kengine.h"
@@ -43,7 +42,7 @@ MainLoop(app_memory *AppMemory)
     if(!PlatformFileExists(FilePath))
     {
         Result = 1;
-        LogError("File not found: \"%S\"", FilePath);
+        PlatformConsoleOut("File not found: \"%S\"\n", FilePath);
     }
     else
     {
@@ -59,11 +58,12 @@ MainLoop(app_memory *AppMemory)
         
         PlatformConsoleOut("\n\nFinal registers:\n");
         string Output = GetRegisterDetails(&Context);
-        PlatformConsoleOut("%S", Output);
+        PlatformConsoleOut("%S\n", Output);
         
         if(DumpMemory)
         {
-            PlatformWriteTextToFile(String_(Megabytes(1), Context.Memory), String("memory.data"));
+            // TODO(kstandbridge): PlatformWriteTextToFile()
+            // PlatformWriteTextToFile(String_(Megabytes(1), Context.Memory), String("memory.data"));
         }
     }
     

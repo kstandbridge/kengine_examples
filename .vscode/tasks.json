@@ -108,7 +108,6 @@
 			"group": "build",
 			"detail": "compiler: cl.exe"
 		},
-
 		{
 			"label": "hello_preprocessor linux debug build",
 			"group": "build",
@@ -144,13 +143,9 @@
 			"group": "build",
 			"detail": "compiler: cl.exe"
 		},
-
 		{
 			"label": "kengine_preprocessor linux debug build",
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			},
+			"group": "build",
 			"command": "kengine_preprocessor/build.sh",
 			"args": [
 				""
@@ -182,6 +177,30 @@
 			],
 			"group": "build",
 			"detail": "compiler: cl.exe"
+		},
+		{
+			"label": "sim8086 linux debug build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"command": "sim8086/build.sh",
+			"args": [
+				""
+			],
+			"problemMatcher": "$gcc",
+			"type": "shell",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": true,
+				"clear": true
+			}
 		}
 	]
 }

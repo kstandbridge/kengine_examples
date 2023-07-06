@@ -1,4 +1,3 @@
-#define KENGINE_WIN32
 #define KENGINE_TEST
 #define KENGINE_IMPLEMENTATION
 #include "kengine.h"
@@ -7,7 +6,7 @@
 #include "sim8086.h"
 #include "sim8086.c"
 
-inline void
+internal void
 RunInstructionTableTests()
 {
     for(s32 TableIndex = 0;
@@ -19,7 +18,7 @@ RunInstructionTableTests()
     }
 }
 
-inline void
+internal void
 RunDisassembleTests()
 {
     {
@@ -79,7 +78,7 @@ RunDisassembleTests()
     
 }
 
-inline void
+internal void
 RunDisassembleToAssemblyTests(memory_arena *Arena)
 {
     
@@ -2669,7 +2668,7 @@ RunDisassembleToAssemblyTests(memory_arena *Arena)
 }
 
 
-inline void
+internal void
 RunImmediateMovTests(memory_arena *Arena)
 {
     {
@@ -2720,7 +2719,7 @@ RunImmediateMovTests(memory_arena *Arena)
 }
 
 
-inline void
+internal void
 RunRegisterMovTests(memory_arena *Arena)
 {
     {
@@ -2836,7 +2835,7 @@ RunRegisterMovTests(memory_arena *Arena)
     }
 }
 
-void inline 
+internal void
 RunAddSubCmpTests(memory_arena *Arena)
 {
     
@@ -2961,7 +2960,7 @@ RunAddSubCmpTests(memory_arena *Arena)
     
 }
 
-void inline 
+internal void 
 RunIPRegisterTests(memory_arena *Arena)
 {
     {
@@ -3009,7 +3008,7 @@ RunIPRegisterTests(memory_arena *Arena)
     }
 }
 
-void inline 
+internal void 
 RunIPConditionalJumpTests(memory_arena *Arena)
 {
     {
@@ -3215,7 +3214,7 @@ RunIPConditionalJumpTests(memory_arena *Arena)
     }
 }
 
-inline void
+internal void
 RunMemoryMovTests(memory_arena *Arena)
 {
     {
@@ -3279,7 +3278,7 @@ RunMemoryMovTests(memory_arena *Arena)
     }
 }
 
-inline void
+internal void
 RunMemoryAddLoopTests(memory_arena *Arena)
 {
     {
@@ -3531,7 +3530,7 @@ RunMemoryAddLoopTests(memory_arena *Arena)
     
 }
 
-inline void
+internal void
 RunSimulateTests(memory_arena *Arena)
 {
     {
@@ -3579,7 +3578,7 @@ RunSimulateTests(memory_arena *Arena)
     }
 }
 
-inline void
+internal void
 RunDrawRectangleTests(memory_arena *Arena)
 {
     {
@@ -3770,7 +3769,7 @@ RunDrawRectangleTests(memory_arena *Arena)
     }
 }
 
-inline void
+internal void
 RunEstimateCyclesTests(memory_arena *Arena)
 {
     // NOTE(kstandbridge): 8086
