@@ -1,23 +1,22 @@
 @echo off
 
-if not defined DevEnvDir (
-	call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2019\Professional\VC\Auxiliary\Build\vcvarsall.bat x64
-)
+SET CurDir=%cd%
+SET BuildDir=%CurDir%\bin
 
-set CommonCompilerFlags=-nologo -fp:fast -fp:except- -Gm- -GR- -EHa- -Zo -Oi -WX -W4 -FC
-set IncludeDirectories=-I..\kengine
+set IncludeDirectories=-I%CurDir%\kengine
+set CommonCompilerFlags=-Od -FC -Z7 -nologo %IncludeDirectories%
 set CommonLinkerFlags=-incremental:no -opt:ref
+set InternalCompilerFlags=-DKENGINE_WIN32 -DKENGINE_INTERNAL -DKENGINE_SLOW
 
-IF NOT EXIST ..\bin mkdir ..\bin
-pushd ..\bin
+IF NOT EXIST %BuildDir% mkdir %BuildDir%
 
-cl %CommonCompilerFlags% -MTd -Od -Z7 %IncludeDirectories% ..\kengine_preprocessor\kengine_preprocessor.c /Fe:kengine_preprocessor.exe /link %CommonLinkerFlags%
+pushd %BuildDir%
 
-del *.obj
+cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\kengine_preprocessor\kengine_preprocessor.c /link %CommonLinkerFlags%
 
-pushd ..\kengine\kengine
-REM ..\..\bin\kengine_preprocessor.exe kengine_math.h
-..\..\bin\kengine_preprocessor.exe kengine_math.h kengine_types.h > kengine_generated.h
+pushd %CurDir%\kengine\kengine
+..\..\bin\kengine_preprocessor kengine_math.h kengine_types.h > kengine_generated.h
 popd
 
 popd
+
