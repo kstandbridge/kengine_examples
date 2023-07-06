@@ -75,10 +75,7 @@
 		},
 		{
 			"label": "kengine_test linux debug build",
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			},
+			"group": "build",
 			"command": "kengine_test/build.sh",
 			"args": [
 				""
@@ -101,6 +98,44 @@
 			"label": "kengine_test win32 debug build",
 			"type": "cppbuild",
 			"command": "kengine_test\\build.bat",
+			"args": [],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": "build",
+			"detail": "compiler: cl.exe"
+		},
+		{
+			"label": "hello_preprocessor linux debug build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"command": "hello_preprocessor/build.sh",
+			"args": [
+				""
+			],
+			"problemMatcher": "$gcc",
+			"type": "shell",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": true,
+				"clear": true
+			}
+		},
+		{
+			"label": "hello_preprocessor win32 debug build",
+			"type": "cppbuild",
+			"command": "hello_preprocessor\\build.bat",
 			"args": [],
 			"options": {
 				"cwd": "${workspaceFolder}"

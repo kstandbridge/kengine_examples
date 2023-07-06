@@ -1,4 +1,3 @@
-#define KENGINE_WIN32
 #define KENGINE_PREPROCESSOR
 #define KENGINE_IMPLEMENTATION
 #include "kengine.h"
@@ -6,8 +5,6 @@
 void
 GenerateCodeFor(memory_arena *Arena, c_struct Struct, string_list *Options)
 {
-    Arena;
-    
     for(string_list *Option = Options;
         Option;
         Option = Option->Next)
@@ -34,12 +31,12 @@ GenerateCodeFor(memory_arena *Arena, c_struct Struct, string_list *Options)
                 {
                     case C_U32:
                     {
-                        PlatformConsoleOut("\"%%u\", A.%S%S);\n", Member->Name);
+                        PlatformConsoleOut("\"%%u\", A.%S);\n", Member->Name);
                     } break;
                     
                     case C_String:
                     {
-                        PlatformConsoleOut("\"%%S\", A.%S%S);\n", Member->Name);
+                        PlatformConsoleOut("\"%%S\", A.%S);\n", Member->Name);
                     } break;
                     
                     default:
