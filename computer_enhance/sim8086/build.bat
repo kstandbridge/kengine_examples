@@ -12,13 +12,13 @@ IF NOT EXIST %BuildDir% mkdir %BuildDir%
 
 pushd %BuildDir%
 
-cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\sim8086\sim8086_console.c /link %CommonLinkerFlags%
+cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\sim8086\sim8086_console.c /link %CommonLinkerFlags%
 
-call nasm %CurDir%\sim8086\test.asm -o test
+call nasm %CurDir%\computer_enhance\sim8086\test.asm -o test
 
 sim8086_console.exe -dump -clocks test
 
-cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\sim8086\sim8086_test.c /link %CommonLinkerFlags%
+cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\sim8086\sim8086_test.c /link %CommonLinkerFlags%
 sim8086_test.exe
 
 popd

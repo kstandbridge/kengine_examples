@@ -180,8 +180,11 @@
 		},
 		{
 			"label": "sim8086 linux debug build",
-			"group": "build",
-			"command": "sim8086/build.sh",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"command": "computer_enhance/sim8086/build.sh",
 			"args": [
 				""
 			],
@@ -202,7 +205,7 @@
 		{
 			"label": "sim8086 win32 debug build",
 			"type": "cppbuild",
-			"command": "sim8086\\build.bat",
+			"command": "computer_enhance\\sim8086\\build.bat",
 			"args": [],
 			"options": {
 				"cwd": "${workspaceFolder}"
@@ -210,10 +213,7 @@
 			"problemMatcher": [
 				"$msCompile"
 			],
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			},
+			"group": "build",
 			"detail": "compiler: cl.exe"
 		}
 	]

@@ -12,12 +12,12 @@ InternalCompilerFlags="-DKENGINE_LINUX -DKENGINE_INTERNAL -DKENGINE_SLOW"
 
 pushd $BuildDir > /dev/null
 
-gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/sim8086/sim8086_console.c" -o sim8086_console $CommonLinkerFlags
+gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/sim8086/sim8086_console.c" -o sim8086_console $CommonLinkerFlags
 
-nasm $CurDir/sim8086/test.asm -o test
+nasm $CurDir/computer_enhance/sim8086/test.asm -o test
 ./sim8086_console -dump -clocks test
 
-gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/sim8086/sim8086_test.c" -o sim8086_test $CommonLinkerFlags
+gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/sim8086/sim8086_test.c" -o sim8086_test $CommonLinkerFlags
 ./sim8086_test
 
 popd > /dev/null
