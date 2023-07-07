@@ -62,8 +62,7 @@ MainLoop(app_memory *AppMemory)
         
         if(DumpMemory)
         {
-            // TODO(kstandbridge): PlatformWriteTextToFile()
-            // PlatformWriteTextToFile(String_(Megabytes(1), Context.Memory), String("memory.data"));
+            PlatformWriteTextToFile(String_(Megabytes(1), Context.Memory), String("memory.data"));
         }
     }
     

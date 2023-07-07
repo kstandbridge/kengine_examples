@@ -183,7 +183,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bin/sim8086_console",
-            "args": [ "test" ],
+            "args": [ "-dump", "-clocks", "test" ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/bin",
             "environment": [],

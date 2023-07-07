@@ -12,13 +12,11 @@ InternalCompilerFlags="-DKENGINE_LINUX -DKENGINE_INTERNAL -DKENGINE_SLOW"
 
 pushd $BuildDir > /dev/null
 
-echo Sim8086 console...
 gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/sim8086/sim8086_console.c" -o sim8086_console $CommonLinkerFlags
 
 nasm $CurDir/sim8086/test.asm -o test
-./sim8086_console test
+./sim8086_console -dump -clocks test
 
-echo Sim8086 tests...
 gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/sim8086/sim8086_test.c" -o sim8086_test $CommonLinkerFlags
 ./sim8086_test
 
