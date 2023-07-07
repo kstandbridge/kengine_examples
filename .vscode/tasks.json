@@ -181,8 +181,7 @@
 		{
 			"label": "sim8086 linux debug build",
 			"group": {
-				"kind": "build",
-				"isDefault": true
+				"kind": "build"
 			},
 			"command": "computer_enhance/sim8086/build.sh",
 			"args": [
@@ -215,6 +214,30 @@
 			],
 			"group": "build",
 			"detail": "compiler: cl.exe"
-		}
+		},
+		{
+			"label": "haversine_processor linux debug build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"command": "computer_enhance/haversine_processor/build.sh",
+			"args": [
+				""
+			],
+			"problemMatcher": "$gcc",
+			"type": "shell",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": true,
+				"clear": true
+			}
+		},
 	]
 }
