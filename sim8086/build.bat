@@ -1,24 +1,25 @@
 @echo off
 
-if not defined DevEnvDir (
-	call C:\"Program Files (x86)"\"Microsoft Visual Studio"\2019\Professional\VC\Auxiliary\Build\vcvarsall.bat x64
-)
+SET CurDir=%cd%
+SET BuildDir=%CurDir%\bin
 
-set CommonCompilerFlags=-nologo -fp:fast -fp:except- -Gm- -GR- -EHa- -Zo -Oi -WX -W4 -FC
-set InternalCompilerFlags=-DKENGINE_INTERNAL=1 -DKENGINE_SLOW=1
-set IncludeDirectories=-I..\kengine
+set IncludeDirectories=-I%CurDir%\kengine
+set CommonCompilerFlags=-Od -FC -Z7 -nologo %IncludeDirectories%
 set CommonLinkerFlags=-incremental:no -opt:ref
+set InternalCompilerFlags=-DKENGINE_WIN32 -DKENGINE_INTERNAL -DKENGINE_SLOW
 
-IF NOT EXIST ..\bin mkdir ..\bin
-pushd ..\bin
+IF NOT EXIST %BuildDir% mkdir %BuildDir%
 
-REM call nasm ..\sim8086\test.asm -o test
+pushd %BuildDir%
 
-cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -Z7 %IncludeDirectories% ..\sim8086\sim8086_tests.c /Fe:sim8086_tests.exe /link %CommonLinkerFlags%
-REM cl %CommonCompilerFlags% %InternalCompilerFlags% -MTd -Od -Z7 %IncludeDirectories% ..\sim8086\sim8086_win32.c /Fe:sim8086.exe /link %CommonLinkerFlags%
+cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\sim8086\sim8086_console.c /link %CommonLinkerFlags%
 
-del *.obj
+call nasm %CurDir%\sim8086\test.asm -o test
 
-sim8086_tests.exe
+sim8086_console.exe -dump -clocks test
+
+cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\sim8086\sim8086_test.c /link %CommonLinkerFlags%
+sim8086_test.exe
 
 popd
+
