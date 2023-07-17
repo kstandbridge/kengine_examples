@@ -17,7 +17,7 @@ int main()
     return 0;
 }
 ```
-You need to define the platform, in this case KENGINE_WIN32 as this will resolve macros to the correct platform specific calls. I'd rather this be explicit for now, as we could figure out the platform based on the compiler. However later I'd like to include the idea of specifying KENGINE_LIB or similar, whereby the translation unit has zero references to any specific platform and all of these platform macros will resolve to calling function pointers.
+You need to define the platform, in this case KENGINE_WIN32 as this will resolve macros to the correct platform specific calls. I'd rather this be explicit for now, as we could figure out the platform based on the compiler. However later I'd like to include the idea of specifying KENGINE_LIB or similar, whereby the translation unit has zero references to any specific platform and all of these PlatformXXX macros would resolve to calling function pointers.
 
 ## Multiple translation units
 You can include kengine.h in multiple translation units as by default it will only include protos, etc. You need to specify KENGINE_IMPLEMENTATION in a single translation unit which is where the definitions will be defined.
@@ -39,14 +39,14 @@ int main()
     return 0;
 }
 ```
-This way the entire of the kengine library can be compiled once and reused in incremental builds. Personally I stick to unity builds that will just have a single translation unit, unless the project reaches 500 million lines of code the compile time can of a pure C project can still be a few seconds and what you're usually waiting for is the linker.
+This way the entire of the kengine library can be compiled once and reused in incremental builds.
 
 ## API calls you
-This may seem backwards to some, but platforms can be quite different and trying to design an engine that supports all of them forces you to include platform specific concepts into your library. For example creating a window or the message pump, while this is boilerplate code on some platforms its not even the case at all on others. So rather than focing consumers to write this plumming of create window, handle message, etc, all of this logic is buried in the engine. Instead you can just focus on what you need for your application/game, such as what needs to be rendered this frame? What sounds need to be playing?
+This may seem backwards to some, but platforms can be quite different and trying to design an engine that supports all of them forces you to include platform specific concepts into your library. For example creating a window and the message pump, while this is boilerplate code on some platforms its not even the case at all on others. So rather than focing consumers to write this plumming of create window, handle message, etc, all of this logic is buried in the engine. Instead you can just focus on what you need for your application/game, such as what needs to be rendered this frame? What sounds need to be playing?
 
 ## Console
 
-[hello_console.c](https://github.com/kstandbridge/kengine_examples/blob/main/hello_console/hello_console.c)                 
+[hello_console.c](https://github.com/kstandbridge/kengine_examples/blob/main/hello_console/hello_console.c)
 ```
 #define KENGINE_WIN32
 #define KENGINE_CONSOLE
@@ -66,56 +66,36 @@ Notice we have a KENGINE_CONSOLE define, this tells kengine to do the boilerplat
 ```
 s32 MainLoop(app_memory *AppMemory);
 ```
-
-## Window
-
-[window_hello.c](https://github.com/kstandbridge/kengine_examples/blob/main/window_hello/window_hello.c)
+## Preprocessor
+[hello_preprocessor.c](https://github.com/kstandbridge/kengine_examples/blob/main/hello_preprocessor/hello_preprocessor.c)
 ```
-#define KENGINE_WIN32
-#define KENGINE_WINDOW
+#define KENGINE_PREPROCESSOR
 #define KENGINE_IMPLEMENTATION
 #include "kengine.h"
 
-typedef struct app_state
-{
-    memory_arena Arena;
-} app_state;
-
 void
-InitApp(app_memory *AppMemory)
+GenerateCodeFor(memory_arena *Arena, c_struct Struct, string_list *Options)
 {
-    AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
+    for(string_list *Option = Options;
+        Option;
+        Option = Option->Next)
+    {
+        // Output C code for this type
+        PlatformConsoleOut("\n// Skipping unsupported option \"%S\" for type \"%S\"", Option->Entry, Struct.Type);
+    }
+    PlatformConsoleOut("\n");
 }
+```
+Here we defined KENGINE_PREPROCESSOR, this is a console app that takes source files as arguments parses them looking for the introspect tag and lets you generate code. For example generate a ToJson method for a struct. Some options already built into kengine are constructors, math operations and linked list, though this will expand over time. Take a look at [kengine_preprocessor.c](https://github.com/kstandbridge/kengine/blob/master/kengine/kengine_preprocessor.c) to see how these are implemented.
 
-LRESULT
-MainWindowCallback(app_memory *AppMemory, HWND Window, UINT Message, WPARAM WParam, LPARAM LParam)
-{
-    LRESULT Result = DefWindowProcA(Window, Message, WParam, LParam);
-    return Result;
-}
-```
-Here we define KENGINE_WINDOW, which when combined with KENGINE_WIN32 creates the basic Win32. Theres two places the engine calls you
-
-```
-void InitApp(app_memory *AppMemory);
-```
-This is called once at the start on the application, this is a good place to setup your application state, create any controls, etc.
-
-```
-LRESULT MainWindowCallback(app_memory *AppMemory, HWND Window, UINT Message, WPARAM WParam, LPARAM LParam);
-```
-This is the message pump, you can handle any message or pass them to the DefWindowProc. The additional first parameter app_memory also contains your app_state defined in InitApp
-
-## Headless
-[headless_hello.c](https://github.com/kstandbridge/kengine_examples/blob/main/headless_hello/headless_hello.c)
-                   
-Similar to KENGINE_WINDOW mentioned above, the KENGINE_HEADLESS will be almost identical however this doesn't create a visible window for the user. Handy for a none visual application.
+## Kengine Preprocessor
+[kengine_preprocessor.c](https://github.com/kstandbridge/kengine_examples/blob/main/kengine_preprocessor/kengine_preprocessor.c)
+We make use of the preprocessor to generate code for kengine, [build.sh](https://github.com/kstandbridge/kengine_examples/blob/main/kengine_preprocessor/build.sh) shows which files are parsed and the result is piped into [kengine_generated.h](https://github.com/kstandbridge/kengine/blob/master/kengine/kengine_generated.h) which is commited to the repository, so consumers don't need to run any preprocessing steps.
 
 ## Unit Tests
-[test_hello.c](https://github.com/kstandbridge/kengine_examples/blob/main/test_hello/test_hello.c)
+[hello_test.c](https://github.com/kstandbridge/kengine_examples/blob/main/hello_test/hello_test.c)
 
 ```
-#define KENGINE_WIN32
 #define KENGINE_TEST
 #define KENGINE_IMPLEMENTATION
 #include "kengine.h"
@@ -123,23 +103,22 @@ Similar to KENGINE_WINDOW mentioned above, the KENGINE_HEADLESS will be almost i
 void
 RunAllTests(memory_arena *Arena)
 {
+    AssertTrue(Arena);
+    
     string Expected = String("Hello, world!");
     string Actual = String("Hello, world!");
+    
     AssertEqualString(Expected, Actual);
 }
 ```
-Here we define KENGINE_TEST, which in a sense just creates a console application so we can output text if a test fails. The AssertEqualX macros will output the file, line etc if the assertion fails, at the end of execution the total and failed number of tests are display.
+Here we define KENGINE_TEST, which in a sense just creates a console application so we can output text if a test fails. The AssertEqualX macros will output the file, line etc if the assertion fails, at the end of execution the total and failed number of tests are displayed.
 
 ## kengine Unit Tests
-[kengine_tests.c](https://github.com/kstandbridge/kengine_examples/blob/main/kengine_tests/kengine_tests.c)
+[kengine_test.c](https://github.com/kstandbridge/kengine_examples/blob/main/kengine_test/kengine_test.c)
 Rather than having the kengine repository grow with test code, I decided to instead keep it as lean as possible and any code used to develop be placed within these examples projects, here is actually all of the unit tests for kengine. If I'm working on an area of the engine I feel will benefit from tests, this file will continue to grow.
 
-## Preprocessor
+## ComputerEnhance
+I've been following a course [ComputerEnhance](https://www.computerenhance.com/)https://www.computerenhance.com/ and making use of kengine for the coding exercises, the course focuses on performance aware programming.
 
-
-## kengine Preprocessor
-
-## Sim8086
-## Minesweeper
-
-## DirectX
+## _deprecated
+These [examples](https://github.com/kstandbridge/kengine_examples/tree/main/_deprecated)https://github.com/kstandbridge/kengine_examples/tree/main/_deprecated may no longer even compile as I'm in the process of migrating a lot of code.
