@@ -128,7 +128,7 @@ The AssertEqualX macros will output the file, line etc if the assertion fails, a
 Rather than having the kengine repository grow with test code, I decided to instead keep it as lean as possible and any code used to develop be placed within these examples projects, here is actually all of the unit tests for kengine. If I'm working on an area of the engine I feel will benefit from tests, this file will continue to grow.
 
 ## ComputerEnhance
-I've been following a course [ComputerEnhance](https://www.computerenhance.com/)https://www.computerenhance.com/ and making use of kengine for the coding exercises, the course focuses on performance aware programming.
+I've been following a course [ComputerEnhance](https://www.computerenhance.com/) and making use of kengine for the coding exercises, the course focuses on performance aware programming.
 
 ## _deprecated
 These [examples](https://github.com/kstandbridge/kengine_examples/tree/main/_deprecated)https://github.com/kstandbridge/kengine_examples/tree/main/_deprecated may no longer even compile as I'm in the process of migrating a lot of code.
