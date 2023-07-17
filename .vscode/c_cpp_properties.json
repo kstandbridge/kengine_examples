@@ -13,7 +13,7 @@
                 "${workspaceFolder}/kengine",
                 "${workspaceFolder}/**"
             ],
-            "defines": ["KENGINE_LINUX", "KENGINE_IMPLEMENTATION", "KENGINE_TEST", "KENGINE_INTERNAL=1", "KENGINE_SLOW=1"],
+            "defines": ["KENGINE_LINUX", "KENGINE_IMPLEMENTATION", "KENGINE_CONSOLE", "KENGINE_INTERNAL=1", "KENGINE_SLOW=1"],
             "intelliSenseMode": "linux-gcc-x64"
         },
         {
@@ -22,7 +22,7 @@
                 "${workspaceFolder}/kengine",
                 "${workspaceFolder}/**"
             ],
-            "defines": ["KENGINE_WIN32", "KENGINE_IMPLEMENTATION", "KENGINE_TEST", "KENGINE_INTERNAL=1", "KENGINE_SLOW=1"],
+            "defines": ["KENGINE_WIN32", "KENGINE_IMPLEMENTATION", "KENGINE_CONSOLE", "KENGINE_INTERNAL=1", "KENGINE_SLOW=1"],
             "intelliSenseMode": "msvc-x64"
         }
     ],

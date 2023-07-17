@@ -15,4 +15,7 @@ pushd $BuildDir > /dev/null
 gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/haversine_test.c" -o haversine_test $CommonLinkerFlags
 ./haversine_test
 
+gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/haversine_generator.c" -o haversine_generator $CommonLinkerFlags
+./haversine_generator uniform 234089 10000000
+
 popd > /dev/null
