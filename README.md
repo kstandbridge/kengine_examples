@@ -62,7 +62,7 @@ MainLoop(app_memory *AppMemory)
 }
 ```
                   
-Notice we have a KENGINE_CONSOLE define, this tells kengine to do the boilerplate code for creating a console application, then you are expecting to create the main application loop:
+Notice we have a KENGINE_CONSOLE define, this tells kengine to do the boilerplate code for creating a console application, then you are exptected to create the main application loop:
 ```
 s32 MainLoop(app_memory *AppMemory);
 ```
@@ -86,7 +86,12 @@ GenerateCodeFor(memory_arena *Arena, c_struct Struct, string_list *Options)
     PlatformConsoleOut("\n");
 }
 ```
-Here we defined KENGINE_PREPROCESSOR, this is a console app that takes source files as arguments parses them looking for the introspect tag and lets you generate code. For example generate a ToJson method for a struct. Some options already built into kengine are constructors, math operations and linked list, though this will expand over time. Take a look at [kengine_preprocessor.c](https://github.com/kstandbridge/kengine/blob/master/kengine/kengine_preprocessor.c) to see how these are implemented.
+Here we defined KENGINE_PREPROCESSOR, this is a console app that takes source files as arguments parses them looking for the introspect tag and lets you generate code. For example generate a ToJson method for a struct. You are expected to implement the GenerateCodeFor function:
+```
+void
+GenerateCodeFor(memory_arena *Arena, c_struct Struct, string_list *Options);
+```
+Some options already built into kengine are constructors, math operations and linked list, though this will expand over time. Take a look at [kengine_preprocessor.c](https://github.com/kstandbridge/kengine/blob/master/kengine/kengine_preprocessor.c) to see how these are implemented.
 
 ## Kengine Preprocessor
 [kengine_preprocessor.c](https://github.com/kstandbridge/kengine_examples/blob/main/kengine_preprocessor/kengine_preprocessor.c)
@@ -111,7 +116,12 @@ RunAllTests(memory_arena *Arena)
     AssertEqualString(Expected, Actual);
 }
 ```
-Here we define KENGINE_TEST, which in a sense just creates a console application so we can output text if a test fails. The AssertEqualX macros will output the file, line etc if the assertion fails, at the end of execution the total and failed number of tests are displayed.
+Here we define KENGINE_TEST, which in a sense just creates a console application so we can output text if a test fails. You are expected to create the RunAllTests function:
+```
+void
+RunAllTests(memory_arena *Arena);
+```
+The AssertEqualX macros will output the file, line etc if the assertion fails, at the end of execution the total and failed number of tests are displayed.
 
 ## kengine Unit Tests
 [kengine_test.c](https://github.com/kstandbridge/kengine_examples/blob/main/kengine_test/kengine_test.c)
