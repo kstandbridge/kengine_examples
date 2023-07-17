@@ -5,7 +5,7 @@ BuildDir="$CurDir/bin"
 
 IncludeDirectories="-I $CurDir/kengine"
 CommonCompilerFlags="-Og -g -ggdb -msse4.2 -maes -Wall -Wno-unused-function -Wno-missing-braces -Wno-switch $IncludeDirectories"
-CommonLinkerFlags="-pthread"
+CommonLinkerFlags="-pthread -lm"
 InternalCompilerFlags="-DKENGINE_LINUX -DKENGINE_INTERNAL -DKENGINE_SLOW"
 
 [ -d $BuildDir ] || mkdir -p $BuildDir
@@ -16,6 +16,6 @@ gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/havers
 ./haversine_test
 
 gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/haversine_generator.c" -o haversine_generator $CommonLinkerFlags
-./haversine_generator uniform 234089 10000000
+./haversine_generator cluster 23453489 1000
 
 popd > /dev/null
