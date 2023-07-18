@@ -1413,6 +1413,16 @@ RunParseXmlTest(memory_arena *Arena)
     
 }
 
+internal void
+RunF32FromStringTests()
+{
+    {
+        f32 Expected = 3.124f;
+        f32 Actual = F32FromString(String("3.124"));
+        AssertEqualF32(Expected, Actual);
+    }
+}
+
 void
 RunAllTests(memory_arena *Arena)
 {
@@ -1453,4 +1463,6 @@ RunAllTests(memory_arena *Arena)
     RunParseHtmlTest(Arena);
     
     RunParseXmlTest(Arena);
+
+    RunF32FromStringTests();
 }

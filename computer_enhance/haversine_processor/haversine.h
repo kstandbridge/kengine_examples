@@ -1,5 +1,16 @@
 #define EARTH_RADIUS 6372.8f
 
+
+typedef struct point
+{
+    f64 X0;
+    f64 Y0;
+    f64 X1;
+    f64 Y1;
+
+    struct point *Next;
+} point;
+
 // TODO(kstandbridge): sin/asin/cos/sqrt
 #include <math.h>
 

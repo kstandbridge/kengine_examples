@@ -13,5 +13,6 @@ InternalCompilerFlags="-DKENGINE_LINUX -DKENGINE_INTERNAL -DKENGINE_SLOW"
 pushd $BuildDir > /dev/null
 
 gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/kengine_test/kengine_test.c" -o kengine_test $CommonLinkerFlags
+./kengine_test
 
 popd > /dev/null
