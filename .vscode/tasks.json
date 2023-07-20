@@ -217,15 +217,12 @@
 		},
 		{
 			"label": "haversine_processor linux debug build",
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			},
+			"group": "build",
 			"command": "computer_enhance/haversine_processor/build.sh",
 			"args": [
 				""
 			],
-			"problemMatcher": "$gcc",
+			"problemMatcher": [],
 			"type": "shell",
 			"options": {
 				"cwd": "${workspaceFolder}"
@@ -238,6 +235,23 @@
 				"showReuseMessage": true,
 				"clear": true
 			}
+		},
+		{
+			"label": "haversine_processor win32 debug build",
+			"type": "cppbuild",
+			"command": "computer_enhance\\haversine_processor\\build.bat",
+			"args": [],
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"problemMatcher": [
+				"$msCompile"
+			],
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "compiler: cl.exe"
 		}
 	]
 }
