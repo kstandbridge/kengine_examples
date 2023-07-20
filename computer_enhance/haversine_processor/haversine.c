@@ -33,19 +33,19 @@ ParseJsonPoints(memory_arena *Arena, string Json)
                 {
                     if(StringsAreEqual(Token.Text, String("x0")))
                     {
-                        CurrentPoint->X0 = F32FromString(ValueToken.Text);
+                        CurrentPoint->X0 = F64FromString(ValueToken.Text);
                     }
                     else if(StringsAreEqual(Token.Text, String("y0")))
                     {
-                        CurrentPoint->Y0 = F32FromString(ValueToken.Text);
+                        CurrentPoint->Y0 = F64FromString(ValueToken.Text);
                     }
                     else if(StringsAreEqual(Token.Text, String("x1")))
                     {
-                        CurrentPoint->X1 = F32FromString(ValueToken.Text);
+                        CurrentPoint->X1 = F64FromString(ValueToken.Text);
                     }
                     else if(StringsAreEqual(Token.Text, String("y1")))
                     {
-                        CurrentPoint->Y1 = F32FromString(ValueToken.Text);
+                        CurrentPoint->Y1 = F64FromString(ValueToken.Text);
                     }
                 }
             }

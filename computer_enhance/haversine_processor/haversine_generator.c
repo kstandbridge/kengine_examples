@@ -28,7 +28,7 @@ MainLoop(app_memory *AppMemory)
     {
         u64 RandomSeed = 0;
         u32 PairCount = 0;
-        f32 ExpectedSum = 0.0f;
+        f64 ExpectedSum = 0.0f;
         method_type Method;
         if(StringsAreEqual(String("cluster"), Args->Entry))
         {
@@ -52,7 +52,7 @@ MainLoop(app_memory *AppMemory)
         PlatformConsoleOut("Pair count: %u\n", PairCount);
 
         platform_file JsonFile = PlatformOpenFile(String("output.json"), FileAccess_Write);
-        platform_file FloatFile = PlatformOpenFile(String("output.f32"), FileAccess_Write);
+        platform_file FloatFile = PlatformOpenFile(String("output.f64"), FileAccess_Write);
         PlatformWriteFile(&JsonFile, String("{\n\t\"pairs\":\n\t\t[\n"));
 
         b32 First = true;
@@ -107,7 +107,7 @@ MainLoop(app_memory *AppMemory)
             f32 X1 = RandomF32Between(&Random, MinX, MaxX);
             f32 Y1 = RandomF32Between(&Random, MinY, MaxY);
 
-            f32 Haversine = ReferenceHaversine(X0, Y0, X1, Y1, EARTH_RADIUS);
+            f64 Haversine = ReferenceHaversine(X0, Y0, X1, Y1, EARTH_RADIUS);
             ExpectedSum += Haversine;
 
             PlatformWriteFile(&FloatFile, String_(sizeof(Haversine), (u8 *)&Haversine));
