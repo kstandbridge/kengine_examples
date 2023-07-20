@@ -112,7 +112,7 @@ MainLoop(app_memory *AppMemory)
 
             PlatformWriteFile(&FloatFile, String_(sizeof(Haversine), (u8 *)&Haversine));
 
-            PlatformWriteFile(&JsonFile, FormatString(Temp.Arena, "\t\t\t{ \"x0\": %lf, \"y0\": %lf, \"x1\": %lf, \"y1\": %lf }", 
+            PlatformWriteFile(&JsonFile, FormatString(Temp.Arena, "\t\t\t{ \"x0\": %.16lf, \"y0\": %.16lf, \"x1\": %.16lf, \"y1\": %.16lf }", 
                                                 X0, Y0, X1, Y1));
             EndTemporaryMemory(Temp);
         }
@@ -125,7 +125,7 @@ MainLoop(app_memory *AppMemory)
         PlatformWriteFile(&JsonFile, String("\n\t\t]\n}"));
         PlatformCloseFile(&JsonFile);
 
-        PlatformConsoleOut("Expected sum: %f\n", ExpectedSum);
+        PlatformConsoleOut("Expected sum: %.16lf\n", ExpectedSum);
     }
     else
     {

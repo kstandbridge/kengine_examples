@@ -12,11 +12,11 @@ IF NOT EXIST %BuildDir% mkdir %BuildDir%
 
 pushd %BuildDir%
 
-cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\haversine_test.c /link %CommonLinkerFlags%
-haversine_test.exe
+REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\haversine_test.c /link %CommonLinkerFlags%
+REM haversine_test.exe
 
 cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\haversine_generator.c /link %CommonLinkerFlags%
-haversine_generator.exe uniform 1127504674 100000
+haversine_generator.exe uniform 1127504674 10000
 
 cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\haversine_processor.c /link %CommonLinkerFlags%
 haversine_processor.exe output.json output.f64

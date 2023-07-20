@@ -43,7 +43,7 @@ MainLoop(app_memory *AppMemory)
             if(((ExpectedHaversine - Haversine) > 0.01f) || 
                ((Haversine - ExpectedHaversine) > 0.01f))
             {
-                PlatformConsoleOut("Error: expected %lf but found %lf\n", ExpectedHaversine, ExpectedHaversine);
+                PlatformConsoleOut("Error: expected %.16lf but found %.16lf\n", ExpectedHaversine, ExpectedHaversine);
             }
 
             HaversineSum += Haversine;
@@ -55,9 +55,9 @@ MainLoop(app_memory *AppMemory)
         f64 Difference = HaversineSum - ReferenceSum;
 
         PlatformConsoleOut("Pair count: %u\n", PairCount);
-        PlatformConsoleOut("Haversine Sum: %lf\n", HaversineSum);
+        PlatformConsoleOut("Haversine Sum: %.16lf\n", HaversineSum);
         PlatformConsoleOut("\nValidation:\n");
-        PlatformConsoleOut("Reference sum: %lf\n", ReferenceSum);
+        PlatformConsoleOut("Reference sum: %.16lf\n", ReferenceSum);
         PlatformConsoleOut("Difference: %lf\n", Difference);
     }
     else
