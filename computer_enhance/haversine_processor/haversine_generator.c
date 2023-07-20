@@ -52,7 +52,7 @@ MainLoop(app_memory *AppMemory)
         PlatformConsoleOut("Pair count: %u\n", PairCount);
 
         platform_file JsonFile = PlatformOpenFile(String("output.json"), FileAccess_Write);
-        platform_file FloatFile = PlatformOpenFile(String("output.f64"), FileAccess_Write);
+        platform_file FloatFile = PlatformOpenFile(String("output.f32"), FileAccess_Write);
         PlatformWriteFile(&JsonFile, String("{\n\t\"pairs\":\n\t\t[\n"));
 
         b32 First = true;
@@ -107,12 +107,12 @@ MainLoop(app_memory *AppMemory)
             f32 X1 = RandomF32Between(&Random, MinX, MaxX);
             f32 Y1 = RandomF32Between(&Random, MinY, MaxY);
 
-            f64 Haversine = ReferenceHaversine(X0, Y0, X1, Y1, EARTH_RADIUS);
+            f32 Haversine = ReferenceHaversine(X0, Y0, X1, Y1, EARTH_RADIUS);
             ExpectedSum += Haversine;
 
             PlatformWriteFile(&FloatFile, String_(sizeof(Haversine), (u8 *)&Haversine));
 
-            PlatformWriteFile(&JsonFile, FormatString(Temp.Arena, "\t\t\t{ \"x0\": %f, \"y0\": %f, \"x1\": %f, \"y1\": %f }", 
+            PlatformWriteFile(&JsonFile, FormatString(Temp.Arena, "\t\t\t{ \"x0\": %lf, \"y0\": %lf, \"x1\": %lf, \"y1\": %lf }", 
                                                 X0, Y0, X1, Y1));
             EndTemporaryMemory(Temp);
         }
@@ -120,9 +120,10 @@ MainLoop(app_memory *AppMemory)
         ExpectedSum /= PairCount;
 
         PlatformWriteFile(&FloatFile, String_(sizeof(ExpectedSum), (u8 *)&ExpectedSum));
+        PlatformCloseFile(&FloatFile);
 
         PlatformWriteFile(&JsonFile, String("\n\t\t]\n}"));
-        PlatformCloseFile(&FloatFile);
+        PlatformCloseFile(&JsonFile);
 
         PlatformConsoleOut("Expected sum: %f\n", ExpectedSum);
     }

@@ -275,5 +275,28 @@
                 }
             ]
         },
+        {
+            "name": "haversine_processor generator win32 debug",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}\\bin\\haversine_generator.exe",
+            "args": [ "uniform", "57389", "20" ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/bin",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "haversine_processor win32 debug",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}\\bin\\haversine_processor.exe",
+            "args": [ "output.json", "output.f64" ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/bin",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+
     ]
 }
