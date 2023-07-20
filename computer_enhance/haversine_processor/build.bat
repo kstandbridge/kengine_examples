@@ -15,5 +15,8 @@ pushd %BuildDir%
 cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\haversine_test.c /link %CommonLinkerFlags%
 haversine_test.exe
 
+cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\haversine_generator.c /link %CommonLinkerFlags%
+haversine_generator cluster 23453489 10
+
 popd
 
