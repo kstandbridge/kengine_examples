@@ -13,6 +13,7 @@ IF NOT EXIST %BuildDir% mkdir %BuildDir%
 pushd %BuildDir%
 
 cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\kengine_test\kengine_test.c /link %CommonLinkerFlags%
+kengine_test.exe
 
 popd
 

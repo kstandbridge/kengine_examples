@@ -40,8 +40,8 @@ MainLoop(app_memory *AppMemory)
             f64 Haversine = ReferenceHaversine(Point->X0, Point->Y0, Point->X1, Point->Y1, EARTH_RADIUS);
             f64 ExpectedHaversine = Answers[PairCount];
 
-            if(((ExpectedHaversine - Haversine) > 0.01f) || 
-               ((Haversine - ExpectedHaversine) > 0.01f))
+            if(((ExpectedHaversine - Haversine) >= FLT_EPSILON) && 
+               ((Haversine - ExpectedHaversine) >= FLT_EPSILON))
             {
                 PlatformConsoleOut("Error: expected %.16lf but found %.16lf\n", ExpectedHaversine, ExpectedHaversine);
             }
