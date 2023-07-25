@@ -22,7 +22,7 @@ pushd $BuildDir > /dev/null
 # ./haversine_processor output.json output.f64
 
 gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/performance_metrics.c" -o performance_metrics $CommonLinkerFlags
-./performance_metrics
+./performance_metrics 1000
 
 
 popd > /dev/null
