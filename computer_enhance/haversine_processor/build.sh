@@ -16,13 +16,13 @@ pushd $BuildDir > /dev/null
 # ./haversine_test
 
 # gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/haversine_generator.c" -o haversine_generator $CommonLinkerFlags
-# ./haversine_generator cluster 1127504674 1
+# ./haversine_generator cluster 1127504674 1000000
 
-# gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/haversine_processor.c" -o haversine_processor $CommonLinkerFlags
-# ./haversine_processor output.json output.f64
+gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/haversine_processor.c" -o haversine_processor $CommonLinkerFlags
+./haversine_processor output.json output.f64
 
-gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/performance_metrics.c" -o performance_metrics $CommonLinkerFlags
-./performance_metrics 1000
+# gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/performance_metrics.c" -o performance_metrics $CommonLinkerFlags
+# ./performance_metrics 1000
 
 
 popd > /dev/null

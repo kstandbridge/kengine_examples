@@ -49,5 +49,7 @@ MainLoop(app_memory *AppMemory)
     PlatformConsoleOut("\t\tCPU Timer: %lu -> %lu = %lu elapsed\n", CPUStart, CPUEnd, CPUElapsed);
     PlatformConsoleOut("\tCPU Frequency: %lu (guessed)\n", CPUFrequency);
 
+    PlatformConsoleOut("\n");
+    
     return 0;
 }
