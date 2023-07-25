@@ -16,13 +16,13 @@ REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\h
 REM haversine_test.exe
 
 REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\haversine_generator.c /link %CommonLinkerFlags%
-REM haversine_generator.exe uniform 1127504674 10000
+REM haversine_generator.exe uniform 1127504674 1000000
 
-REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\haversine_processor.c /link %CommonLinkerFlags%
-REM haversine_processor.exe output.json output.f64
+cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\haversine_processor.c /link %CommonLinkerFlags%
+haversine_processor.exe output.json output.f64
 
-cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\performance_metrics.c /link %CommonLinkerFlags%
-performance_metrics.exe
+REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\performance_metrics.c /link %CommonLinkerFlags%
+REM performance_metrics.exe 1000
 
 popd
 
