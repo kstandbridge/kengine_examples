@@ -16,7 +16,7 @@ PlatformEstimateCPUTimerFrequency()
 
     while(OSElapsed < OSWaitTime)
     {
-        OSEnd = LinuxReadOSTimer();
+        OSEnd = PlatformReadOSTimer();
         OSElapsed = OSEnd - OSStart;
     }
 
