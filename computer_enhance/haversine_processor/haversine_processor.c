@@ -10,44 +10,19 @@ typedef struct app_state
     memory_arena Arena;
 } app_state;
 
-s32
-MainLoop(app_memory *AppMemory)
+internal f64
+SumHaversineDistance(point *Points, u64 PointCount)
 {
-    u64 OSFrequency = PlatformGetOSTimerFrequency();
-    u64 CPUStart = PlatformReadCPUTimer();
-    u64 OSStart = PlatformReadOSTimer();
+    f64 Result = 0;
 
-    app_state *AppState = AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
-    memory_arena *Arena = &AppState->Arena;
-    PlatformConsoleOut("Usage: haversine_processor [input.json] [input.f64]\n");
-    u64 StartEnd = PlatformReadOSTimer();
-
-    string_list *Args = PlatformGetCommandLineArgs(Arena);
-    u32 ArgsCount = GetStringListCount(Args);
-    if(ArgsCount == 2)
-    {
-        string JsonFile = Args->Entry;
-        string AnswerFile = Args->Next->Entry;
-
-        string Json = PlatformReadEntireFile(Arena, JsonFile);
-        string AnswerData = PlatformReadEntireFile(Arena, AnswerFile);
-
-        u64 ReadEnd = PlatformReadOSTimer();
-
-        f64 *Answers = (f64 *)AnswerData.Data;
-
-        PlatformConsoleOut("Input size: %lu\n", Json.Size);
-
-        u32 PairCount = 0;
-        f64 HaversineSum = 0.0f;
-        point *Points = ParseJsonPoints(Arena, Json);
-        u64 ParseEnd = PlatformReadOSTimer();
-
-        for(point *Point = Points;
+    f64 Coefficient = 1 / (f64)PointCount;
+    for(point *Point = Points;
             Point;
             Point = Point->Next)
         {
             f64 Haversine = ReferenceHaversine(Point->X0, Point->Y0, Point->X1, Point->Y1, EARTH_RADIUS);
+            
+#if 0
             f64 ExpectedHaversine = Answers[PairCount];
 
             if(((ExpectedHaversine - Haversine) >= FLT_EPSILON) && 
@@ -55,46 +30,135 @@ MainLoop(app_memory *AppMemory)
             {
                 PlatformConsoleOut("Error: expected %.16lf but found %.16lf\n", ExpectedHaversine, ExpectedHaversine);
             }
+#endif
 
-            HaversineSum += Haversine;
-            ++PairCount;
+            Result += Coefficient * Haversine;
         }
         
-        HaversineSum /= PairCount;
-        f64 ReferenceSum = Answers[PairCount];
-        f64 Difference = HaversineSum - ReferenceSum;
 
-        u64 SumEnd = PlatformReadOSTimer();
+    return Result;
+}
 
-        PlatformConsoleOut("Pair count: %u\n", PairCount);
-        PlatformConsoleOut("Haversine Sum: %.16lf\n", HaversineSum);
-        PlatformConsoleOut("\nValidation:\n");
-        PlatformConsoleOut("Reference sum: %.16lf\n", ReferenceSum);
-        PlatformConsoleOut("Difference: %lf\n", Difference);
+internal string
+ReadEntireFile(memory_arena *Arena, string FilePath)
+{
+    string Result = PlatformReadEntireFile(Arena, FilePath);
 
-        u64 OutputEnd = PlatformReadOSTimer();
+    return Result;
+}
 
-        u64 CPUEnd = PlatformReadCPUTimer();
-        u64 OSEnd = PlatformReadOSTimer();
+internal void
+PrintTimeElapsed(string Label, u64 TotalElapsed, u64 Begin, u64 End)
+{
+    u64 Elapsed = End - Begin;
+    f64 Percent = 100.0f * ((f64)Elapsed / (f64)TotalElapsed);
+    PlatformConsoleOut("\t%S\t%lu\t(%.2f%%)\n", Label, Elapsed, Percent);
+}
 
-        u64 CPUElapsed = CPUEnd - CPUStart;
-        u64 OSElapsed = OSEnd - OSStart;
+internal u64
+PlatformEstimateCPUTimerFrequency()
+{
+    u64 Result = 0;
 
-        u64 CPUFrequency = 0;
-        if(OSElapsed)
+    u64 MillisecondsToWait = 100;
+    u64 OSFrequency = PlatformGetOSTimerFrequency();
+
+    u64 CPUStart = PlatformReadCPUTimer();
+    u64 OSStart = PlatformReadOSTimer();
+    u64 OSEnd = 0;
+    u64 OSElapsed = 0;
+    u64 OSWaitTime = OSFrequency * MillisecondsToWait / 1000;
+
+    while(OSElapsed < OSWaitTime)
+    {
+        OSEnd = LinuxReadOSTimer();
+        OSElapsed = OSEnd - OSStart;
+    }
+
+    u64 CPUEnd = PlatformReadCPUTimer();
+    u64 CPUElapsed = CPUEnd - CPUStart;
+
+    if(OSElapsed)
+    {
+        Result = OSFrequency * CPUElapsed / OSElapsed;
+    }
+
+    return Result;
+}
+
+s32
+MainLoop(app_memory *AppMemory)
+{
+    u64 OSStart = PlatformReadCPUTimer();
+
+    app_state *AppState = AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
+    memory_arena *Arena = &AppState->Arena;
+    PlatformConsoleOut("Usage: haversine_processor [input.json] [input.f64]\n");
+    u64 StartEnd = PlatformReadCPUTimer();
+
+    string_list *Args = PlatformGetCommandLineArgs(Arena);
+    u32 ArgsCount = GetStringListCount(Args);
+    if((ArgsCount == 1) || (ArgsCount == 2))
+    {
+        string Json = ReadEntireFile(Arena, Args->Entry);
+        
+        f64 *Answers = 0;
+        
+        if(ArgsCount == 2)
         {
-            CPUFrequency = OSFrequency * CPUElapsed / OSElapsed;
+            string AnswerData = ReadEntireFile(Arena, Args->Next->Entry);
+            Answers = (f64 *)AnswerData.Data;
         }
 
-        PlatformConsoleOut("\nTotal time: %.4fms (CPU freq %lu)\n", 
-                           (f64)OSElapsed/(f64)OSFrequency, 
-                           CPUFrequency);
-        PlatformConsoleOut("\tStartup:%lu\t(%.2f%%)\n", StartEnd - OSStart, ((f64)StartEnd - (f64)OSStart) / (f64)OSElapsed*100.0f);
-        PlatformConsoleOut("\tRead:\t%lu\t(%.2f%%)\n", ReadEnd - StartEnd, (((f64)ReadEnd - (f64)StartEnd) / (f64)OSElapsed)*100.0f);
-        PlatformConsoleOut("\tParse:\t%lu\t(%.2f%%)\n", ParseEnd - ReadEnd, (((f64)ParseEnd - (f64)ReadEnd) / (f64)OSElapsed)*100.0f);
-        PlatformConsoleOut("\tSum:\t%lu\t(%.2f%%)\n", SumEnd - ParseEnd, (((f64)SumEnd - (f64)ParseEnd) / (f64)OSElapsed)*100.0f);
-        PlatformConsoleOut("\tOutput:\t%lu\t(%.2f%%)\n", OutputEnd - SumEnd, (((f64)OutputEnd - (f64)SumEnd) / (f64)OSElapsed)*100.0f);
+        u64 ReadEnd = PlatformReadCPUTimer();
 
+        PlatformConsoleOut("Input size: %lu\n", Json.Size);
+
+        point *Points = ParseJsonPoints(Arena, Json);
+        
+        u64 ParseEnd = PlatformReadCPUTimer();
+
+        u64 PointCount = 0;
+        for(point *Point = Points;
+            Point;
+            Point = Point->Next)
+        {
+            ++PointCount;
+        }
+
+        f64 HaversineSum = SumHaversineDistance(Points, PointCount);
+        
+
+        u64 SumEnd = PlatformReadCPUTimer();
+
+        PlatformConsoleOut("Pair count: %u\n", PointCount);
+        PlatformConsoleOut("Haversine Sum: %.16lf\n", HaversineSum);
+
+        if(Answers)
+        {
+            f64 ReferenceSum = Answers[PointCount];
+            f64 Difference = HaversineSum - ReferenceSum;
+            PlatformConsoleOut("\nValidation:\n");
+            PlatformConsoleOut("Reference sum: %.16lf\n", ReferenceSum);
+            PlatformConsoleOut("Difference: %lf\n", Difference);
+        }
+
+        u64 OutputEnd = PlatformReadCPUTimer();
+        u64 OSEnd = PlatformReadCPUTimer();
+
+        u64 OSElapsed = OSEnd - OSStart;
+
+        u64 CPUFrequency = PlatformEstimateCPUTimerFrequency();
+        if(CPUFrequency)
+        {
+            PlatformConsoleOut("\nTotal time: %.4fms (CPU freq %lu)\n", (f64)OSElapsed/(f64)CPUFrequency, CPUFrequency);
+        }
+        
+        PrintTimeElapsed(String("Startup"), OSElapsed, OSStart, StartEnd);
+        PrintTimeElapsed(String("Read"), OSElapsed, StartEnd, ReadEnd);
+        PrintTimeElapsed(String("Parse"), OSElapsed, ReadEnd, ParseEnd);
+        PrintTimeElapsed(String("Sum"), OSElapsed, ParseEnd, SumEnd);
+        PrintTimeElapsed(String("Output"), OSElapsed, SumEnd, OutputEnd);
         PlatformConsoleOut("\n");
     }
     else
