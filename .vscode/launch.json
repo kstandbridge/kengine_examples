@@ -256,7 +256,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bin/haversine_processor",
-            "args": [ ],
+            "args": [ "output.json" ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}/bin",
             "environment": [],

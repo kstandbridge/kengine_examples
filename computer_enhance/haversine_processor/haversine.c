@@ -3,6 +3,8 @@ ParseJsonPoints(memory_arena *Arena, string Json)
 {
     point *Result = 0;
 
+    BEGIN_TIMED_FUNCTION();
+
     tokenizer Tokenizer_ = Tokenize(Json, String(""));
     tokenizer *Tokenizer = &Tokenizer_;
 
@@ -51,6 +53,8 @@ ParseJsonPoints(memory_arena *Arena, string Json)
             }
         }
     }
+
+    END_TIMED_FUNCTION();
 
     return Result;
 }
