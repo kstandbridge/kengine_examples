@@ -1410,7 +1410,93 @@ RunParseXmlTest(memory_arena *Arena)
         xml_element *SubElement = GetXmlElement(FirstElement, String("sub"));
         AssertTrue(SubElement == 0);
     }
+}
+
+internal void
+ParseJsonTests(memory_arena *Arena)
+{
+    {
+        string Filename = String("/dev/null");
+        string FileData = String("{"
+                                 "\"foo\": \"bar\""
+                                 "}");
+
+        json_element *DocElement = ParseJsonDocument(Arena, FileData, Filename);
+        AssertEqualU32(JsonElement_Object, DocElement->Type);
+
+        json_element *FooElement = GetJsonElement(DocElement, String("foo"));
+        AssertEqualU32(JsonElement_String, FooElement->Type);
+         AssertEqualString(String("bar"), FooElement->Value);
+    }
+
+    {
+        string Filename = String("/dev/null");
+        string FileData = String("{"
+                                 "\"foo\": 42"
+                                 "}");
+
+        json_element *DocElement = ParseJsonDocument(Arena, FileData, Filename);
+        AssertEqualU32(JsonElement_Object, DocElement->Type);
+
+        json_element *FooElement = GetJsonElement(DocElement, String("foo"));
+        AssertEqualU32(JsonElement_Number, FooElement->Type);
+        AssertEqualString(String("42"), FooElement->Value);
+    }
     
+    {
+        string Filename = String("/dev/null");
+        string FileData = String("{"
+                                 "  \"foo\": {"
+                                        "\"bar\": \"bas\""
+                                 "  }"
+                                 "}");
+
+        json_element *DocElement = ParseJsonDocument(Arena, FileData, Filename);
+        AssertEqualU32(JsonElement_Object, DocElement->Type);
+
+        json_element *FooElement = GetJsonElement(DocElement, String("foo"));
+        AssertEqualU32(JsonElement_Object, FooElement->Type);
+        
+        json_element *BarElement = GetJsonElement(FooElement, String("bar"));
+        AssertEqualU32(JsonElement_String, BarElement->Type);
+        AssertEqualString(String("bas"), BarElement->Value);
+    }
+    {
+        string Filename = String("/dev/null");
+        string FileData = String("{"
+                                 "  \"foo\": ["
+                                        "{ \"key\": \"first\", \"value\": 1234 },"
+                                        "{ \"key\": \"second\", \"value\": 4321 }"
+                                 "  ]"
+                                 "}");
+        json_element *DocElement = ParseJsonDocument(Arena, FileData, Filename);
+        AssertEqualU32(JsonElement_Object, DocElement->Type);
+
+        json_element *FooElement = GetJsonElement(DocElement, String("foo"));
+        AssertEqualU32(JsonElement_Array, FooElement->Type);
+
+        json_element *ArrayElement = FooElement->Children;
+        AssertEqualU32(JsonElement_Object, ArrayElement->Type);
+
+        json_element *KeyElement = GetJsonElement(ArrayElement, String("key"));
+        AssertEqualU32(JsonElement_String, KeyElement->Type);
+        AssertEqualString(String("first"), KeyElement->Value);
+
+        json_element *ValueElement = GetJsonElement(ArrayElement, String("value"));
+        AssertEqualU32(JsonElement_Number, ValueElement->Type);
+        AssertEqualString(String("1234"), ValueElement->Value);
+
+        ArrayElement = ArrayElement->Next;
+        AssertEqualU32(JsonElement_Object, ArrayElement->Type);
+
+        KeyElement = GetJsonElement(ArrayElement, String("key"));
+        AssertEqualU32(JsonElement_String, KeyElement->Type);
+        AssertEqualString(String("second"), KeyElement->Value);
+
+        ValueElement = GetJsonElement(ArrayElement, String("value"));
+        AssertEqualU32(JsonElement_Number, ValueElement->Type);
+        AssertEqualString(String("4321"), ValueElement->Value);
+    }
 }
 
 internal void
@@ -1461,8 +1547,8 @@ RunAllTests(memory_arena *Arena)
     RunGetNodeTests(Arena);
     
     RunParseHtmlTest(Arena);
-    
     RunParseXmlTest(Arena);
+    ParseJsonTests(Arena);
 
     RunF32FromStringTests();
 }
