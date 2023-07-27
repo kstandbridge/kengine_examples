@@ -48,41 +48,34 @@ global profiler GlobalProfiler;
 
 typedef struct profile_block
 {
-#if 0
-    profile_block(char const *Label_, u32 AnchorIndex_)
-    {
-        AnchorIndex = AnchorIndex_;
-        Label = Label_;
-        StartTSC = PlatformReadCPUTimer();
-    }
-
-    ~profile_block()
-    {
-        u64 Elapsed = PlatformReadCPUTimer() - StartTSC;
-
-        profile_anchor *Anchor = GlobalProfiler.Anchors + AnchorIndex;
-        Anchor->TSCElapsed += Elapsed;
-        ++Anchor->HitCount;
-
-        Anchor->Label = Label;
-    }
-#endif
-
     char const *Label;
     u64 StartTSC;
     u32 AnchorIndex;
 } profile_block;
 
+internal void
+EndProfileBlock_(profile_block Block)
+{
+    u64 Elapsed = PlatformReadCPUTimer() - Block.StartTSC;
+
+    profile_anchor *Anchor = GlobalProfiler.Anchors + Block.AnchorIndex;
+    Anchor->TSCElapsed += Elapsed;
+    ++Anchor->HitCount;
+
+    Anchor->Label = Block.Label;
+}
+
+
 // TODO(kstandbridge): Relocate these?
 #define NAME_CONCAT_(A, B) A##B
 #define NAME_CONCAT(A, B) NAME_CONCAT_(A, B)
 
-#if 0
-#define TIMED_BLOCK(Name) profile_block NAME_CONCAT(Block, __LINE__)(Name, __COUNTER__ + 1)
-#else
-#define TIMED_BLOCK(...)
-#endif
-#define TIMED_FUNCTION() TIMED_BLOCK(__FUNCTION__)
+
+#define END_TIMED_BLOCK(Name) EndProfileBlock_(NAME_CONCAT(ProfileBlock, Name))
+#define BEGIN_TIMED_BLOCK(Name) profile_block NAME_CONCAT(ProfileBlock, Name) = { .Label = Name, .StartTSC = PlatformReadCPUTimer(), .AnchorIndex = __COUNTER__ + 1}
+
+#define END_TIMED_FUNCTION() END_TIMED_BLOCK(__FUNCTION__)
+#define BEGIN_TIMED_FUNCTION() BEGIN_TIMED_BLOCK(__FUNCTION__)
 
 internal void
 BeginProfile()
@@ -93,6 +86,8 @@ BeginProfile()
 internal void
 EndAndPrintProfile()
 {
+    // TODO(kstandbridge): Check to see if any profile_blocks were not ended
+    
     GlobalProfiler.EndTSC = PlatformReadCPUTimer();
     u64 CPUFrequency = EstimateCPUTimerFrequency();
 
@@ -112,7 +107,7 @@ EndAndPrintProfile()
         {
             u64 Elapsed = Anchor->TSCElapsed;
             f64 Percent = 100.0f * ((f64)Elapsed / (f64)TotalCPUElapsed);
-            PlatformConsoleOut("%s[%lu]: %lu (%.2f%%)\n", Anchor->Label, Anchor->HitCount, Elapsed, Percent);
+            PlatformConsoleOut("\t%s[%lu]: %lu (%.2f%%)\n", Anchor->Label, Anchor->HitCount, Elapsed, Percent);
         }
     }
 

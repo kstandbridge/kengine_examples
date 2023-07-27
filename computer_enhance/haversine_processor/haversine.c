@@ -1,7 +1,7 @@
 internal point *
 ParseJsonPoints(memory_arena *Arena, string Json)
 {
-    TIMED_FUNCTION();
+    BEGIN_TIMED_FUNCTION();
 
     point *Result = 0;
 
@@ -53,6 +53,8 @@ ParseJsonPoints(memory_arena *Arena, string Json)
             }
         }
     }
+
+    END_TIMED_FUNCTION();
 
     return Result;
 }

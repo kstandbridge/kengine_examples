@@ -16,7 +16,7 @@ typedef struct app_state
 internal f64
 SumHaversineDistance(point *Points, u64 PointCount)
 {
-    TIMED_FUNCTION();
+    BEGIN_TIMED_FUNCTION();
 
     f64 Result = 0;
 
@@ -40,15 +40,19 @@ SumHaversineDistance(point *Points, u64 PointCount)
             Result += Coefficient * Haversine;
         }
 
+    END_TIMED_FUNCTION();
+
     return Result;
 }
 
 internal string
 ReadEntireFile(memory_arena *Arena, string FilePath)
 {
-    TIMED_FUNCTION();
+    BEGIN_TIMED_FUNCTION();
 
     string Result = PlatformReadEntireFile(Arena, FilePath);
+
+    END_TIMED_FUNCTION();
 
     return Result;
 }
