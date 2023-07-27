@@ -2,10 +2,10 @@
 #define KENGINE_IMPLEMENTATION
 #include "kengine.h"
 
-#include "kengine_profiler.c"
+#include "kengine_profiler.cpp"
 
 #include "haversine.h"
-#include "haversine.c"
+#include "haversine.cpp"
 
 typedef struct app_state
 {
@@ -16,11 +16,9 @@ typedef struct app_state
 internal f64
 SumHaversineDistance(point *Points, u64 PointCount)
 {
-    BEGIN_TIMED_FUNCTION();
+    TIMED_FUNCTION();
 
     f64 Result = 0;
-
-    PlatformConsoleOut("foo %s bar %u bas\n", __FUNCTION__, __COUNTER__);
 
     f64 Coefficient = 1 / (f64)PointCount;
     for(point *Point = Points;
@@ -41,8 +39,6 @@ SumHaversineDistance(point *Points, u64 PointCount)
 
             Result += Coefficient * Haversine;
         }
-        
-    END_TIMED_FUNCTION();
 
     return Result;
 }
@@ -50,11 +46,9 @@ SumHaversineDistance(point *Points, u64 PointCount)
 internal string
 ReadEntireFile(memory_arena *Arena, string FilePath)
 {
-    BEGIN_TIMED_FUNCTION();
+    TIMED_FUNCTION();
 
     string Result = PlatformReadEntireFile(Arena, FilePath);
-
-    END_TIMED_FUNCTION();
 
     return Result;
 }

@@ -2,8 +2,10 @@
 #define KENGINE_IMPLEMENTATION
 #include "kengine.h"
 
+#include "kengine_profiler.cpp"
+
 #include "haversine.h"
-#include "haversine.c"
+#include "haversine.cpp"
 
 internal void
 RunParseJsonPointsTests(memory_arena *Arena)

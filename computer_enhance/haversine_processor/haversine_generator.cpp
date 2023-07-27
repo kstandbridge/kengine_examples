@@ -58,7 +58,7 @@ MainLoop(app_memory *AppMemory)
         b32 First = true;
         random_state Random = 
         {
-            .Value = RandomSeed
+            .Value = (u32)RandomSeed
         };
 
         v2 Clusters[64];
@@ -70,7 +70,7 @@ MainLoop(app_memory *AppMemory)
                                  RandomF32Between(&Random, 0.0f, 90.0f));
         }
 
-        for(s32 Index = 0;
+        for(u32 Index = 0;
             Index < PairCount;
             ++Index)
         {
