@@ -48,6 +48,7 @@ global profiler GlobalProfiler;
 
 typedef struct profile_block
 {
+#if 0
     profile_block(char const *Label_, u32 AnchorIndex_)
     {
         AnchorIndex = AnchorIndex_;
@@ -65,6 +66,7 @@ typedef struct profile_block
 
         Anchor->Label = Label;
     }
+#endif
 
     char const *Label;
     u64 StartTSC;
@@ -75,7 +77,11 @@ typedef struct profile_block
 #define NAME_CONCAT_(A, B) A##B
 #define NAME_CONCAT(A, B) NAME_CONCAT_(A, B)
 
+#if 0
 #define TIMED_BLOCK(Name) profile_block NAME_CONCAT(Block, __LINE__)(Name, __COUNTER__ + 1)
+#else
+#define TIMED_BLOCK(...)
+#endif
 #define TIMED_FUNCTION() TIMED_BLOCK(__FUNCTION__)
 
 internal void
