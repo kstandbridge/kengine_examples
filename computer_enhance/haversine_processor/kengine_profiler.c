@@ -33,6 +33,7 @@ EstimateCPUTimerFrequency()
 typedef struct profile_anchor
 {
     u64 TSCElapsed;
+    u64 TSCElapsedChildren;
     u64 HitCount;
     char const *Label;
 } profile_anchor;
@@ -45,11 +46,13 @@ typedef struct profiler
     u64 EndTSC;
 } profiler;
 global profiler GlobalProfiler;
+global u32 GlobalProfilerParent;
 
 typedef struct profile_block
 {
     char const *Label;
     u64 StartTSC;
+    u32 ParentIndex;
     u32 AnchorIndex;
 } profile_block;
 
@@ -57,8 +60,12 @@ internal void
 EndProfileBlock_(profile_block Block)
 {
     u64 Elapsed = PlatformReadCPUTimer() - Block.StartTSC;
-
+    GlobalProfilerParent = Block.ParentIndex;
+    
+    profile_anchor *Parent = GlobalProfiler.Anchors + Block.ParentIndex;
     profile_anchor *Anchor = GlobalProfiler.Anchors + Block.AnchorIndex;
+    
+    Parent->TSCElapsedChildren += Elapsed;
     Anchor->TSCElapsed += Elapsed;
     ++Anchor->HitCount;
 
@@ -68,7 +75,7 @@ EndProfileBlock_(profile_block Block)
 #define END_TIMED_BLOCK(Name) EndProfileBlock_(ProfileBlock##Name)
 #define END_TIMED_FUNCTION() END_TIMED_BLOCK(__FUNCTION__)
 
-#define BEGIN_TIMED_BLOCK_(Name, BlockLabel) profile_block ProfileBlock##Name = { .Label = BlockLabel, .StartTSC = PlatformReadCPUTimer(), .AnchorIndex = __COUNTER__ + 1}
+#define BEGIN_TIMED_BLOCK_(Name, BlockLabel) profile_block ProfileBlock##Name = { .Label = BlockLabel, .StartTSC = PlatformReadCPUTimer(), .ParentIndex = GlobalProfilerParent, .AnchorIndex = __COUNTER__ + 1}; GlobalProfilerParent = ProfileBlock##Name.AnchorIndex
 #define BEGIN_TIMED_BLOCK(Name) BEGIN_TIMED_BLOCK_(Name, #Name)
 #define BEGIN_TIMED_FUNCTION() BEGIN_TIMED_BLOCK_(__FUNCTION__, __FUNCTION__)
 
@@ -100,9 +107,15 @@ EndAndPrintProfile()
         profile_anchor *Anchor = GlobalProfiler.Anchors + AnchorIndex;
         if(Anchor->TSCElapsed)
         {
-            u64 Elapsed = Anchor->TSCElapsed;
+            u64 Elapsed = Anchor->TSCElapsed - Anchor->TSCElapsedChildren;
             f64 Percent = 100.0f * ((f64)Elapsed / (f64)TotalCPUElapsed);
-            PlatformConsoleOut("\t%s[%lu]: %lu (%.2f%%)\n", Anchor->Label, Anchor->HitCount, Elapsed, Percent);
+            PlatformConsoleOut("\t%s[%lu]: %lu (%.2f%%", Anchor->Label, Anchor->HitCount, Elapsed, Percent);
+            if(Anchor->TSCElapsedChildren)
+            {
+                f64 PercentWithChildren = 100.0f * ((f64)Anchor->TSCElapsed / (f64)TotalCPUElapsed);
+                PlatformConsoleOut(", %.2f%% w/children", PercentWithChildren);
+            }
+            PlatformConsoleOut(")\n");
         }
     }
 
