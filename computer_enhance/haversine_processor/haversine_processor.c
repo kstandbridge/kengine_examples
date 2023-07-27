@@ -2,8 +2,6 @@
 #define KENGINE_IMPLEMENTATION
 #include "kengine.h"
 
-#include "kengine_profiler.c"
-
 #include "haversine.h"
 #include "haversine.c"
 
