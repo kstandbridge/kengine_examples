@@ -1,5 +1,52 @@
 internal point *
-ParseJsonPoints(memory_arena *Arena, string Json)
+ParseJsonPoints(memory_arena *Arena, string Json, string FileName)
+{
+    point *Result = 0;
+
+    json_element *DocElement = ParseJsonDocument(Arena, Json, FileName);
+    if(DocElement)
+    {
+        json_element *PairsElement = GetJsonElement(DocElement, String("pairs"));
+        if(PairsElement)
+        {
+            if(JsonElement_Array == PairsElement->Type)
+            {
+                json_element *PairElement = PairsElement->Children;
+                
+                point *CurrentPoint = 0;
+                while(PairElement)
+                {
+                    json_element *X0Element = GetJsonElement(PairElement, String("x0"));
+                    json_element *Y0Element = GetJsonElement(PairElement, String("y0"));
+                    json_element *X1Element = GetJsonElement(PairElement, String("x1"));
+                    json_element *Y1Element = GetJsonElement(PairElement, String("y1"));
+                    if(X0Element && Y0Element && X1Element && Y1Element)
+                    {
+                        if(CurrentPoint == 0)
+                        {
+                            CurrentPoint = Result = PushStruct(Arena, point);
+                        }
+                        else
+                        {
+                            CurrentPoint->Next = PushStruct(Arena, point);
+                            CurrentPoint = CurrentPoint->Next;
+                        }
+                            CurrentPoint->X0 = F64FromString(X0Element->Value);
+                            CurrentPoint->Y0 = F64FromString(Y0Element->Value);
+                            CurrentPoint->X1 = F64FromString(X1Element->Value);
+                            CurrentPoint->Y1 = F64FromString(Y1Element->Value);
+                    }
+                    PairElement = PairElement->Next;
+                }
+            }
+        }
+    }
+
+    return Result;
+}
+
+internal point *
+ParseJsonPoints_(memory_arena *Arena, string Json)
 {
     BEGIN_TIMED_FUNCTION();
 

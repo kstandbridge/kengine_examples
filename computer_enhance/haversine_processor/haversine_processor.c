@@ -82,7 +82,7 @@ MainLoop(app_memory *AppMemory)
 
         PlatformConsoleOut("Input size: %lu\n", Json.Size);
 
-        point *Points = ParseJsonPoints(Arena, Json);
+        point *Points = ParseJsonPoints(Arena, Json, Args->Entry);
 
 
         u64 PointCount = 0;
