@@ -57,14 +57,6 @@ ReadEntireFile(memory_arena *Arena, string FilePath)
     return Result;
 }
 
-internal void
-PrintTimeElapsed(string Label, u64 TotalElapsed, u64 Begin, u64 End)
-{
-    u64 Elapsed = End - Begin;
-    f64 Percent = 100.0f * ((f64)Elapsed / (f64)TotalElapsed);
-    PlatformConsoleOut("\t%S\t%lu\t(%.2f%%)\n", Label, Elapsed, Percent);
-}
-
 s32
 MainLoop(app_memory *AppMemory)
 {
@@ -92,13 +84,17 @@ MainLoop(app_memory *AppMemory)
 
         point *Points = ParseJsonPoints(Arena, Json);
 
+
         u64 PointCount = 0;
         for(point *Point = Points;
             Point;
             Point = Point->Next)
         {
+            BEGIN_TIMED_BLOCK(CountPoint);
             ++PointCount;
+            END_TIMED_BLOCK(CountPoint);
         }
+        
 
         f64 HaversineSum = SumHaversineDistance(Points, PointCount);
 

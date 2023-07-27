@@ -12,6 +12,8 @@ ParseJsonPoints(memory_arena *Arena, string Json)
     RequireToken(Tokenizer, Token_OpenCurlyBracket);
     while(Parsing(Tokenizer))
     {
+        BEGIN_TIMED_BLOCK(ParseToken);
+
         token Token = GetToken(Tokenizer);
         if(Token.Type == Token_OpenCurlyBracket)
         {
@@ -52,6 +54,8 @@ ParseJsonPoints(memory_arena *Arena, string Json)
                 }
             }
         }
+
+        END_TIMED_BLOCK(ParseToken);
     }
 
     END_TIMED_FUNCTION();

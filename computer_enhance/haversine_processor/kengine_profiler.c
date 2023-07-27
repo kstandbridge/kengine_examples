@@ -65,17 +65,12 @@ EndProfileBlock_(profile_block Block)
     Anchor->Label = Block.Label;
 }
 
-
-// TODO(kstandbridge): Relocate these?
-#define NAME_CONCAT_(A, B) A##B
-#define NAME_CONCAT(A, B) NAME_CONCAT_(A, B)
-
-
-#define END_TIMED_BLOCK(Name) EndProfileBlock_(NAME_CONCAT(ProfileBlock, Name))
-#define BEGIN_TIMED_BLOCK(Name) profile_block NAME_CONCAT(ProfileBlock, Name) = { .Label = Name, .StartTSC = PlatformReadCPUTimer(), .AnchorIndex = __COUNTER__ + 1}
-
+#define END_TIMED_BLOCK(Name) EndProfileBlock_(ProfileBlock##Name)
 #define END_TIMED_FUNCTION() END_TIMED_BLOCK(__FUNCTION__)
-#define BEGIN_TIMED_FUNCTION() BEGIN_TIMED_BLOCK(__FUNCTION__)
+
+#define BEGIN_TIMED_BLOCK_(Name, BlockLabel) profile_block ProfileBlock##Name = { .Label = BlockLabel, .StartTSC = PlatformReadCPUTimer(), .AnchorIndex = __COUNTER__ + 1}
+#define BEGIN_TIMED_BLOCK(Name) BEGIN_TIMED_BLOCK_(Name, #Name)
+#define BEGIN_TIMED_FUNCTION() BEGIN_TIMED_BLOCK_(__FUNCTION__, __FUNCTION__)
 
 internal void
 BeginProfile()
