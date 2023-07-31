@@ -3,8 +3,6 @@ ParseJsonPoints(memory_arena *Arena, string Json, string FileName)
 {
     point *Result = 0;
 
-    BEGIN_TIMED_FUNCTION();
-
     json_element *DocElement = ParseJsonDocument(Arena, Json, FileName);
     if(DocElement)
     {
@@ -43,8 +41,6 @@ ParseJsonPoints(memory_arena *Arena, string Json, string FileName)
             }
         }
     }
-
-    END_TIMED_FUNCTION();
 
     return Result;
 }
@@ -108,8 +104,6 @@ ParseJsonPoints_(memory_arena *Arena, string Json)
 
         END_TIMED_BLOCK(ParseToken);
     }
-
-    END_TIMED_FUNCTION();
 
     return Result;
 }

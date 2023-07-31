@@ -1,3 +1,4 @@
+#define KENGINE_PROFILER
 #define KENGINE_CONSOLE
 #define KENGINE_IMPLEMENTATION
 #include "kengine.h"
@@ -80,30 +81,31 @@ MainLoop(app_memory *AppMemory)
 
         PlatformConsoleOut("Input size: %lu\n", Json.Size);
 
+        BEGIN_TIMED_BLOCK(ParseJsonPoints);
         point *Points = ParseJsonPoints(Arena, Json, Args->Entry);
-
-
+        END_TIMED_BLOCK(ParseJsonPoints);
+        
+        BEGIN_TIMED_BLOCK(CountPoint);
         u64 PointCount = 0;
         for(point *Point = Points;
             Point;
             Point = Point->Next)
         {
-            BEGIN_TIMED_BLOCK(CountPoint);
             ++PointCount;
-            END_TIMED_BLOCK(CountPoint);
         }
+        END_TIMED_BLOCK(CountPoint);
         
 
         f64 HaversineSum = SumHaversineDistance(Points, PointCount);
 
         PlatformConsoleOut("Pair count: %u\n", PointCount);
-        PlatformConsoleOut("Haversine Sum: %.16lf\n", HaversineSum);
+        PlatformConsoleOut("Haversine Sum: %.16lf", HaversineSum);
 
         if(Answers)
         {
             f64 ReferenceSum = Answers[PointCount];
             f64 Difference = HaversineSum - ReferenceSum;
-            PlatformConsoleOut("\nValidation:\n");
+            PlatformConsoleOut("\n\nValidation:\n");
             PlatformConsoleOut("Reference sum: %.16lf\n", ReferenceSum);
             PlatformConsoleOut("Difference: %lf\n", Difference);
         }
