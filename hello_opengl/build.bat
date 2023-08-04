@@ -12,7 +12,7 @@ IF NOT EXIST %BuildDir% mkdir %BuildDir%
 
 pushd %BuildDir%
 
-cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\hello_opengl\hello_opengl.c /link %CommonLinkerFlags%
+cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\hello_opengl\hello_opengl.c /link %CommonLinkerFlags% User32.lib GDI32.lib OpenGL32.lib
 hello_opengl
 
 popd

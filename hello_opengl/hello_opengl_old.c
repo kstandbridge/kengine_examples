@@ -1,8 +1,7 @@
 // example how to set up modern OpenGL context with fallback to legacy context
-// compile: gcc xlib_opengl.c -lX11 -lGL -o xlib_opengl
 
 // set to 0 to create resizable window
-#define WINDOW_WIDTH  1280
+#define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 720
 
 // do you need depth buffer?
@@ -26,23 +25,26 @@
 
 // replace this with your favorite assert() implementation
 #include <assert.h>
-#include <stdio.h>
 
-#include <X11/Xlib.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 #include <GL/gl.h>
-#include <GL/glx.h>
 
-#include "glext.h"  // download from https://www.opengl.org/registry/api/GL/glext.h
-#include "glxext.h" // download from https://www.opengl.org/registry/api/GL/glxext.h
+#include "kengine/glext.h"  // download from https://www.opengl.org/registry/api/GL/glext.h
+#include "kengine/wglext.h" // download from https://www.opengl.org/registry/api/GL/wglext.h
 
-// https://www.opengl.org/registry/specs/ARB/glx_create_context.txt
-// https://cgit.freedesktop.org/mesa/mesa/plain/docs/specs/MESA_swap_control.spec
-// https://www.opengl.org/registry/specs/SGI/swap_control.txt
-// https://www.opengl.org/registry/specs/EXT/swap_control.txt
-// https://www.opengl.org/registry/specs/EXT/glx_swap_control_tear.txt
+// https://www.opengl.org/registry/specs/ARB/wgl_extensions_string.txt
+// https://www.opengl.org/registry/specs/ARB/wgl_pixel_format.txt
+// https://www.opengl.org/registry/specs/ARB/wgl_create_context.txt
+// https://www.opengl.org/registry/specs/EXT/wgl_swap_control.txt
+// https://www.opengl.org/registry/specs/EXT/wgl_swap_control_tear.txt
 // https://www.opengl.org/registry/specs/ARB/framebuffer_sRGB.txt
 // https://www.opengl.org/registry/specs/ARB/multisample.txt
 // https://www.opengl.org/registry/specs/ARB/debug_output.txt
+
+#pragma comment (lib, "gdi32.lib")
+#pragma comment (lib, "user32.lib")
+#pragma comment (lib, "opengl32.lib")
 
 #if USE_DEBUG_MODE
     #define GL_CHECK(x) do          \
@@ -90,12 +92,79 @@ static void RenderFrame(void)
     GL_CHECK( glEnd() );
 }
 
+static void LogWin32Error(const char* msg)
+{
+    OutputDebugStringA(msg);
+    OutputDebugStringA("!\n");
+
+    DWORD err = GetLastError();
+
+    LPWSTR str;
+    if (FormatMessageW(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+        err, MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL), (LPWSTR)&str, 0, NULL))
+    {
+        OutputDebugStringW(str);
+        LocalFree(str);
+    }
+}
+
+static HGLRC CreateOldOpenGLContext(HDC dc)
+{
+    PIXELFORMATDESCRIPTOR pfd =
+    {
+        .nSize = sizeof(pfd),
+        .nVersion = 1,
+        .dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL |
+                   PFD_DOUBLEBUFFER | (WINDOW_DEPTH ? 0 : PFD_DEPTH_DONTCARE),
+        .iPixelType = PFD_TYPE_RGBA,
+        .cColorBits = 24,
+        .cDepthBits = (WINDOW_DEPTH ? 24 : 0),
+        .cStencilBits = (WINDOW_STENCIL ? 8 : 0),
+    };
+
+    int format = ChoosePixelFormat(dc, &pfd);
+    if (!format)
+    {
+        LogWin32Error("ChoosePixelFormat failed");
+        return NULL;
+    }
+
+    if (!DescribePixelFormat(dc, format, sizeof(pfd), &pfd))
+    {
+        LogWin32Error("DescribePixelFormat failed");
+        return NULL;
+    }
+
+    if (!SetPixelFormat(dc, format, &pfd))
+    {
+        LogWin32Error("SetPixelFormat failed");
+        return NULL;
+    }
+
+    HGLRC rc = wglCreateContext(dc);
+    if (!rc)
+    {
+        LogWin32Error("wglCreateContext failed");
+        return NULL;
+    }
+
+    if (!wglMakeCurrent(dc, rc))
+    {
+        LogWin32Error("wglMakeCurrent failed");
+        wglDeleteContext(rc);
+        return NULL;
+    }
+
+    return rc;
+}
+
 #if USE_DEBUG_MODE
 static void APIENTRY OpenGLDebugCallback(
     GLenum source, GLenum type, GLuint id, GLenum severity,
     GLsizei length, const GLchar *message, const void* user)
 {
-    fprintf(stderr, "%s\n", message);
+    OutputDebugStringA(message);
+    OutputDebugStringA("\n");
     if (severity >= GL_DEBUG_SEVERITY_LOW_ARB && severity <= GL_DEBUG_SEVERITY_HIGH_ARB)
     {
         assert(0);
@@ -116,324 +185,376 @@ static int StringsAreEqual(const char* src, const char* dst, size_t dstlen)
     return (dstlen && *src == *dst) || (!dstlen && *src == 0);
 }
 
-int main(void)
+static HGLRC CreateOpenGLContext(HDC dc)
 {
-    Display* display = XOpenDisplay(NULL);
-    if (!display)
-    {
-        fprintf(stderr, "XOpenDisplay failed!\n");
-    }
-    else
-    {
-        int glx_ARB_create_context = 0;
-        int glx_ARB_multisample = 0;
-        int glx_ARB_framebuffer_sRGB = 0;
-        int glx_SGI_swap_control = 0;
-        int glx_MESA_swap_control = 0;
-        int glx_EXT_swap_control = 0;
-        int glx_EXT_swap_control_tear = 0;
+    PFNWGLCHOOSEPIXELFORMATARBPROC wglChoosePixelFormatARB = NULL;
+    PFNWGLCREATECONTEXTATTRIBSARBPROC wglCreateContextAttribsARB = NULL;
+    PFNWGLSWAPINTERVALEXTPROC wglSwapIntervalEXT = NULL;
+    int wgl_ARB_multisample = 0;
+    int wgl_ARB_framebuffer_sRGB = 0;
+    int wgl_EXT_swap_control_tear = 0;
 
-        const char* glx = glXQueryExtensionsString(display, DefaultScreen(display));
-        if (!glx)
+    HWND wnd = CreateWindowExW(0, L"STATIC", L"Dummy Window", WS_OVERLAPPED,
+        CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, NULL, NULL, NULL, NULL);
+    if (wnd)
+    {
+        HDC dc = GetDC(wnd);
+        if (dc)
         {
-            fprintf(stderr, "glXQueryExtensionsString failed!\n");
+            HGLRC rc = CreateOldOpenGLContext(dc);
+            if (rc)
+            {
+                PFNWGLGETEXTENSIONSSTRINGARBPROC wglGetExtensionsStringARB =
+                    (void*)wglGetProcAddress("wglGetExtensionsStringARB");
+                if (wglGetExtensionsStringARB != (void*)0 &&
+                    wglGetExtensionsStringARB != (void*)1 &&
+                    wglGetExtensionsStringARB != (void*)2 &&
+                    wglGetExtensionsStringARB != (void*)3 &&
+                    wglGetExtensionsStringARB != (void*)-1)
+                {
+                    const char* ext = wglGetExtensionsStringARB(dc);
+                    if (ext)
+                    {
+                        const char* start = ext;
+                        for (;;)
+                        {
+                            while (*ext != 0 && *ext != ' ')
+                            {
+                                ext++;
+                            }
+
+                            size_t length = ext - start;
+                            if (StringsAreEqual("WGL_ARB_pixel_format", start, length))
+                            {
+                                wglChoosePixelFormatARB = (void*)wglGetProcAddress("wglChoosePixelFormatARB");
+                            }
+                            else if (StringsAreEqual("WGL_ARB_create_context", start, length))
+                            {
+                                wglCreateContextAttribsARB = (void*)wglGetProcAddress("wglCreateContextAttribsARB");
+                            }
+                            else if (StringsAreEqual("WGL_EXT_swap_control", start, length))
+                            {
+                                wglSwapIntervalEXT = (void*)wglGetProcAddress("wglSwapIntervalEXT");
+                            }
+                            else if (StringsAreEqual("WGL_ARB_framebuffer_sRGB", start, length))
+                            {
+                                wgl_ARB_framebuffer_sRGB = 1;
+                            }
+                            else if (StringsAreEqual("WGL_ARB_multisample", start, length))
+                            {
+                                wgl_ARB_multisample = 1;
+                            }
+                            else if (StringsAreEqual("WGL_ARB_framebuffer_sRGB", start, length))
+                            {
+                                wgl_ARB_framebuffer_sRGB = 1;
+                            }
+                            else if (StringsAreEqual("WGL_EXT_swap_control_tear", start, length))
+                            {
+                                wgl_EXT_swap_control_tear = 1;
+                            }
+
+                            if (*ext == 0)
+                            {
+                                break;
+                            }
+
+                            ext++;
+                            start = ext;
+                        }
+                    }
+                }
+
+                wglMakeCurrent(NULL, NULL);
+                wglDeleteContext(rc);
+            }
+            ReleaseDC(wnd, dc);
+        }
+        DestroyWindow(wnd);
+    }
+
+    HGLRC rc = NULL;
+
+    if (wglCreateContextAttribsARB && wglChoosePixelFormatARB)
+    {
+        int attrib[32];
+        int* p = attrib;
+
+        *p++ = WGL_DRAW_TO_WINDOW_ARB; *p++ = GL_TRUE;
+        *p++ = WGL_ACCELERATION_ARB;   *p++ = WGL_FULL_ACCELERATION_ARB;
+        *p++ = WGL_SUPPORT_OPENGL_ARB; *p++ = GL_TRUE;
+        *p++ = WGL_DOUBLE_BUFFER_ARB;  *p++ = GL_TRUE;
+        *p++ = WGL_PIXEL_TYPE_ARB;     *p++ = WGL_TYPE_RGBA_ARB;
+        *p++ = WGL_COLOR_BITS_ARB;     *p++ = 24;
+
+        if (WINDOW_DEPTH)
+        {
+            *p++ = WGL_DEPTH_BITS_ARB;
+            *p++ = 24;
+        }
+        if (WINDOW_STENCIL)
+        {
+            *p++ = WGL_STENCIL_BITS_ARB;
+            *p++ = 8;
+        }
+        if (WINDOW_SRGB && wgl_ARB_framebuffer_sRGB)
+        {
+            *p++ = WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB;
+            *p++ = GL_TRUE;
+        }
+        if (WINDOW_MSAA && wgl_ARB_multisample)
+        {
+            *p++ = WGL_SAMPLE_BUFFERS_ARB;
+            *p++ = 1;
+            *p++ = WGL_SAMPLES_ARB;
+            *p++ = WINDOW_MSAA;
+        }
+        *p = 0;
+
+        int format;
+        UINT formats;
+        if (!wglChoosePixelFormatARB(dc, attrib, NULL, 1, &format, &formats) || formats == 0)
+        {
+            LogWin32Error("wglChoosePixelFormatARB failed");
         }
         else
         {
-            const char* start = glx;
+            PIXELFORMATDESCRIPTOR pfd =
+            {
+                .nSize = sizeof(pfd),
+            };
+
+            if (!DescribePixelFormat(dc, format, sizeof(pfd), &pfd))
+            {
+                LogWin32Error("DescribePixelFormat failed");
+                return NULL;
+            }
+            else
+            {
+                if (!SetPixelFormat(dc, format, &pfd))
+                {
+                    LogWin32Error("SetPixelFormat failed");
+                }
+                else
+                {
+                    int ctx[] =
+                    {
+                        WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+                        WGL_CONTEXT_MINOR_VERSION_ARB, 0,
+#if USE_DEBUG_MODE
+                        WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_DEBUG_BIT_ARB,
+#endif
+                        WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
+                        0,
+                    };
+
+                    rc = wglCreateContextAttribsARB(dc, NULL, ctx);
+                    if (!rc)
+                    {
+                        LogWin32Error("wglCreateContextAttribsARB failed");
+                    }
+                    else
+                    {
+                        if (!wglMakeCurrent(dc, rc))
+                        {
+                            LogWin32Error("wglMakeCurrent failed");
+                            wglDeleteContext(rc);
+                            rc = NULL;
+                        }
+                        else
+                        {
+                            if (WINDOW_MSAA && wgl_ARB_multisample)
+                            {
+                                GL_CHECK(glEnable(GL_MULTISAMPLE_ARB));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (!rc)
+    {
+        OutputDebugStringA("Failed to create modern OpenGL context, retrying with legacy context!\n");
+        rc = CreateOldOpenGLContext(dc);
+    }
+
+    if (rc)
+    {
+        if (WINDOW_VSYNC && wglSwapIntervalEXT)
+        {
+            if (!wglSwapIntervalEXT(wgl_EXT_swap_control_tear ? -1 : 1))
+            {
+                LogWin32Error("wglSwapIntervalEXT failed");
+            }
+        }
+
+#if USE_DEBUG_MODE
+        const GLubyte* ext;
+        GL_CHECK( ext = glGetString(GL_EXTENSIONS) );
+        if (ext)
+        {
+            const GLubyte* start = ext;
             for (;;)
             {
-                while (*glx != 0 && *glx != ' ')
+                while (*ext != 0 && *ext != ' ')
                 {
-                    glx++;
+                    ext++;
                 }
 
-                size_t length = glx - start;
-                if (StringsAreEqual("GLX_ARB_create_context", start, length))
+                size_t length = ext - start;
+                if (StringsAreEqual("GL_ARB_debug_output", (const char*)start, length))
                 {
-                    glx_ARB_create_context = 1;
-                }
-                else if (StringsAreEqual("GLX_ARB_multisample", start, length))
-                {
-                    glx_ARB_multisample = 1;
-                }
-                else if (StringsAreEqual("GLX_ARB_framebuffer_sRGB", start, length))
-                {
-                    glx_ARB_framebuffer_sRGB = 1;
-                }
-                else if (StringsAreEqual("GLX_SGI_swap_control", start, length))
-                {
-                    glx_SGI_swap_control = 1;
-                }
-                else if (StringsAreEqual("GLX_MESA_swap_control", start, length))
-                {
-                    glx_MESA_swap_control = 1;
-                }
-                else if (StringsAreEqual("GLX_EXT_swap_control", start, length))
-                {
-                    glx_EXT_swap_control = 1;
-                }
-                else if (StringsAreEqual("GLX_EXT_swap_control_tear", start, length))
-                {
-                    glx_EXT_swap_control_tear = 1;
+                    PFNGLDEBUGMESSAGECALLBACKARBPROC glDebugMessageCallbackARB =
+                        (void*)wglGetProcAddress("glDebugMessageCallbackARB");
+                    GL_CHECK( glDebugMessageCallbackARB(OpenGLDebugCallback, NULL) );
+                    GL_CHECK( glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB) );
+                    break;
                 }
 
-                if (*glx == 0)
+                if (*ext == 0)
                 {
                     break;
                 }
 
-                glx++;
-                start = glx;
+                ext++;
+                start = ext;
             }
         }
+#endif
+    }
 
-        int attr[32];
-        int* p = attr;
-        *p++ = GLX_X_VISUAL_TYPE; *p++ = GLX_TRUE_COLOR;
-        *p++ = GLX_DOUBLEBUFFER;  *p++ = True;
-        *p++ = GLX_RED_SIZE;      *p++ = 8;
-        *p++ = GLX_GREEN_SIZE;    *p++ = 8;
-        *p++ = GLX_BLUE_SIZE;     *p++ = 8;
-        *p++ = GLX_DEPTH_SIZE;    *p++ = WINDOW_DEPTH ? 24 : 0;
-        *p++ = GLX_STENCIL_SIZE;  *p++ = WINDOW_STENCIL ? 8 : 0;
-        if (WINDOW_SRGB && glx_ARB_framebuffer_sRGB)
-        {
-            *p++ = GLX_FRAMEBUFFER_SRGB_CAPABLE_ARB;
-            *p++ = True;
-        }
-        if (WINDOW_MSAA && glx_ARB_multisample)
-        {
-            *p++ = GLX_SAMPLE_BUFFERS_ARB;
-            *p++ = 1;
-            *p++ = GLX_SAMPLES_ARB;
-            *p++ = WINDOW_MSAA;
-        }
-        *p++ = 0;
+    return rc;
+}
 
-        int count;
-        GLXFBConfig* config = glXChooseFBConfig(display, DefaultScreen(display), attr, &count);
-        if (!config || count == 0)
+struct Win32Context
+{
+    HDC dc;
+    HGLRC rc;
+};
+
+static LRESULT CALLBACK WindowProc(HWND wnd, UINT msg, WPARAM wparam, LPARAM lparam)
+{
+    struct Win32Context* ctx = (void*)GetWindowLongPtr(wnd, GWLP_USERDATA);
+
+    switch (msg)
+    {
+    case WM_CREATE:
+       ctx = ((CREATESTRUCTW*)lparam)->lpCreateParams;
+       SetWindowLongPtr(wnd, GWLP_USERDATA, (LONG_PTR)ctx);
+
+       if (!(ctx->dc = GetDC(wnd)))
+       {
+           LogWin32Error("GetDC failed");
+           return -1;
+       }
+
+       if (!(ctx->rc = CreateOpenGLContext(ctx->dc)))
+       {
+           ReleaseDC(wnd, ctx->dc);
+           return -1;
+       }
+       RenderInit();
+       return 0;
+
+    case WM_DESTROY:
+        if (ctx->rc)
         {
-            fprintf(stderr, "glXChooseFBConfig failed!\n");
+            RenderDone();
+
+            wglMakeCurrent(NULL, NULL);
+            wglDeleteContext(ctx->rc);
         }
-        else
+        if (ctx->dc)
         {
-            XVisualInfo* info = glXGetVisualFromFBConfig(display, config[0]);
-            if (!info)
+            ReleaseDC(wnd, ctx->dc);
+        }
+
+        PostQuitMessage(0);
+        return 0;
+        
+    case WM_SIZE:
+        RenderResize(LOWORD(lparam), HIWORD(lparam));
+        return 0;
+    }
+    return DefWindowProcW(wnd, msg, wparam, lparam);
+}
+
+int WINAPI WinMain(HINSTANCE instance, HINSTANCE prev_instance, LPSTR cmd_line, int cmd_show)
+{
+    WNDCLASSEXW wc =
+    {
+        .cbSize = sizeof(wc),
+        .lpfnWndProc = WindowProc,
+        .hInstance = instance,
+        .hIcon = LoadIconA(NULL, IDI_APPLICATION),
+        .hCursor = LoadCursorA(NULL, IDC_ARROW),
+        .lpszClassName = L"opengl_window_class",
+    };
+
+    if (!RegisterClassExW(&wc))
+    {
+        LogWin32Error("RegisterClassEx failed");
+    }
+    else
+    {
+        int width = CW_USEDEFAULT;
+        int height = CW_USEDEFAULT;
+
+        DWORD exstyle = WS_EX_APPWINDOW;
+        DWORD style = WS_OVERLAPPEDWINDOW;
+
+        if (WINDOW_WIDTH && WINDOW_HEIGHT)
+        {
+            style &= ~WS_THICKFRAME & ~WS_MAXIMIZEBOX;
+    
+            RECT rect = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT };
+            if (!AdjustWindowRectEx(&rect, style, FALSE, exstyle))
             {
-                fprintf(stderr, "glXGetVisualFromFBConfig failed!\n");
+                LogWin32Error("AdjustWindowRectEx failed");
+                style = WS_OVERLAPPEDWINDOW;
             }
             else
             {
-                Window root = DefaultRootWindow(display);
-
-                Colormap cmap = XCreateColormap(display, root, info->visual, AllocNone);
-                if (!cmap)
-                {
-                    fprintf(stderr, "XCreateColormap failed!\n");
-                }
-                else
-                {
-                    XSetWindowAttributes swa;
-                    swa.colormap = cmap;
-                    swa.event_mask = StructureNotifyMask;
-
-                    Window window = XCreateWindow(
-                        display, root, 0, 0,
-                        WINDOW_WIDTH ? WINDOW_WIDTH : 800,
-                        WINDOW_HEIGHT ? WINDOW_HEIGHT : 450,
-                        0, info->depth, InputOutput, info->visual,
-                        CWColormap | CWEventMask, &swa);
-                        XSelectInput(display, window, ExposureMask | ButtonPressMask | KeyPressMask);
-                    if (!window)
-                    {
-                        fprintf(stderr, "XCreateWindow failed!\n");
-                    }
-                    else
-                    {
-                        if (WINDOW_WIDTH && WINDOW_HEIGHT)
-                        {
-                            XSizeHints* hints = XAllocSizeHints();
-                            if (!hints)
-                            {
-                                fprintf(stderr, "XAllocSizeHints failed!\n");
-                            }
-                            else
-                            {
-                                hints->flags |= PMinSize | PMaxSize;
-                                hints->min_width = hints->max_width = WINDOW_WIDTH;
-                                hints->min_height = hints->max_height = WINDOW_HEIGHT;
-                                XSetWMNormalHints(display, window, hints);
-                                XFree(hints);
-                            }
-                        }
-                        Atom WM_DELETE_WINDOW = XInternAtom(display, "WM_DELETE_WINDOW", False);
-                        XSetWMProtocols(display, window, &WM_DELETE_WINDOW, 1);
-
-                        XStoreName(display, window, "OpenGL window");
-                        XMapWindow(display, window);
-
-                        GLXContext ctx = NULL;
-                        if (glx_ARB_create_context)
-                        {
-                            int cattr[] =
-                            {
-                                GLX_CONTEXT_MAJOR_VERSION_ARB, 3,
-                                GLX_CONTEXT_MINOR_VERSION_ARB, 0,
-#if USE_DEBUG_MODE
-                                GLX_CONTEXT_FLAGS_ARB, GLX_CONTEXT_DEBUG_BIT_ARB,
-#endif
-                                GLX_CONTEXT_PROFILE_MASK_ARB, GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
-                                None,
-                            };
-
-                            PFNGLXCREATECONTEXTATTRIBSARBPROC glXCreateContextAttribsARB =
-                                (PFNGLXCREATECONTEXTATTRIBSARBPROC)glXGetProcAddressARB(
-                                    (const GLubyte*)"glXCreateContextAttribsARB");
-                            ctx = glXCreateContextAttribsARB(display, config[0], 0, True, cattr);
-                            if (!ctx)
-                            {
-                                fprintf(stderr, "Failed to create modern OpenGL context, trying legacy context!\n");
-                            }
-                        }
-
-                        if (!ctx)
-                        {
-                            ctx = glXCreateContext(display, info, NULL, GL_TRUE);
-                        }
-
-                        if (!ctx)
-                        {
-                            fprintf(stderr, "glXCreateContext failed!\n");
-                        }
-                        else
-                        {
-                            if (!glXMakeCurrent(display, window, ctx))
-                            {
-                                fprintf(stderr, "glXMakeCurrent failed!\n");
-                            }
-                            else
-                            {
-                                if (WINDOW_VSYNC)
-                                {
-                                    if (glx_EXT_swap_control)
-                                    {                 
-                                        PFNGLXSWAPINTERVALEXTPROC glXSwapIntervalEXT =
-                                            (PFNGLXSWAPINTERVALEXTPROC)glXGetProcAddressARB(
-                                                (const GLubyte*)"glXSwapIntervalEXT");
-                                        glXSwapIntervalEXT(display, window, glx_EXT_swap_control_tear ? -1 : 1);
-                                    }
-                                    else if (glx_MESA_swap_control)
-                                    {
-                                        PFNGLXSWAPINTERVALMESAPROC glXSwapIntervalMESA =
-                                            (PFNGLXSWAPINTERVALMESAPROC)glXGetProcAddressARB(
-                                                (const GLubyte*)"glXSwapIntervalMESA");
-                                        if (glXSwapIntervalMESA(1))
-                                        {
-                                            fprintf(stderr, "glXSwapIntervalMESA failed!\n");
-                                        }
-                                    }
-                                    else if (glx_SGI_swap_control)
-                                    {
-                                        PFNGLXSWAPINTERVALSGIPROC glXSwapIntervalSGI =
-                                            (PFNGLXSWAPINTERVALSGIPROC)glXGetProcAddressARB(
-                                                (const GLubyte*)"glXSwapIntervalSGI");
-                                        if (glXSwapIntervalSGI(1))
-                                        {
-                                            fprintf(stderr, "glXSwapIntervalSGI failed!\n");
-                                        }
-                                    }
-                                }
-
-#if USE_DEBUG_MODE
-                                const GLubyte* ext;
-                                GL_CHECK( ext = glGetString(GL_EXTENSIONS) );
-                                if (ext)
-                                {
-                                    const GLubyte* start = ext;
-                                    for (;;)
-                                    {
-                                        while (*ext != 0 && *ext != ' ')
-                                        {
-                                            ext++;
-                                        }
-
-                                        size_t length = ext - start;
-                                        if (StringsAreEqual("GL_ARB_debug_output", (const char*)start, length))
-                                        {
-                                            PFNGLDEBUGMESSAGECALLBACKARBPROC glDebugMessageCallbackARB =
-                                                (PFNGLDEBUGMESSAGECALLBACKARBPROC)glXGetProcAddressARB((const GLubyte*)"glDebugMessageCallbackARB");
-                                            GL_CHECK( glDebugMessageCallbackARB(OpenGLDebugCallback, NULL) );
-                                            GL_CHECK( glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB) );
-                                            break;
-                                        }
-
-                                        if (*ext == 0)
-                                        {
-                                            break;
-                                        }
-
-                                        ext++;
-                                        start = ext;
-                                    }
-                                }
-#endif
-                                if (WINDOW_MSAA && glx_ARB_multisample)
-                                {
-                                    GL_CHECK( glEnable(GL_MULTISAMPLE_ARB) );
-                                }                
-
-                                RenderInit();
-
-                                int Running = 1;
-                                while (Running)
-                                {
-                                    if (XPending(display))
-                                    {
-                                        XEvent event;
-                                        XNextEvent(display, &event);
-
-                                        if (event.type == ConfigureNotify)
-                                        {
-                                            RenderResize(event.xconfigure.width, event.xconfigure.height);
-                                        }
-                                        else if (event.type == ClientMessage)
-                                        {
-                                            if ((Atom)event.xclient.data.l[0] == WM_DELETE_WINDOW)
-                                            {
-                                                break;
-                                            }
-                                        }
-                                        else if((event.type == KeyPress) &&
-                                                (event.xkey.keycode == 9)) // KEYCODE_ESCAPE
-                                        {
-                                            Running = 0;
-                                        }
-
-                                        continue;
-                                    }
-
-                                    RenderFrame();
-
-                                    glXSwapBuffers(display, window);
-                                }
-
-                                RenderDone();
-
-                                glXMakeCurrent(display, None, NULL);
-                            }
-                            glXDestroyContext(display, ctx);
-                        }
-                        XDestroyWindow(display, window);
-                    }
-                    XFreeColormap(display, cmap);
-                }
-                XFree(info);
+                width = rect.right - rect.left;
+                height = rect.bottom - rect.top;
             }
-            XFree(config);
         }
-        XCloseDisplay(display);
+
+        struct Win32Context ctx;
+        HWND wnd = CreateWindowExW(exstyle, wc.lpszClassName, L"OpenGL Window",
+            style | WS_VISIBLE, CW_USEDEFAULT, CW_USEDEFAULT, width, height,
+            NULL, NULL, wc.hInstance, &ctx);
+        if (!wnd)
+        {
+            LogWin32Error("CreateWindow failed");
+        }
+        else
+        {
+            for (;;)
+            {
+                MSG msg;
+                if (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE))
+                {
+                    if (msg.message == WM_QUIT)
+                    {
+                        break;
+                    }
+                    TranslateMessage(&msg);
+                    DispatchMessageW(&msg);
+                    continue;
+                }
+
+                RenderFrame();
+
+                if (!SwapBuffers(ctx.dc))
+                {
+                    LogWin32Error("SwapBuffers failed");
+                }
+            }
+        }
+
+        UnregisterClassW(wc.lpszClassName, wc.hInstance);
     }
 
     return 0;
