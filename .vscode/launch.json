@@ -208,7 +208,7 @@
             "request": "launch",
             "program": "${workspaceFolder}\\bin\\hello_opengl.exe",
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+            "cwd": "${workspaceFolder}/bin/",
             "environment": [],
             "console": "integratedTerminal"
         },
