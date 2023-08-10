@@ -5,14 +5,15 @@
 internal void
 AppUpdateAndRender(app_render_commands *RenderCommands)
 {
+    RenderCommands->RenderWidth = 1024;
+    RenderCommands->RenderHeight = 576;
+
     render_group RenderGroup_ =
     {
         .Commands = RenderCommands
     };
     render_group *RenderGroup = &RenderGroup_;
 
-    PushClear(RenderGroup, V4(0.25f, 0.25f, 0.25f, 0.0f));
-    
     PushRect(RenderGroup, V2(10, 10), V2(100, 100), V4Set1(1), 1.0f);
 
     local_persist memory_arena Arena = {0};
