@@ -287,10 +287,7 @@
 		},
 		{
 			"label": "handmade linux debug build",
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			},
+			"group": "build",
 			"command": "handmade/build.sh",
 			"args": [
 				""
@@ -317,10 +314,21 @@
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": true,
+				"clear": true
+			},
 			"problemMatcher": [
 				"$msCompile"
 			],
-			"group": "build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
 			"detail": "compiler: cl.exe"
 		}
 	]
