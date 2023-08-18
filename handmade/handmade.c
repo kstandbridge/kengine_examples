@@ -42,10 +42,34 @@ RenderWeirdGradient(offscreen_buffer *Buffer, s32 BlueOffset, s32 GreenOffset)
     }
 }
 
-internal void
-GameUpdateAndRender(offscreen_buffer *Buffer, s32 BlueOffset, s32 GreenOffset,
-                    sound_output_buffer *SoundBuffer, s32 ToneHz)
+internal void 
+AppUpdateAndRender(app_input *Input, offscreen_buffer *Buffer,
+                   sound_output_buffer *SoundBuffer)
 {
+    local_persist s32 BlueOffset = 0;
+    local_persist s32 GreenOffset = 0;
+    local_persist s32 ToneHz = 256;
+
+    controller_input *Input0 = &Input->Controllers[0];    
+    if(Input0->IsAnalog)
+    {
+        // NOTE(kstandbridge): Use analog movement tuning
+        BlueOffset += (s32)4.0f*(Input0->EndX);
+        ToneHz = 256 + (s32)(128.0f*(Input0->EndY));
+    }
+    else
+    {
+        // NOTE(kstandbridge): Use digital movement tuning
+    }
+
+    // Input.AButtonEndedDown;
+    // Input.AButtonHalfTransitionCount;
+    if(Input0->Down.EndedDown)
+    {
+        GreenOffset += 1;
+    }
+    
+    // TODO(kstandbridge): Allow sample offsets here for more robust platform options
     GameOutputSound(SoundBuffer, ToneHz);
     RenderWeirdGradient(Buffer, BlueOffset, GreenOffset);
 }
