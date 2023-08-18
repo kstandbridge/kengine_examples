@@ -22,31 +22,32 @@ typedef struct button_state
 
 typedef struct controller_input
 {
+    b32 IsConnected;
     b32 IsAnalog;
-    
-    f32 StartX;
-    f32 StartY;
-
-    f32 MinX;
-    f32 MinY;
-
-    f32 MaxX;
-    f32 MaxY;
-    
-    f32 EndX;
-    f32 EndY;
+    f32 StickAverageX;
+    f32 StickAverageY;
 
     union
     {
-        button_state Buttons[6];
+        button_state Buttons[12];
+
         struct
         {
-            button_state Up;
-            button_state Down;
-            button_state Left;
-            button_state Right;
+            button_state MoveUp;
+            button_state MoveDown;
+            button_state MoveLeft;
+            button_state MoveRight;
+
+            button_state ActionUp;
+            button_state ActionDown;
+            button_state ActionLeft;
+            button_state ActionRight;
+
             button_state LeftShoulder;
             button_state RightShoulder;
+
+            button_state Back;
+            button_state Start;
         };
     };
 } controller_input;

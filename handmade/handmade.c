@@ -50,12 +50,12 @@ AppUpdateAndRender(app_input *Input, offscreen_buffer *Buffer,
     local_persist s32 GreenOffset = 0;
     local_persist s32 ToneHz = 256;
 
-    controller_input *Input0 = &Input->Controllers[0];    
-    if(Input0->IsAnalog)
+    controller_input *Input1 = &Input->Controllers[1];    
+    if(Input1->IsAnalog)
     {
         // NOTE(kstandbridge): Use analog movement tuning
-        BlueOffset += (s32)4.0f*(Input0->EndX);
-        ToneHz = 256 + (s32)(128.0f*(Input0->EndY));
+        BlueOffset += (s32)4.0f*(Input1->StickAverageX);
+        ToneHz = 256 + (s32)(128.0f*(Input1->StickAverageY));
     }
     else
     {
@@ -64,7 +64,7 @@ AppUpdateAndRender(app_input *Input, offscreen_buffer *Buffer,
 
     // Input.AButtonEndedDown;
     // Input.AButtonHalfTransitionCount;
-    if(Input0->Down.EndedDown)
+    if(Input1->ActionDown.EndedDown)
     {
         GreenOffset += 1;
     }
