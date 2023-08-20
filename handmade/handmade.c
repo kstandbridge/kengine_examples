@@ -32,8 +32,8 @@ RenderWeirdGradient(offscreen_buffer *Buffer, s32 BlueOffset, s32 GreenOffset)
             X < Buffer->Width;
             ++X)
         {
-            u8 Blue = (X + BlueOffset);
-            u8 Green = (Y + GreenOffset);
+            u8 Blue = (u8)(X + BlueOffset);
+            u8 Green = (u8)(Y + GreenOffset);
 
             *Pixel++ = ((Green << 8) | Blue);
         }
@@ -46,6 +46,9 @@ internal void
 AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Buffer,
                    sound_output_buffer *SoundBuffer)
 {
+    Assert((&Input->Controllers[0].Terminator - &Input->Controllers[0].Buttons[0]) ==
+        (ArrayCount(Input->Controllers[0].Buttons)));
+
     app_state *AppState = AppMemory->AppState;
     if(AppState == 0)
     {
@@ -61,25 +64,39 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         }
     }
 
-    controller_input *Input1 = &Input->Controllers[1];    
-    if(Input1->IsAnalog)
+    for(int ControllerIndex = 0;
+        ControllerIndex < ArrayCount(Input->Controllers);
+        ++ControllerIndex)
     {
-        // NOTE(kstandbridge): Use analog movement tuning
-        AppState->BlueOffset += (s32)4.0f*(Input1->StickAverageX);
-        AppState->ToneHz = 256 + (s32)(128.0f*(Input1->StickAverageY));
-    }
-    else
-    {
-        // NOTE(kstandbridge): Use digital movement tuning
+        controller_input *Controller = GetController(Input, ControllerIndex);
+        if(Controller->IsAnalog)
+        {
+            // NOTE(kstandbridge): Use analog movement tuning
+            AppState->BlueOffset += (s32)4.0f*(Controller->StickAverageX);
+            AppState->ToneHz = 256 + (s32)(128.0f*(Controller->StickAverageY));
+        }
+        else
+        {
+            // NOTE(kstandbridge): Use digital movement tuning
+            if(Controller->MoveLeft.EndedDown)
+            {
+                AppState->BlueOffset -= 1;
+            }
+            
+            if(Controller->MoveRight.EndedDown)
+            {
+                AppState->BlueOffset += 1;
+            }
+        }
+
+        // Input.AButtonEndedDown;
+        // Input.AButtonHalfTransitionCount;
+        if(Controller->ActionDown.EndedDown)
+        {
+            AppState->GreenOffset += 1;
+        }
     }
 
-    // Input.AButtonEndedDown;
-    // Input.AButtonHalfTransitionCount;
-    if(Input1->ActionDown.EndedDown)
-    {
-        AppState->GreenOffset += 1;
-    }
-    
     // TODO(kstandbridge): Allow sample offsets here for more robust platform options
     GameOutputSound(SoundBuffer, AppState->ToneHz);
     RenderWeirdGradient(Buffer, AppState->BlueOffset, AppState->GreenOffset);

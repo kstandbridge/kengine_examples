@@ -48,14 +48,27 @@ typedef struct controller_input
 
             button_state Back;
             button_state Start;
+
+            button_state Terminator;
         };
     };
 } controller_input;
 
 typedef struct app_input
 {
-    controller_input Controllers[4];
+    controller_input Controllers[5];
 } app_input;
+
+inline controller_input *
+GetController(app_input *Input, u32 ControllerIndex)
+{
+    Assert(ControllerIndex < ArrayCount(Input->Controllers));
+    
+    controller_input *Result = &Input->Controllers[ControllerIndex];
+
+
+    return Result;
+}
 
 typedef struct app_state
 {
