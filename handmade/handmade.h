@@ -85,3 +85,32 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
 
 internal void
 AppGetSoundSamples(app_memory *AppMemory, sound_output_buffer *SoundBuffer);
+
+internal void
+DebugDrawVertical(offscreen_buffer *Backbuffer,
+                  s32 X, s32 Top, s32 Bottom, u32 Color)
+{
+    if(Top <= 0)
+    {
+        Top = 0;
+    }
+
+    if(Bottom > Backbuffer->Height)
+    {
+        Bottom = Backbuffer->Height;
+    }
+    
+    if((X >= 0) && (X < Backbuffer->Width))
+    {
+        u8 *Pixel = ((u8 *)Backbuffer->Memory +
+                        X*Backbuffer->BytesPerPixel +
+                        Top*Backbuffer->Pitch);
+        for(s32 Y = Top;
+            Y < Bottom;
+            ++Y)
+        {
+            *(u32 *)Pixel = Color;
+            Pixel += Backbuffer->Pitch;
+        }
+    }
+}
