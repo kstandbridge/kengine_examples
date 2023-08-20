@@ -43,19 +43,23 @@ RenderWeirdGradient(offscreen_buffer *Buffer, s32 BlueOffset, s32 GreenOffset)
 }
 
 internal void 
-AppUpdateAndRender(app_input *Input, offscreen_buffer *Buffer,
+AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Buffer,
                    sound_output_buffer *SoundBuffer)
 {
-    local_persist s32 BlueOffset = 0;
-    local_persist s32 GreenOffset = 0;
-    local_persist s32 ToneHz = 256;
+    app_state *AppState = AppMemory->AppState;
+    if(AppState == 0)
+    {
+        AppState = AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
+
+        AppState->ToneHz = 256;
+    }
 
     controller_input *Input1 = &Input->Controllers[1];    
     if(Input1->IsAnalog)
     {
         // NOTE(kstandbridge): Use analog movement tuning
-        BlueOffset += (s32)4.0f*(Input1->StickAverageX);
-        ToneHz = 256 + (s32)(128.0f*(Input1->StickAverageY));
+        AppState->BlueOffset += (s32)4.0f*(Input1->StickAverageX);
+        AppState->ToneHz = 256 + (s32)(128.0f*(Input1->StickAverageY));
     }
     else
     {
@@ -66,10 +70,10 @@ AppUpdateAndRender(app_input *Input, offscreen_buffer *Buffer,
     // Input.AButtonHalfTransitionCount;
     if(Input1->ActionDown.EndedDown)
     {
-        GreenOffset += 1;
+        AppState->GreenOffset += 1;
     }
     
     // TODO(kstandbridge): Allow sample offsets here for more robust platform options
-    GameOutputSound(SoundBuffer, ToneHz);
-    RenderWeirdGradient(Buffer, BlueOffset, GreenOffset);
+    GameOutputSound(SoundBuffer, AppState->ToneHz);
+    RenderWeirdGradient(Buffer, AppState->BlueOffset, AppState->GreenOffset);
 }

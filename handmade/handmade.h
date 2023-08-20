@@ -57,6 +57,15 @@ typedef struct app_input
     controller_input Controllers[4];
 } app_input;
 
+typedef struct app_state
+{
+    memory_arena Arena;
+
+    s32 ToneHz;
+    s32 GreenOffset;
+    s32 BlueOffset;
+} app_state;
+
 internal void 
-AppUpdateAndRender(app_input *Input, offscreen_buffer *Buffer,
+AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Buffer,
                    sound_output_buffer *SoundBuffer);
