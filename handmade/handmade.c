@@ -52,6 +52,13 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         AppState = AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
 
         AppState->ToneHz = 256;
+
+        string FilePath = String(__FILE__);
+        string File = PlatformReadEntireFile(&AppState->Arena, FilePath);
+        if(File.Data)
+        {
+            PlatformWriteTextToFile(File, String("test.out"));
+        }
     }
 
     controller_input *Input1 = &Input->Controllers[1];    
