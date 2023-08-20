@@ -5,6 +5,7 @@ typedef struct offscreen_buffer
     s32 Width;
     s32 Height;
     s32 Pitch;
+    s32 BytesPerPixel;
 } offscreen_buffer;
 
 typedef struct sound_output_buffer
@@ -80,5 +81,7 @@ typedef struct app_state
 } app_state;
 
 internal void 
-AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Buffer,
-                   sound_output_buffer *SoundBuffer);
+AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Buffer);
+
+internal void
+AppGetSoundSamples(app_memory *AppMemory, sound_output_buffer *SoundBuffer);

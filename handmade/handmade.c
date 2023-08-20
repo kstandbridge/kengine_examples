@@ -1,5 +1,5 @@
 internal void
-GameOutputSound(sound_output_buffer *SoundBuffer, s32 ToneHz)
+AppOutputSound(sound_output_buffer *SoundBuffer, s32 ToneHz)
 {
     local_persist f32 tSine;
     s16 ToneVolume = 3000;
@@ -16,6 +16,10 @@ GameOutputSound(sound_output_buffer *SoundBuffer, s32 ToneHz)
         *SampleOut++ = SampleValue;
 
         tSine += 2.0f*Pi32*1.0f/(f32)WavePeriod;
+        if(tSine > 2.0f*Pi32)
+        {
+            tSine -= 2.0f*Pi32;
+        }
     }
 }
 
@@ -43,8 +47,7 @@ RenderWeirdGradient(offscreen_buffer *Buffer, s32 BlueOffset, s32 GreenOffset)
 }
 
 internal void 
-AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Buffer,
-                   sound_output_buffer *SoundBuffer)
+AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Buffer)
 {
     Assert((&Input->Controllers[0].Terminator - &Input->Controllers[0].Buttons[0]) ==
         (ArrayCount(Input->Controllers[0].Buttons)));
@@ -54,7 +57,7 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
     {
         AppState = AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
 
-        AppState->ToneHz = 256;
+        AppState->ToneHz = 512;
 
         string FilePath = String(__FILE__);
         string File = PlatformReadEntireFile(&AppState->Arena, FilePath);
@@ -73,7 +76,7 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         {
             // NOTE(kstandbridge): Use analog movement tuning
             AppState->BlueOffset += (s32)4.0f*(Controller->StickAverageX);
-            AppState->ToneHz = 256 + (s32)(128.0f*(Controller->StickAverageY));
+            AppState->ToneHz = 512 + (s32)(128.0f*(Controller->StickAverageY));
         }
         else
         {
@@ -97,7 +100,19 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         }
     }
 
-    // TODO(kstandbridge): Allow sample offsets here for more robust platform options
-    GameOutputSound(SoundBuffer, AppState->ToneHz);
     RenderWeirdGradient(Buffer, AppState->BlueOffset, AppState->GreenOffset);
+}
+
+internal void
+AppGetSoundSamples(app_memory *AppMemory, sound_output_buffer *SoundBuffer)
+{
+    app_state *AppState = AppMemory->AppState;
+    if(AppState)
+    {
+        AppOutputSound(SoundBuffer, AppState->ToneHz);
+    }
+    else
+    {
+        PlatformConsoleOut("WARN: SoundSamples requested before app state initialized!\n");
+    }
 }
