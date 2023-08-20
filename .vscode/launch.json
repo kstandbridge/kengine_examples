@@ -363,7 +363,7 @@
             "request": "launch",
             "program": "${workspaceFolder}\\bin\\platform_handmade.exe",
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}/handmade/data",
+            "cwd": "${workspaceFolder}\\handmade\\data",
             "environment": [],
             "console": "integratedTerminal"
         },

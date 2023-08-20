@@ -1,7 +1,13 @@
+#define KENGINE_LIBRARY
+#define KENGINE_OPENGL
+#define KENGINE_IMPLEMENTATION
+#include "kengine.h"
+
+#include "handmade.h"
+
 internal void
-AppOutputSound(sound_output_buffer *SoundBuffer, s32 ToneHz)
+AppOutputSound(app_state *AppState, sound_output_buffer *SoundBuffer, s32 ToneHz)
 {
-    local_persist f32 tSine;
     s16 ToneVolume = 3000;
     s32 WavePeriod = SoundBuffer->SamplesPerSecond/ToneHz;
 
@@ -10,15 +16,15 @@ AppOutputSound(sound_output_buffer *SoundBuffer, s32 ToneHz)
         SampleIndex < SoundBuffer->SampleCount;
         ++SampleIndex)
     {
-        f32 SineValue = sinf(tSine);
+        f32 SineValue = sinf(AppState->tSine);
         s16 SampleValue = (s16)(SineValue * ToneVolume);
         *SampleOut++ = SampleValue;
         *SampleOut++ = SampleValue;
 
-        tSine += 2.0f*Pi32*1.0f/(f32)WavePeriod;
-        if(tSine > 2.0f*Pi32)
+        AppState->tSine += 2.0f*Pi32*1.0f/(f32)WavePeriod;
+        if(AppState->tSine > 2.0f*Pi32)
         {
-            tSine -= 2.0f*Pi32;
+            AppState->tSine -= 2.0f*Pi32;
         }
     }
 }
@@ -39,16 +45,18 @@ RenderWeirdGradient(offscreen_buffer *Buffer, s32 BlueOffset, s32 GreenOffset)
             u8 Blue = (u8)(X + BlueOffset);
             u8 Green = (u8)(Y + GreenOffset);
 
-            *Pixel++ = ((Green << 8) | Blue);
+            *Pixel++ = ((Green << 16) | Blue);
         }
         
         Row += Buffer->Pitch;
     }
 }
 
-internal void 
+extern void 
 AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Buffer)
 {
+    Platform = AppMemory->PlatformAPI;
+    
     Assert((&Input->Controllers[0].Terminator - &Input->Controllers[0].Buttons[0]) ==
         (ArrayCount(Input->Controllers[0].Buttons)));
 
@@ -57,14 +65,15 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
     {
         AppState = AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
 
-        AppState->ToneHz = 512;
-
         string FilePath = String(__FILE__);
         string File = PlatformReadEntireFile(&AppState->Arena, FilePath);
         if(File.Data)
         {
             PlatformWriteTextToFile(File, String("test.out"));
         }
+
+        AppState->ToneHz = 512;
+        AppState->tSine = 0.0f;
     }
 
     for(int ControllerIndex = 0;
@@ -103,13 +112,13 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
     RenderWeirdGradient(Buffer, AppState->BlueOffset, AppState->GreenOffset);
 }
 
-internal void
+extern void
 AppGetSoundSamples(app_memory *AppMemory, sound_output_buffer *SoundBuffer)
 {
     app_state *AppState = AppMemory->AppState;
     if(AppState)
     {
-        AppOutputSound(SoundBuffer, AppState->ToneHz);
+        AppOutputSound(AppState, SoundBuffer, AppState->ToneHz);
     }
     else
     {
