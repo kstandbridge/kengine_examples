@@ -3,6 +3,8 @@
 #define KENGINE_IMPLEMENTATION
 #include "kengine.h"
 
+#include <math.h>
+
 #include "handmade.h"
 
 internal void
@@ -122,6 +124,6 @@ AppGetSoundSamples(app_memory *AppMemory, sound_output_buffer *SoundBuffer)
     }
     else
     {
-        PlatformConsoleOut("WARN: SoundSamples requested before app state initialized!\n");
+        PlatformConsoleOut("WARN: SoundSamples requested before app state initialized!\n", 0);
     }
 }
