@@ -15,10 +15,9 @@ pushd $BuildDir > /dev/null
 echo WAITING FOR PDB > lock.tmp
 
 # Build library
-HandmadeLib="handmade.so"
-gcc -shared $CommonCompilerFlags $InternalCompilerFlags "$CurDir/handmade/handmade.c" -o build_$HandmadeLib $CommonLinkerFlags
-[ -f $HandmadeLib ] && rm $HandmadeLib
-mv build_$HandmadeLib $HandmadeLib
+rm handmade.so* > /dev/null
+gcc -shared $CommonCompilerFlags $InternalCompilerFlags "$CurDir/handmade/handmade.c" -o build_handmade.so $CommonLinkerFlags
+mv build_handmade.so handmade.so
 
 # Build executable
 gcc $CommonCompilerFlags $InternalCompilerFlags -DKENGINE_LINUX "$CurDir/handmade/platform_handmade.c" -o platform_handmade $CommonLinkerFlags -lX11 -ldl
