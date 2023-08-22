@@ -63,7 +63,7 @@ RenderWeirdGradient(offscreen_buffer *Buffer, s32 BlueOffset, s32 GreenOffset)
 internal void
 DrawRectangle(offscreen_buffer *Buffer,
               f32 RealMinX, f32 RealMinY, f32 RealMaxX, f32 RealMaxY,
-              u32 Color)
+              f32 R, f32 G, f32 B)
 {
     // TODO(kstandbridge): Color as float
 
@@ -91,7 +91,10 @@ DrawRectangle(offscreen_buffer *Buffer,
     {
         MaxY = Buffer->Height;
     }
-    
+
+    u32 Color = ((RoundF32ToU32(R * 255.0f) << 16) |    
+                 (RoundF32ToU32(G * 255.0f) << 8) |
+                 (RoundF32ToU32(B * 255.0f) << 0));
 
     u8 *Row = ((u8 *)Buffer->Memory + MinX*Buffer->BytesPerPixel + MinY*Buffer->Pitch);
     for(s32 Y = MinY;
@@ -136,11 +139,88 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         else
         {
             // NOTE(kstandbridge): Use digital movement tuning
+            f32 dPlayerX = 0.0f; // pixels/second
+            f32 dPlayerY = 0.0f; // pixels/second
+            
+            if(Controller->MoveUp.EndedDown)
+            {
+                dPlayerY = -1.0f;
+            }
+            if(Controller->MoveDown.EndedDown)
+            {
+                dPlayerY = 1.0f;
+            }
+            if(Controller->MoveLeft.EndedDown)
+            {
+                dPlayerX = -1.0f;
+            }
+            if(Controller->MoveRight.EndedDown)
+            {
+                dPlayerX = 1.0f;
+            }
+            dPlayerX *= 64.0f;
+            dPlayerY *= 64.0f;
+
+            // TODO(kstandbridge): Diagonal will be faster!  Fix once we have vectors :)
+            AppState->PlayerX += Input->dtForFrame*dPlayerX;
+            AppState->PlayerY += Input->dtForFrame*dPlayerY;
         }
     }
 
-    DrawRectangle(Buffer, 0.0f, 0.0f, (f32)Buffer->Width, (f32)Buffer->Height, 0x00FF00FF);
-    DrawRectangle(Buffer, 10.0f, 10.0f, 40.0f, 40.0f, 0x0000FFFF);
+    u32 TileMap[9][17] =
+    {
+        {1, 1, 1, 1,  1, 1, 1, 1,  0, 1, 1, 1,  1, 1, 1, 1, 1},
+        {1, 1, 0, 0,  0, 1, 0, 0,  0, 0, 0, 0,  0, 1, 0, 0, 1},
+        {1, 1, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 1, 0, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0, 1},
+        {0, 0, 0, 0,  0, 1, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0, 0},
+        {1, 1, 0, 0,  0, 1, 0, 0,  1, 0, 0, 0,  0, 1, 0, 0, 1},
+        {1, 0, 0, 0,  0, 1, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0, 1},
+        {1, 1, 1, 1,  1, 0, 0, 0,  0, 0, 0, 0,  0, 1, 0, 0, 1},
+        {1, 1, 1, 1,  1, 1, 1, 1,  0, 1, 1, 1,  1, 1, 1, 1, 1},
+    };
+
+    f32 UpperLeftX = -30;
+    f32 UpperLeftY = 0;
+    f32 TileWidth = 60;
+    f32 TileHeight = 60;
+    
+    DrawRectangle(Buffer, 0.0f, 0.0f, (f32)Buffer->Width, (f32)Buffer->Height, 1.0f, 0.0f, 0.1f);
+    for(int Row = 0;
+        Row < 9;
+        ++Row)
+    {
+        for(int Column = 0;
+            Column < 17;
+            ++Column)
+        {
+            u32 TileID = TileMap[Row][Column];
+            f32 Gray = 0.5f;
+            if(TileID == 1)
+            {
+                Gray = 1.0f;
+            }
+
+            f32 MinX = UpperLeftX + ((f32)Column)*TileWidth;
+            f32 MinY = UpperLeftY + ((f32)Row)*TileHeight;
+            f32 MaxX = MinX + TileWidth;
+            f32 MaxY = MinY + TileHeight;
+            DrawRectangle(Buffer, MinX, MinY, MaxX, MaxY, Gray, Gray, Gray);
+        }
+    }
+    
+    f32 PlayerR = 1.0f;
+    f32 PlayerG = 1.0f;
+    f32 PlayerB = 0.0f;
+    f32 PlayerWidth = 0.75f*TileWidth;
+    f32 PlayerHeight = TileHeight;
+    f32 PlayerLeft = AppState->PlayerX - 0.5f*PlayerWidth;
+    f32 PlayerTop = AppState->PlayerY - PlayerHeight;
+    DrawRectangle(Buffer,
+                  PlayerLeft, PlayerTop,
+                  PlayerLeft + PlayerWidth,
+                  PlayerTop + PlayerHeight,
+                  PlayerR, PlayerG, PlayerB);
 }
 
 extern void
