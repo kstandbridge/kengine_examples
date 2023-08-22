@@ -10,8 +10,6 @@
 internal void
 AppOutputSound(app_state *AppState, sound_output_buffer *SoundBuffer, s32 ToneHz)
 {
-    s32 WavePeriod = SoundBuffer->SamplesPerSecond/ToneHz;
-
     s16 *SampleOut = SoundBuffer->Samples;
     for(int SampleIndex = 0;
         SampleIndex < SoundBuffer->SampleCount;
@@ -27,11 +25,15 @@ AppOutputSound(app_state *AppState, sound_output_buffer *SoundBuffer, s32 ToneHz
         *SampleOut++ = SampleValue;
         *SampleOut++ = SampleValue;
 
+#if 0
+        s32 WavePeriod = SoundBuffer->SamplesPerSecond/ToneHz;
         AppState->tSine += 2.0f*Pi32*1.0f/(f32)WavePeriod;
         if(AppState->tSine > 2.0f*Pi32)
         {
             AppState->tSine -= 2.0f*Pi32;
         }
+#endif
+
     }
 }
 
@@ -59,32 +61,52 @@ RenderWeirdGradient(offscreen_buffer *Buffer, s32 BlueOffset, s32 GreenOffset)
 }
 
 internal void
-RenderPlayer(offscreen_buffer *Buffer, s32 PlayerX, s32 PlayerY)
+DrawRectangle(offscreen_buffer *Buffer,
+              f32 RealMinX, f32 RealMinY, f32 RealMaxX, f32 RealMaxY,
+              u32 Color)
 {
-    u8 *EndofBuffer = (u8 *)Buffer->Memory + Buffer->Pitch*Buffer->Height;
+    // TODO(kstandbridge): Color as float
 
-    u32 Color = 0xFFFFFFFF;
-    s32 Top = PlayerY;
-    s32 Bottom = PlayerY + 10;
-    for(s32 X = PlayerX;
-        X < PlayerX + 10;
-        ++X)
+    s32 MinX = RoundF32ToS32(RealMinX);
+    s32 MinY = RoundF32ToS32(RealMinY);
+    s32 MaxX = RoundF32ToS32(RealMaxX);
+    s32 MaxY = RoundF32ToS32(RealMaxY);
+
+    if(MinX < 0)
     {
-        u8 *Pixel = ((u8 *)Buffer->Memory +
-                     X*Buffer->BytesPerPixel +
-                     Top*Buffer->Pitch);
-        for(s32 Y = Top;
-            Y < Bottom;
-            ++Y)
-        {
-            if((Pixel >= (u8 *)Buffer->Memory) &&
-               ((Pixel + 4) <= EndofBuffer))
-            {
-                *(u32 *)Pixel = Color;
-            }
+        MinX = 0;
+    }
 
-            Pixel += Buffer->Pitch;
+    if(MinY < 0)
+    {
+        MinY = 0;
+    }
+
+    if(MaxX > Buffer->Width)
+    {
+        MaxX = Buffer->Width;
+    }
+
+    if(MaxY > Buffer->Height)
+    {
+        MaxY = Buffer->Height;
+    }
+    
+
+    u8 *Row = ((u8 *)Buffer->Memory + MinX*Buffer->BytesPerPixel + MinY*Buffer->Pitch);
+    for(s32 Y = MinY;
+        Y < MaxY;
+        ++Y)
+    {
+        u32 *Pixel = (u32 *)Row;
+        for(s32 X = MinX;
+            X < MaxX;
+            ++X)
+        {            
+            *Pixel++ = Color;
         }
+        
+        Row += Buffer->Pitch;
     }
 }
 
@@ -100,19 +122,6 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
     if(AppState == 0)
     {
         AppState = AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
-
-        string FilePath = String(__FILE__);
-        string File = PlatformReadEntireFile(&AppState->Arena, FilePath);
-        if(File.Data)
-        {
-            PlatformWriteTextToFile(File, String("test.out"));
-        }
-
-        AppState->ToneHz = 512;
-        AppState->tSine = 0.0f;
-
-        AppState->PlayerX = 100;
-        AppState->PlayerY = 100;
     }
 
     for(int ControllerIndex = 0;
@@ -123,53 +132,15 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         if(Controller->IsAnalog)
         {
             // NOTE(kstandbridge): Use analog movement tuning
-            AppState->BlueOffset += (s32)4.0f*(Controller->StickAverageX);
-            AppState->ToneHz = 512 + (s32)(128.0f*(Controller->StickAverageY));
         }
         else
         {
             // NOTE(kstandbridge): Use digital movement tuning
-            if(Controller->MoveLeft.EndedDown)
-            {
-                AppState->BlueOffset -= 1;
-            }
-            
-            if(Controller->MoveRight.EndedDown)
-            {
-                AppState->BlueOffset += 1;
-            }
-        }
-
-        // Input.AButtonEndedDown;
-        // Input.AButtonHalfTransitionCount;
-
-        AppState->PlayerX += (s32)(4.0f*Controller->StickAverageX);
-        AppState->PlayerY -= (s32)(4.0f*Controller->StickAverageY);
-        if(AppState->tJump > 0)
-        {
-            AppState->PlayerY += (s32)(5.0f*sinf(0.5f*Pi32*AppState->tJump));
-        }
-        if(Controller->ActionDown.EndedDown)
-        {
-            AppState->tJump = 4.0f;
-        }
-        AppState->tJump -= 0.033f;
-    }
-
-    RenderWeirdGradient(Buffer, AppState->BlueOffset, AppState->GreenOffset);
-    RenderPlayer(Buffer, AppState->PlayerX, AppState->PlayerY);
-
-    RenderPlayer(Buffer, Input->MouseX, Input->MouseY);
-
-    for(s32 ButtonIndex = 0;
-        ButtonIndex < ArrayCount(Input->MouseButtons);
-        ++ButtonIndex)
-    {
-        if(Input->MouseButtons[ButtonIndex].EndedDown)
-        {
-            RenderPlayer(Buffer, 10 + 20*ButtonIndex, 10);
         }
     }
+
+    DrawRectangle(Buffer, 0.0f, 0.0f, (f32)Buffer->Width, (f32)Buffer->Height, 0x00FF00FF);
+    DrawRectangle(Buffer, 10.0f, 10.0f, 40.0f, 40.0f, 0x0000FFFF);
 }
 
 extern void
@@ -178,7 +149,7 @@ AppGetSoundSamples(app_memory *AppMemory, sound_output_buffer *SoundBuffer)
     app_state *AppState = AppMemory->AppState;
     if(AppState)
     {
-        AppOutputSound(AppState, SoundBuffer, AppState->ToneHz);
+        AppOutputSound(AppState, SoundBuffer, 400);
     }
     else
     {
