@@ -30,13 +30,14 @@ typedef struct tile_map
 
 typedef struct world
 {
+    f32 TileSideInMeters;
+    s32 TileSideInPixels;
+
     s32 CountX;
     s32 CountY;
 
     f32 UpperLeftX;
     f32 UpperLeftY;
-    f32 TileWidth;
-    f32 TileHeight;
 
     // TODO(kstandbridge): Sparseness
     s32 TileMapCountX;

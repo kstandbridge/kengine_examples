@@ -168,16 +168,16 @@ GetCanonicalPosition(world *World, raw_position Pos)
 
     f32 X = Pos.X - World->UpperLeftX;
     f32 Y = Pos.Y - World->UpperLeftY;
-    Result.TileX = FloorF32ToS32(X / World->TileWidth);
-    Result.TileY = FloorF32ToS32(Y / World->TileHeight);
+    Result.TileX = FloorF32ToS32(X / World->TileSideInPixels);
+    Result.TileY = FloorF32ToS32(Y / World->TileSideInPixels);
 
-    Result.TileRelX = X - Result.TileX*World->TileWidth;
-    Result.TileRelY = Y - Result.TileY*World->TileHeight;
+    Result.TileRelX = X - Result.TileX*World->TileSideInPixels;
+    Result.TileRelY = Y - Result.TileY*World->TileSideInPixels;
 
     Assert(Result.TileRelX >= 0);
     Assert(Result.TileRelY >= 0);
-    Assert(Result.TileRelX < World->TileWidth);
-    Assert(Result.TileRelY < World->TileHeight);
+    Assert(Result.TileRelX < World->TileSideInPixels);
+    Assert(Result.TileRelY < World->TileSideInPixels);
 
     if(Result.TileX < 0)
     {
@@ -293,21 +293,25 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         .TileMaps = (tile_map *)TileMaps,
         .CountX = TILE_MAP_COUNT_X,
         .CountY = TILE_MAP_COUNT_Y,
-        .UpperLeftX = -30,
-        .UpperLeftY = 0,
-        .TileWidth = 60,
-        .TileHeight = 60,
-    };
 
-    f32 PlayerWidth = 0.75f*World.TileWidth;
-    f32 PlayerHeight = World.TileHeight;
+        // TODO(kstandbridge): Begin using tile side in meters
+        .TileSideInMeters = 1.4f,
+        .TileSideInPixels = 60,
+
+        .UpperLeftX = -(f32)World.TileSideInPixels/2.0f,
+        .UpperLeftY = 0,
+   };
+        
+
+    f32 PlayerWidth = 0.75f*World.TileSideInPixels;
+    f32 PlayerHeight = (f32)World.TileSideInPixels;
 
     app_state *AppState = AppMemory->AppState;
     if(AppState == 0)
     {
         AppState = AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
 
-        AppState->PlayerX = 150;
+        AppState->PlayerX = 175;
         AppState->PlayerY = 150;
     }
 
@@ -372,8 +376,8 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
 
                 AppState->PlayerTileMapX = CanPos.TileMapX;
                 AppState->PlayerTileMapY = CanPos.TileMapY;
-                AppState->PlayerX = World.UpperLeftX + World.TileWidth*CanPos.TileX + CanPos.TileRelX;
-                AppState->PlayerY = World.UpperLeftY + World.TileHeight*CanPos.TileY + CanPos.TileRelY;
+                AppState->PlayerX = World.UpperLeftX + World.TileSideInPixels*CanPos.TileX + CanPos.TileRelX;
+                AppState->PlayerY = World.UpperLeftY + World.TileSideInPixels*CanPos.TileY + CanPos.TileRelY;
             }
 
         }
@@ -396,10 +400,10 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
                 Gray = 1.0f;
             }
 
-            f32 MinX = World.UpperLeftX + ((f32)Column)*World.TileWidth;
-            f32 MinY = World.UpperLeftY + ((f32)Row)*World.TileHeight;
-            f32 MaxX = MinX + World.TileWidth;
-            f32 MaxY = MinY + World.TileHeight;
+            f32 MinX = World.UpperLeftX + ((f32)Column)*World.TileSideInPixels;
+            f32 MinY = World.UpperLeftY + ((f32)Row)*World.TileSideInPixels;
+            f32 MaxX = MinX + World.TileSideInPixels;
+            f32 MaxY = MinY + World.TileSideInPixels;
             DrawRectangle(Buffer, MinX, MinY, MaxX, MaxY, Gray, Gray, Gray);
         }
     }
