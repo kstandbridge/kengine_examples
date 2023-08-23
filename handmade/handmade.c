@@ -292,7 +292,7 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         .TileMapCountY = 2,
         .TileMaps = (tile_map *)TileMaps,
         .CountX = TILE_MAP_COUNT_X,
-        .CountX = TILE_MAP_COUNT_Y,
+        .CountY = TILE_MAP_COUNT_Y,
         .UpperLeftX = -30,
         .UpperLeftY = 0,
         .TileWidth = 60,
