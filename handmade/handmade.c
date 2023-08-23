@@ -128,49 +128,92 @@ GetTileMap(world *World, s32 TileMapX, s32 TileMapY)
 }
 
 inline u32
-GetTileValueUnchecked(tile_map *TileMap, s32 TileX, s32 TileY)
+GetTileValueUnchecked(world *World, tile_map *TileMap, s32 TileX, s32 TileY)
 {
-    u32 Result = TileMap->Tiles[TileY*TileMap->CountX + TileX];
+    Assert(TileMap);
+    Assert((TileX >= 0) && (TileX < World->CountX) &&
+           (TileY >= 0) && (TileY < World->CountY));
+
+    u32 Result = TileMap->Tiles[TileY*World->CountX + TileX];
 
     return Result; 
 }
 
 internal b32
-IsTileMapPointEmpty(tile_map *TileMap, f32 TestX, f32 TestY)
+IsTileMapPointEmpty(world *World, tile_map *TileMap, f32 TestTileX, f32 TestTileY)
 {
     b32 Result = false;
 
-    s32 PlayerTileX = FloorF32ToS32((TestX - TileMap->UpperLeftX) / TileMap->TileWidth);
-    s32 PlayerTileY = FloorF32ToS32((TestY - TileMap->UpperLeftY) / TileMap->TileHeight);
-
-    if((PlayerTileX >= 0) && (PlayerTileX < TileMap->CountX) &&
-       (PlayerTileY >= 0) && (PlayerTileY < TileMap->CountY))
+    if(TileMap)
     {
-        u32 TileMapValue = GetTileValueUnchecked(TileMap, PlayerTileX, PlayerTileY);
-        Result = (TileMapValue == 0);
+        if((TestTileX >= 0) && (TestTileX < World->CountX) &&
+           (TestTileY >= 0) && (TestTileY < World->CountY))
+        {
+            u32 TileMapValue = GetTileValueUnchecked(World, TileMap, TestTileX, TestTileY);
+            Result = (TileMapValue == 0);
+        }
     }
 
     return Result;
 }
 
+internal canonical_position
+GetCanonicalPosition(world *World, raw_position Pos)
+{
+    canonical_position Result =
+    {
+        .TileMapX = Pos.TileMapX,
+        .TileMapY = Pos.TileMapY,
+    };
+
+    f32 X = Pos.X - World->UpperLeftX;
+    f32 Y = Pos.Y - World->UpperLeftY;
+    Result.TileX = FloorF32ToS32(X / World->TileWidth);
+    Result.TileY = FloorF32ToS32(Y / World->TileHeight);
+
+    Result.TileRelX = X - Result.TileX*World->TileWidth;
+    Result.TileRelY = Y - Result.TileY*World->TileHeight;
+
+    Assert(Result.TileRelX >= 0);
+    Assert(Result.TileRelY >= 0);
+    Assert(Result.TileRelX < World->TileWidth);
+    Assert(Result.TileRelY < World->TileHeight);
+
+    if(Result.TileX < 0)
+    {
+        Result.TileX = World->CountX + Result.TileX;
+        --Result.TileMapX;
+    }
+    
+    if(Result.TileY < 0)
+    {
+        Result.TileY = World->CountY + Result.TileY;
+        --Result.TileMapY;
+    }
+
+    if(Result.TileX >= World->CountX)
+    {
+        Result.TileX = Result.TileX - World->CountX;
+        ++Result.TileMapX;
+    }
+
+    if(Result.TileY >= World->CountY)
+    {
+        Result.TileY = Result.TileY - World->CountY;
+        ++Result.TileMapY;
+    }
+
+    return(Result);
+}
+
 internal b32
-IsWorldPointEmpty(world *World, s32 TileMapX, s32 TileMapY, f32 TestX, f32 TestY)
+IsWorldPointEmpty(world *World, raw_position TestPos)
 {
     b32 Result = false;
 
-    tile_map *TileMap = GetTileMap(World, TileMapX, TileMapY);
-    if(TileMap)
-    {
-        s32 PlayerTileX = FloorF32ToS32((TestX - TileMap->UpperLeftX) / TileMap->TileWidth);
-        s32 PlayerTileY = FloorF32ToS32((TestY - TileMap->UpperLeftY) / TileMap->TileHeight);
-
-        if((PlayerTileX >= 0) && (PlayerTileX < TileMap->CountX) &&
-           (PlayerTileY >= 0) && (PlayerTileY < TileMap->CountY))
-        {
-            u32 TileMapValue = GetTileValueUnchecked(TileMap, PlayerTileX, PlayerTileY);
-            Result = (TileMapValue == 0);
-        }
-    }
+    canonical_position CanPos = GetCanonicalPosition(World, TestPos);
+    tile_map *TileMap = GetTileMap(World, CanPos.TileMapX, CanPos.TileMapY);
+    Result = IsTileMapPointEmpty(World, TileMap, CanPos.TileX, CanPos.TileY);
     
     return Result;
 }
@@ -238,37 +281,26 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
     };
 
     tile_map TileMaps[2][2];
-    TileMaps[0][0].CountX = TILE_MAP_COUNT_X;
-    TileMaps[0][0].CountY = TILE_MAP_COUNT_Y;
-    
-    TileMaps[0][0].UpperLeftX = -30;
-    TileMaps[0][0].UpperLeftY = 0;
-    TileMaps[0][0].TileWidth = 60;
-    TileMaps[0][0].TileHeight = 60;
-
     TileMaps[0][0].Tiles = (u32 *)Tiles00;
-
-    TileMaps[0][1] = TileMaps[0][0];
-    TileMaps[0][1].Tiles = (u32 *)Tiles01;
-
-    TileMaps[1][0] = TileMaps[0][0];
-    TileMaps[1][0].Tiles = (u32 *)Tiles10;
-
-    TileMaps[1][1] = TileMaps[0][0];
+    TileMaps[0][1].Tiles = (u32 *)Tiles10;
+    TileMaps[1][0].Tiles = (u32 *)Tiles01;
     TileMaps[1][1].Tiles = (u32 *)Tiles11;
 
-    tile_map *TileMap = &TileMaps[0][0];
+    world World =
+    {
+        .TileMapCountX = 2,
+        .TileMapCountY = 2,
+        .TileMaps = (tile_map *)TileMaps,
+        .CountX = TILE_MAP_COUNT_X,
+        .CountX = TILE_MAP_COUNT_Y,
+        .UpperLeftX = -30,
+        .UpperLeftY = 0,
+        .TileWidth = 60,
+        .TileHeight = 60,
+    };
 
-#if 0
-    world World;
-    World.TileMapCountX = 2;
-    World.TileMapCountY = 2;
-s
-    World.TileMaps = (tile_map *)TileMaps;
-#endif
-
-    f32 PlayerWidth = 0.75f*TileMap->TileWidth;
-    f32 PlayerHeight = TileMap->TileHeight;
+    f32 PlayerWidth = 0.75f*World.TileWidth;
+    f32 PlayerHeight = World.TileHeight;
 
     app_state *AppState = AppMemory->AppState;
     if(AppState == 0)
@@ -278,6 +310,9 @@ s
         AppState->PlayerX = 150;
         AppState->PlayerY = 150;
     }
+
+    tile_map *TileMap = GetTileMap(&World, AppState->PlayerTileMapX, AppState->PlayerTileMapY);
+    Assert(TileMap);
 
     for(int ControllerIndex = 0;
         ControllerIndex < ArrayCount(Input->Controllers);
@@ -317,13 +352,30 @@ s
             f32 NewPlayerX = AppState->PlayerX + Input->dtForFrame*dPlayerX;
             f32 NewPlayerY = AppState->PlayerY + Input->dtForFrame*dPlayerY;
 
-            if(IsTileMapPointEmpty(TileMap, NewPlayerX - 0.5f*PlayerWidth, NewPlayerY) &&
-               IsTileMapPointEmpty(TileMap, NewPlayerX + 0.5f*PlayerWidth, NewPlayerY) &&
-               IsTileMapPointEmpty(TileMap, NewPlayerX, NewPlayerY))
+            raw_position PlayerPos =
             {
-                AppState->PlayerX = NewPlayerX;
-                AppState->PlayerY = NewPlayerY;
+                .TileMapX = AppState->PlayerTileMapX,
+                .TileMapY = AppState->PlayerTileMapY,
+                .X = NewPlayerX,
+                .Y = NewPlayerY,
+            };
+            raw_position PlayerLeft = PlayerPos;
+            PlayerLeft.X -= 0.5f*PlayerWidth;
+            raw_position PlayerRight = PlayerPos;
+            PlayerRight.X += 0.5f*PlayerWidth;
+
+            if(IsWorldPointEmpty(&World, PlayerPos),
+               IsWorldPointEmpty(&World, PlayerLeft),
+               IsWorldPointEmpty(&World, PlayerRight))
+            {
+                canonical_position CanPos = GetCanonicalPosition(&World, PlayerPos);
+
+                AppState->PlayerTileMapX = CanPos.TileMapX;
+                AppState->PlayerTileMapY = CanPos.TileMapY;
+                AppState->PlayerX = World.UpperLeftX + World.TileWidth*CanPos.TileX + CanPos.TileRelX;
+                AppState->PlayerY = World.UpperLeftY + World.TileHeight*CanPos.TileY + CanPos.TileRelY;
             }
+
         }
     }
     
@@ -337,17 +389,17 @@ s
             Column < 17;
             ++Column)
         {
-            u32 TileID = GetTileValueUnchecked(TileMap, Column, Row);
+            u32 TileID = GetTileValueUnchecked(&World, TileMap, Column, Row);
             f32 Gray = 0.5f;
             if(TileID == 1)
             {
                 Gray = 1.0f;
             }
 
-            f32 MinX = TileMap->UpperLeftX + ((f32)Column)*TileMap->TileWidth;
-            f32 MinY = TileMap->UpperLeftY + ((f32)Row)*TileMap->TileHeight;
-            f32 MaxX = MinX + TileMap->TileWidth;
-            f32 MaxY = MinY + TileMap->TileHeight;
+            f32 MinX = World.UpperLeftX + ((f32)Column)*World.TileWidth;
+            f32 MinY = World.UpperLeftY + ((f32)Row)*World.TileHeight;
+            f32 MaxX = MinX + World.TileWidth;
+            f32 MaxY = MinY + World.TileHeight;
             DrawRectangle(Buffer, MinX, MinY, MaxX, MaxY, Gray, Gray, Gray);
         }
     }
