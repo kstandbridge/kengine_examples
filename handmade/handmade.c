@@ -113,7 +113,7 @@ DrawRectangle(offscreen_buffer *Buffer,
     }
 }
 
-inline tile_map *
+internal tile_map *
 GetTileMap(world *World, s32 TileMapX, s32 TileMapY)
 {
     tile_map *Result = 0;
@@ -127,7 +127,7 @@ GetTileMap(world *World, s32 TileMapX, s32 TileMapY)
     return Result;
 }
 
-inline u32
+internal u32
 GetTileValueUnchecked(world *World, tile_map *TileMap, s32 TileX, s32 TileY)
 {
     Assert(TileMap);
@@ -345,8 +345,8 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
             {
                 dPlayerX = 1.0f;
             }
-            dPlayerX *= 64.0f;
-            dPlayerY *= 64.0f;
+            dPlayerX *= 128.0f;
+            dPlayerY *= 128.0f;
 
             // TODO(kstandbridge): Diagonal will be faster!  Fix once we have vectors :)
             f32 NewPlayerX = AppState->PlayerX + Input->dtForFrame*dPlayerX;
