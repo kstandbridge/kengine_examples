@@ -311,7 +311,7 @@ s
                 dPlayerX = 1.0f;
             }
             dPlayerX *= 64.0f;
-            dPlayerY *= 64.0f;s
+            dPlayerY *= 64.0f;
 
             // TODO(kstandbridge): Diagonal will be faster!  Fix once we have vectors :)
             f32 NewPlayerX = AppState->PlayerX + Input->dtForFrame*dPlayerX;
