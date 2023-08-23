@@ -113,6 +113,68 @@ DrawRectangle(offscreen_buffer *Buffer,
     }
 }
 
+inline tile_map *
+GetTileMap(world *World, s32 TileMapX, s32 TileMapY)
+{
+    tile_map *Result = 0;
+
+    if((TileMapX >= 0) && (TileMapX < World->TileMapCountX) &&
+       (TileMapY >= 0) && (TileMapY < World->TileMapCountY))
+    {
+        Result = &World->TileMaps[TileMapY*World->TileMapCountX + TileMapX];
+    }
+
+    return Result;
+}
+
+inline u32
+GetTileValueUnchecked(tile_map *TileMap, s32 TileX, s32 TileY)
+{
+    u32 Result = TileMap->Tiles[TileY*TileMap->CountX + TileX];
+
+    return Result; 
+}
+
+internal b32
+IsTileMapPointEmpty(tile_map *TileMap, f32 TestX, f32 TestY)
+{
+    b32 Result = false;
+
+    s32 PlayerTileX = FloorF32ToS32((TestX - TileMap->UpperLeftX) / TileMap->TileWidth);
+    s32 PlayerTileY = FloorF32ToS32((TestY - TileMap->UpperLeftY) / TileMap->TileHeight);
+
+    if((PlayerTileX >= 0) && (PlayerTileX < TileMap->CountX) &&
+       (PlayerTileY >= 0) && (PlayerTileY < TileMap->CountY))
+    {
+        u32 TileMapValue = GetTileValueUnchecked(TileMap, PlayerTileX, PlayerTileY);
+        Result = (TileMapValue == 0);
+    }
+
+    return Result;
+}
+
+internal b32
+IsWorldPointEmpty(world *World, s32 TileMapX, s32 TileMapY, f32 TestX, f32 TestY)
+{
+    b32 Result = false;
+
+    tile_map *TileMap = GetTileMap(World, TileMapX, TileMapY);
+    if(TileMap)
+    {
+        s32 PlayerTileX = FloorF32ToS32((TestX - TileMap->UpperLeftX) / TileMap->TileWidth);
+        s32 PlayerTileY = FloorF32ToS32((TestY - TileMap->UpperLeftY) / TileMap->TileHeight);
+
+        if((PlayerTileX >= 0) && (PlayerTileX < TileMap->CountX) &&
+           (PlayerTileY >= 0) && (PlayerTileY < TileMap->CountY))
+        {
+            u32 TileMapValue = GetTileValueUnchecked(TileMap, PlayerTileX, PlayerTileY);
+            Result = (TileMapValue == 0);
+        }
+    }
+    
+    return Result;
+}
+
 extern void 
 AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Buffer)
 {
@@ -121,10 +183,100 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
     Assert((&Input->Controllers[0].Terminator - &Input->Controllers[0].Buttons[0]) ==
         (ArrayCount(Input->Controllers[0].Buttons)));
 
+#define TILE_MAP_COUNT_X 17
+#define TILE_MAP_COUNT_Y 9
+    u32 Tiles00[TILE_MAP_COUNT_Y][TILE_MAP_COUNT_X] =
+    {
+        {1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1, 1},
+        {1, 1, 0, 0,  0, 1, 0, 0,  0, 0, 0, 0,  0, 1, 0, 0, 1},
+        {1, 1, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 1, 0, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0, 1},
+        {1, 0, 0, 0,  0, 1, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0, 0},
+        {1, 1, 0, 0,  0, 1, 0, 0,  1, 0, 0, 0,  0, 1, 0, 0, 1},
+        {1, 0, 0, 0,  0, 1, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0, 1},
+        {1, 1, 1, 1,  1, 0, 0, 0,  0, 0, 0, 0,  0, 1, 0, 0, 1},
+        {1, 1, 1, 1,  1, 1, 1, 1,  0, 1, 1, 1,  1, 1, 1, 1, 1},
+    };
+    
+    u32 Tiles01[TILE_MAP_COUNT_Y][TILE_MAP_COUNT_X] =
+    {
+        {1, 1, 1, 1,  1, 1, 1, 1,  0, 1, 1, 1,  1, 1, 1, 1, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 0},
+        {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1, 1},
+    };
+    
+    u32 Tiles10[TILE_MAP_COUNT_Y][TILE_MAP_COUNT_X] =
+    {
+        {1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {1, 1, 1, 1,  1, 1, 1, 1,  0, 1, 1, 1,  1, 1, 1, 1, 1},
+    };
+    
+    u32 Tiles11[TILE_MAP_COUNT_Y][TILE_MAP_COUNT_X] =
+    {
+        {1, 1, 1, 1,  1, 1, 1, 1,  0, 1, 1, 1,  1, 1, 1, 1, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {1, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0,  0, 0, 0, 0, 1},
+        {1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1,  1, 1, 1, 1, 1},
+    };
+
+    tile_map TileMaps[2][2];
+    TileMaps[0][0].CountX = TILE_MAP_COUNT_X;
+    TileMaps[0][0].CountY = TILE_MAP_COUNT_Y;
+    
+    TileMaps[0][0].UpperLeftX = -30;
+    TileMaps[0][0].UpperLeftY = 0;
+    TileMaps[0][0].TileWidth = 60;
+    TileMaps[0][0].TileHeight = 60;
+
+    TileMaps[0][0].Tiles = (u32 *)Tiles00;
+
+    TileMaps[0][1] = TileMaps[0][0];
+    TileMaps[0][1].Tiles = (u32 *)Tiles01;
+
+    TileMaps[1][0] = TileMaps[0][0];
+    TileMaps[1][0].Tiles = (u32 *)Tiles10;
+
+    TileMaps[1][1] = TileMaps[0][0];
+    TileMaps[1][1].Tiles = (u32 *)Tiles11;
+
+    tile_map *TileMap = &TileMaps[0][0];
+
+#if 0
+    world World;
+    World.TileMapCountX = 2;
+    World.TileMapCountY = 2;
+s
+    World.TileMaps = (tile_map *)TileMaps;
+#endif
+
+    f32 PlayerWidth = 0.75f*TileMap->TileWidth;
+    f32 PlayerHeight = TileMap->TileHeight;
+
     app_state *AppState = AppMemory->AppState;
     if(AppState == 0)
     {
         AppState = AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
+
+        AppState->PlayerX = 150;
+        AppState->PlayerY = 150;
     }
 
     for(int ControllerIndex = 0;
@@ -159,52 +311,43 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
                 dPlayerX = 1.0f;
             }
             dPlayerX *= 64.0f;
-            dPlayerY *= 64.0f;
+            dPlayerY *= 64.0f;s
 
             // TODO(kstandbridge): Diagonal will be faster!  Fix once we have vectors :)
-            AppState->PlayerX += Input->dtForFrame*dPlayerX;
-            AppState->PlayerY += Input->dtForFrame*dPlayerY;
+            f32 NewPlayerX = AppState->PlayerX + Input->dtForFrame*dPlayerX;
+            f32 NewPlayerY = AppState->PlayerY + Input->dtForFrame*dPlayerY;
+
+            if(IsTileMapPointEmpty(TileMap, NewPlayerX - 0.5f*PlayerWidth, NewPlayerY) &&
+               IsTileMapPointEmpty(TileMap, NewPlayerX + 0.5f*PlayerWidth, NewPlayerY) &&
+               IsTileMapPointEmpty(TileMap, NewPlayerX, NewPlayerY))
+            {
+                AppState->PlayerX = NewPlayerX;
+                AppState->PlayerY = NewPlayerY;
+            }
         }
     }
-
-    u32 TileMap[9][17] =
-    {
-        {1, 1, 1, 1,  1, 1, 1, 1,  0, 1, 1, 1,  1, 1, 1, 1, 1},
-        {1, 1, 0, 0,  0, 1, 0, 0,  0, 0, 0, 0,  0, 1, 0, 0, 1},
-        {1, 1, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 1, 0, 1},
-        {1, 0, 0, 0,  0, 0, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0, 1},
-        {0, 0, 0, 0,  0, 1, 0, 0,  1, 0, 0, 0,  0, 0, 0, 0, 0},
-        {1, 1, 0, 0,  0, 1, 0, 0,  1, 0, 0, 0,  0, 1, 0, 0, 1},
-        {1, 0, 0, 0,  0, 1, 0, 0,  1, 0, 0, 0,  1, 0, 0, 0, 1},
-        {1, 1, 1, 1,  1, 0, 0, 0,  0, 0, 0, 0,  0, 1, 0, 0, 1},
-        {1, 1, 1, 1,  1, 1, 1, 1,  0, 1, 1, 1,  1, 1, 1, 1, 1},
-    };
-
-    f32 UpperLeftX = -30;
-    f32 UpperLeftY = 0;
-    f32 TileWidth = 60;
-    f32 TileHeight = 60;
     
-    DrawRectangle(Buffer, 0.0f, 0.0f, (f32)Buffer->Width, (f32)Buffer->Height, 1.0f, 0.0f, 0.1f);
-    for(int Row = 0;
+    DrawRectangle(Buffer, 0.0f, 0.0f, (f32)Buffer->Width, (f32)Buffer->Height,
+                  1.0f, 0.0f, 0.1f);
+    for(s32 Row = 0;
         Row < 9;
         ++Row)
     {
-        for(int Column = 0;
+        for(s32 Column = 0;
             Column < 17;
             ++Column)
         {
-            u32 TileID = TileMap[Row][Column];
+            u32 TileID = GetTileValueUnchecked(TileMap, Column, Row);
             f32 Gray = 0.5f;
             if(TileID == 1)
             {
                 Gray = 1.0f;
             }
 
-            f32 MinX = UpperLeftX + ((f32)Column)*TileWidth;
-            f32 MinY = UpperLeftY + ((f32)Row)*TileHeight;
-            f32 MaxX = MinX + TileWidth;
-            f32 MaxY = MinY + TileHeight;
+            f32 MinX = TileMap->UpperLeftX + ((f32)Column)*TileMap->TileWidth;
+            f32 MinY = TileMap->UpperLeftY + ((f32)Row)*TileMap->TileHeight;
+            f32 MaxX = MinX + TileMap->TileWidth;
+            f32 MaxY = MinY + TileMap->TileHeight;
             DrawRectangle(Buffer, MinX, MinY, MaxX, MaxY, Gray, Gray, Gray);
         }
     }
@@ -212,8 +355,6 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
     f32 PlayerR = 1.0f;
     f32 PlayerG = 1.0f;
     f32 PlayerB = 0.0f;
-    f32 PlayerWidth = 0.75f*TileWidth;
-    f32 PlayerHeight = TileHeight;
     f32 PlayerLeft = AppState->PlayerX - 0.5f*PlayerWidth;
     f32 PlayerTop = AppState->PlayerY - PlayerHeight;
     DrawRectangle(Buffer,
