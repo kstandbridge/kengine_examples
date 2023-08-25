@@ -12,17 +12,6 @@ typedef struct canonical_position
     f32 TileRelY;
 } canonical_position;
 
-// TODO(kstandbridge): Is this ever necessary?
-typedef struct raw_position
-{
-    s32 TileMapX;
-    s32 TileMapY;
-
-    // NOTE(kstandbridge): Tile-map relative X and Y
-    f32 X;
-    f32 Y;
-} raw_position;
-
 typedef struct tile_map
 {
     u32 *Tiles;
@@ -32,7 +21,8 @@ typedef struct world
 {
     f32 TileSideInMeters;
     s32 TileSideInPixels;
-
+    f32 MetersToPixels;
+    
     s32 CountX;
     s32 CountY;
 
@@ -50,11 +40,6 @@ typedef struct app_state
 {
     memory_arena Arena;
 
-    // TODO(kstandbridge): Player state should be canonical position now?
-    s32 PlayerTileMapX;
-    s32 PlayerTileMapY;
-
-    f32 PlayerX;
-    f32 PlayerY;
+    canonical_position PlayerP;
 
 } app_state;
