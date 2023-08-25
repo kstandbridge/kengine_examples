@@ -1,45 +1,49 @@
-typedef struct canonical_position
+typedef struct tile_chunk_position
 {
-    s32 TileMapX;
-    s32 TileMapY;
+    u32 TileChunkX;
+    u32 TileChunkY;
 
-    s32 TileX;
-    s32 TileY;
+    u32 RelTileX;
+    u32 RelTileY;
+} tile_chunk_position;
 
-    // NOTE(kstandbridge): This is tile-relative X and Y
-    // TODO(kstandbridge): These are still in pixels...
+typedef struct world_position
+{
+    s32 AbsTileX;
+    s32 AbsTileY;
+
+    // NOTE(kstandbridge): Should these be from the center of a tile?
+    // TODO(kstandbridge): Rename to offset X and Y
     f32 TileRelX;
     f32 TileRelY;
-} canonical_position;
+} world_position;
 
-typedef struct tile_map
+typedef struct tile_chunk
 {
     u32 *Tiles;
-} tile_map;
+} tile_chunk;
 
 typedef struct world
 {
+    u32 ChunkShift;
+    u32 ChunkMask;
+    u32 ChunkDim;
+
     f32 TileSideInMeters;
     s32 TileSideInPixels;
     f32 MetersToPixels;
     
-    s32 CountX;
-    s32 CountY;
-
-    f32 UpperLeftX;
-    f32 UpperLeftY;
-
     // TODO(kstandbridge): Sparseness
-    s32 TileMapCountX;
-    s32 TileMapCountY;
+    s32 TileChunkCountX;
+    s32 TileChunkCountY;
     
-    tile_map *TileMaps;
+    tile_chunk *TileChunks;
 } world;
 
 typedef struct app_state
 {
     memory_arena Arena;
 
-    canonical_position PlayerP;
+    world_position PlayerP;
 
 } app_state;
