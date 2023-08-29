@@ -42,6 +42,7 @@ ReadViaFRead(repetition_tester *Tester, string *Output, char *FilePath)
     }
 }
 
+#if KENGINE_LINUX
 internal void
 ReadViaRead(repetition_tester *Tester, string *Output, char *FilePath)
 {
@@ -73,6 +74,42 @@ ReadViaRead(repetition_tester *Tester, string *Output, char *FilePath)
         }
     }
 }
+#elif KENGINE_WIN32
+internal void
+ReadViaRead(repetition_tester *Tester, string *Output, char *FilePath)
+{
+    while(RepetitionTestIsTesting(Tester))
+    {
+        HANDLE FileHandle = CreateFileA(FilePath, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+        if(FileHandle != INVALID_HANDLE_VALUE)
+        {
+            RepetitionTestBeginTime(Tester);
+            u32 BytesRead = 0;
+            ReadFile(FileHandle, Output->Data, (u32)Output->Size, (LPDWORD)&BytesRead, 0);
+
+            RepetitionTestEndTime(Tester);
+        
+            if(Output->Size == (umm)BytesRead)
+            {
+                RepetitionTestCountBytes(Tester, Output->Size);
+            }
+            else
+            {
+                RepetitionTestError(Tester, "pread failed");
+            }
+
+
+            CloseHandle(FileHandle);
+        }
+        else
+        {
+            RepetitionTestError(Tester, "open failed");
+        }
+    }
+}
+#else
+#error Platform not supported
+#endif
 
 s32
 MainLoop(app_memory *AppMemory)
@@ -82,27 +119,38 @@ MainLoop(app_memory *AppMemory)
 
     u64 CPUTimerFreq = EstimateCPUTimerFrequency();
     
-    char *FilePath = "/home/eowhat/Sources/kengine_examples/bin/output.json";
-    string FileCacheHack = PlatformReadEntireFile(Arena, String_(GetNullTerminiatedStringLength(FilePath), (u8 *)FilePath));
-
-    string Buffer = 
+    string_list *Args = PlatformGetCommandLineArgs(Arena);
+    u32 ArgsCount = GetStringListCount(Args);
+    if(ArgsCount == 1)
     {
-        .Size = FileCacheHack.Size,
-        .Data = PushSize(Arena, FileCacheHack.Size),
-    };
+        string FilePath = Args->Entry;
+        char CPath[MAX_PATH];
+        StringToCString(FilePath, sizeof(CPath), CPath);
+        string FileCacheHack = PlatformReadEntireFile(Arena, FilePath);
 
-    {
-        repetition_tester Tester = {0};
-        PlatformConsoleOut("\n--- ReadViaFRead ---\n");
-        RepetitionTestNewTestWave(&Tester, Buffer.Size, CPUTimerFreq, 10);
-        ReadViaFRead(&Tester, &Buffer, FilePath);
+        string Buffer = 
+        {
+            .Size = FileCacheHack.Size,
+            .Data = PushSize(Arena, FileCacheHack.Size),
+        };
+
+        {
+            repetition_tester Tester = {0};
+            PlatformConsoleOut("\n--- ReadViaFRead ---\n");
+            RepetitionTestNewTestWave(&Tester, Buffer.Size, CPUTimerFreq, 10);
+            ReadViaFRead(&Tester, &Buffer, CPath);
+        }
+        {
+            repetition_tester Tester = {0};
+            PlatformConsoleOut("\n--- ReadViaRead ---\n");
+            RepetitionTestNewTestWave(&Tester, Buffer.Size, CPUTimerFreq, 10);
+            ReadViaRead(&Tester, &Buffer, CPath);
+        }
     }
+    else
     {
-        repetition_tester Tester = {0};
-        PlatformConsoleOut("\n--- ReadViaRead ---\n");
-        RepetitionTestNewTestWave(&Tester, Buffer.Size, CPUTimerFreq, 10);
-        ReadViaRead(&Tester, &Buffer, FilePath);
+        PlatformConsoleOut("Missing file path arg\n");
     }
-
+    
     return 0;
 }

@@ -335,6 +335,17 @@
             ]
         },
         {
+            "name": "haversine read_overhead_test win32 debug",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}\\bin\\read_overhead_test.exe",
+            "args": [ "output.json" ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/bin",
+            "environment": [],
+            "console": "integratedTerminal"
+        },
+        {
             "name": "haversine_processor generator win32 debug",
             "type": "cppvsdbg",
             "request": "launch",
