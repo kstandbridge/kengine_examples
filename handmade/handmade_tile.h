@@ -1,3 +1,5 @@
+#if !defined(HANDMADE_TILE_H)
+
 typedef struct tile_map_position
 {
     // NOTE(kstandbridge): These are fixed point tile locations. the high
@@ -7,10 +9,10 @@ typedef struct tile_map_position
     u32 AbsTileY;
     u32 AbsTileZ;
 
-    // NOTE(kstandbridge): Should these be from the center of a tile?
-    // TODO(kstandbridge): Rename to offset X and Y
-    f32 TileRelX;
-    f32 TileRelY;
+    // NOTE(kstandbridge): These are the offsets from the tile center
+    
+    f32 OffsetX;
+    f32 OffsetY;
 } tile_map_position;
 
 typedef struct tile_chunk_position
@@ -47,3 +49,6 @@ typedef struct tile_map
     
     tile_chunk *TileChunks;
 } tile_map;
+
+#define HANDMADE_TILE_H
+#endif

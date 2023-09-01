@@ -134,14 +134,16 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
     if(AppState == 0)
     {
         AppState = AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
+        string BitmapFile = PlatformReadEntireFile(&AppState->Arena, String("test/test_background.bmp"));
+        AppState->LoadedBitmap = LoadBMP(BitmapFile);
 
         // TODO(kstandbridge): Make random?
         AppState->RandomState.Value = 1234;
 
         AppState->PlayerP.AbsTileX = 1;
         AppState->PlayerP.AbsTileY = 3;
-        AppState->PlayerP.TileRelX = 5.0f;
-        AppState->PlayerP.TileRelY = 5.0f;
+        AppState->PlayerP.OffsetX = 5.0f;
+        AppState->PlayerP.OffsetY = 5.0f;
 
         AppState->World = PushStruct(&AppState->Arena, world);
         world *World = AppState->World;
@@ -191,8 +193,10 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
                 RandomChoice %= 3;
             }
 
+            b32 CreatedZDoor = false;
             if(RandomChoice == 2)
             {
+                CreatedZDoor = true;
                 if(AbsTileZ == 0)
                 {
                     DoorUp = true;
@@ -264,15 +268,10 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
             DoorLeft = DoorRight;
             DoorBottom = DoorTop;
 
-            if(DoorUp)
+            if(CreatedZDoor)
             {
-                DoorDown = true;
-                DoorUp = false;
-            }
-            else if(DoorDown)
-            {
-                DoorUp = true;
-                DoorDown = false;
+                DoorDown = !DoorDown;
+                DoorUp = !DoorUp;
             }
             else
             {
@@ -355,23 +354,37 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
 
             // TODO(kstandbridge): Diagonal will be faster!  Fix once we have vectors :)
             tile_map_position NewPlayerP = AppState->PlayerP;
-            NewPlayerP.TileRelX += Input->dtForFrame*dPlayerX;
-            NewPlayerP.TileRelY += Input->dtForFrame*dPlayerY;
+            NewPlayerP.OffsetX += Input->dtForFrame*dPlayerX;
+            NewPlayerP.OffsetY += Input->dtForFrame*dPlayerY;
             NewPlayerP = RecanonicalizePosition(TileMap, NewPlayerP);
             // TODO(kstandbridge): Delta function that auto recanonicalizes
 
             tile_map_position PlayerLeft = NewPlayerP;
-            PlayerLeft.TileRelX -= 0.5f*PlayerWidth;
+            PlayerLeft.OffsetX -= 0.5f*PlayerWidth;
             PlayerLeft = RecanonicalizePosition(TileMap, PlayerLeft);
 
             tile_map_position PlayerRight = NewPlayerP;
-            PlayerRight.TileRelX += 0.5f*PlayerWidth;
+            PlayerRight.OffsetX += 0.5f*PlayerWidth;
             PlayerRight = RecanonicalizePosition(TileMap, PlayerRight);
 
             if(IsTileMapPointEmpty(TileMap, NewPlayerP),
                IsTileMapPointEmpty(TileMap, PlayerLeft),
                IsTileMapPointEmpty(TileMap, PlayerRight))
             {
+                if(!AreOnSameTile(&AppState->PlayerP, &NewPlayerP))
+                {
+                    u32 NewTileValue = GetTileValue(TileMap, NewPlayerP);
+
+                    if(NewTileValue == 3)
+                    {
+                        ++NewPlayerP.AbsTileZ;
+                    }
+                    else if(NewTileValue == 4)
+                    {
+                        --NewPlayerP.AbsTileZ;
+                    }
+                }
+
                 AppState->PlayerP = NewPlayerP;
             }
 
@@ -394,7 +407,7 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         {
             u32 Column = AppState->PlayerP.AbsTileX + RelColumn;
             u32 Row = AppState->PlayerP.AbsTileY + RelRow;
-            u32 TileID = GetTileValue(TileMap, Column, Row, AppState->PlayerP.AbsTileZ);
+            u32 TileID = GetTileValue_(TileMap, Column, Row, AppState->PlayerP.AbsTileZ);
 
             if(TileID > 0)
             {
@@ -415,8 +428,8 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
                     Gray = 0.0f;
                 }
 
-                f32 CenX = ScreenCenterX - MetersToPixels*AppState->PlayerP.TileRelX + ((f32)RelColumn)*TileSideInPixels;
-                f32 CenY = ScreenCenterY + MetersToPixels*AppState->PlayerP.TileRelY - ((f32)RelRow)*TileSideInPixels;
+                f32 CenX = ScreenCenterX - MetersToPixels*AppState->PlayerP.OffsetX + ((f32)RelColumn)*TileSideInPixels;
+                f32 CenY = ScreenCenterY + MetersToPixels*AppState->PlayerP.OffsetY - ((f32)RelRow)*TileSideInPixels;
                 f32 MinX = CenX - 0.5f*TileSideInPixels;
                 f32 MinY = CenY - 0.5f*TileSideInPixels;
                 f32 MaxX = CenX + 0.5f*TileSideInPixels;
@@ -436,6 +449,22 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
                   PlayerLeft + MetersToPixels*PlayerWidth,
                   PlayerTop + MetersToPixels*PlayerHeight,
                   PlayerR, PlayerG, PlayerB);
+
+#if 0
+    u32 *Source = AppState->LoadedBitmap.Memory;
+    u32 *Dest = (u32 *)Buffer->Memory;
+    for(s32 Y = 0;
+        Y < Buffer->Height;
+        ++Y)
+    {
+        for(s32 X = 0;
+            X < Buffer->Width;
+            ++X)
+        {
+            *Dest++ = *Source++;
+        }
+    }
+#endif
 }
 
 extern void

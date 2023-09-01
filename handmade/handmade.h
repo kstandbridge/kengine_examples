@@ -13,5 +13,6 @@ typedef struct app_state
     world *World;
 
     tile_map_position PlayerP;
+    loaded_bitmap LoadedBitmap;
 
 } app_state;
