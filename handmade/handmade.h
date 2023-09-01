@@ -1,3 +1,5 @@
+#include <kengine.h>
+
 typedef struct tile_chunk_position
 {
     u32 TileChunkX;

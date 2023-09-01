@@ -1,0 +1,2 @@
+CompileFlags:
+  Add: [ -I/home/eowhat/Sources/kengine_examples/kengine, -DKENGINE_LINUX, -DKENGINE_SLOW, -DKENGINE_INTERNAL ]
