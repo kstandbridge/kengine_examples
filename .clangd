@@ -1,2 +1,2 @@
 CompileFlags:
-  Add: [ -I../kengine, -DKENGINE_SLOW, -DKENGINE_INTERNAL ]
+  Add: [ "-I../kengine", "-include/home/eowhat/Sources/kengine_examples/kengine/kengine.h", "-include/home/eowhat/Sources/kengine_examples/handmade/handmade.h", -DKENGINE_SLOW=1", "-DKENGINE_INTERNAL=1", "-DKENGINE_LIBRARY=1", "-DKENGINE_OPENGL=1" ]

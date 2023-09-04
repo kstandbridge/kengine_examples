@@ -1,6 +1,7 @@
-#define KENGINE_LIBRARY
-#define KENGINE_OPENGL
-#define KENGINE_IMPLEMENTATION
+#include "kengine/kengine_types.h"
+#define KENGINE_LIBRARY 1
+#define KENGINE_OPENGL 1
+#define KENGINE_IMPLEMENTATION 1
 #include "kengine.h"
 
 #include <math.h>
@@ -114,6 +115,57 @@ DrawRectangle(offscreen_buffer *Buffer,
     }
 }
 
+internal void
+DrawBitmap(offscreen_buffer *Buffer, loaded_bitmap *Bitmap, f32 RealX, f32 RealY)
+{
+    s32 MinX = RoundF32ToS32(RealX);
+    s32 MinY = RoundF32ToS32(RealY);
+    s32 MaxX = RoundF32ToS32(RealX + (f32)Bitmap->Width);
+    s32 MaxY = RoundF32ToS32(RealY + (f32)Bitmap->Height);
+
+    if(MinX < 0)
+    {
+        MinX = 0;
+    }
+
+    if(MinY < 0)
+    {
+        MinY = 0;
+    }
+
+    if(MaxX > Buffer->Width)
+    {
+        MaxX = Buffer->Width;
+    }
+
+    if(MaxY > Buffer->Height)
+    {
+        MaxY = Buffer->Height;
+    }
+
+    // TODO(kstandbridge): SourceRow needs to be changed based on clipping.
+    u32 *SourceRow = Bitmap->Memory + Bitmap->Width*(Bitmap->Height - 1);
+    u8 *DestRow = ((u8 *)Buffer->Memory +
+                      MinX*Buffer->BytesPerPixel +
+                      MinY*Buffer->Pitch);
+    for(s32 Y = MinY;
+        Y < MaxY;
+        ++Y)
+    {
+        u32 *Dest = (u32 *)DestRow;
+        u32 *Source = SourceRow;
+        for(int X = MinX;
+            X < MaxX;
+            ++X)
+        {            
+            *Dest++ = *Source++;
+        }
+
+        DestRow += Buffer->Pitch;
+        SourceRow -= Bitmap->Width;
+    }
+}
+
 extern void 
 AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Buffer)
 {
@@ -134,8 +186,14 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
     if(AppState == 0)
     {
         AppState = AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
-        string BitmapFile = PlatformReadEntireFile(&AppState->Arena, String("test/test_background.bmp"));
-        AppState->LoadedBitmap = LoadBMP(BitmapFile);
+        string BackdropFile = PlatformReadEntireFile(&AppState->Arena, String("test/test_background.bmp"));
+        AppState->Backdrop = LoadBMP(BackdropFile);
+        string HeroHeadFile = PlatformReadEntireFile(&AppState->Arena, String("test/test_hero_front_head.bmp"));
+        AppState->HeroHead = LoadBMP(HeroHeadFile);
+        string HeroCapeFile = PlatformReadEntireFile(&AppState->Arena, String("test/test_hero_front_cape.bmp"));
+        AppState->HeroCape = LoadBMP(HeroCapeFile);
+        string HeroTorsoFile = PlatformReadEntireFile(&AppState->Arena, String("test/test_hero_front_torso.bmp"));
+        AppState->HeroTorso = LoadBMP(HeroTorsoFile);
 
         // TODO(kstandbridge): Make random?
         AppState->RandomState.Value = 1234;
@@ -391,8 +449,7 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         }
     }
     
-    DrawRectangle(Buffer, 0.0f, 0.0f, (f32)Buffer->Width, (f32)Buffer->Height,
-                  1.0f, 0.0f, 0.1f);
+    DrawBitmap(Buffer, &AppState->HeroHead, 0, 0);
 
     f32 ScreenCenterX = 0.5f*(f32)Buffer->Width;
     f32 ScreenCenterY = 0.5f*(f32)Buffer->Height;
@@ -409,7 +466,7 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
             u32 Row = AppState->PlayerP.AbsTileY + RelRow;
             u32 TileID = GetTileValue_(TileMap, Column, Row, AppState->PlayerP.AbsTileZ);
 
-            if(TileID > 0)
+            if(TileID > 1)
             {
                 f32 Gray = 0.5f;
                 if(TileID == 2)
@@ -449,22 +506,8 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
                   PlayerLeft + MetersToPixels*PlayerWidth,
                   PlayerTop + MetersToPixels*PlayerHeight,
                   PlayerR, PlayerG, PlayerB);
-
-#if 0
-    u32 *Source = AppState->LoadedBitmap.Memory;
-    u32 *Dest = (u32 *)Buffer->Memory;
-    for(s32 Y = 0;
-        Y < Buffer->Height;
-        ++Y)
-    {
-        for(s32 X = 0;
-            X < Buffer->Width;
-            ++X)
-        {
-            *Dest++ = *Source++;
-        }
-    }
-#endif
+    // DrawBitmap(Buffer, &AppState->HeroHead, PlayerLeft, PlayerTop);
+    // DrawBitmap(Buffer, &AppState->HeroHead, 0, 0);
 }
 
 extern void

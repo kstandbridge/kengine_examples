@@ -1,3 +1,5 @@
+#pragma once
+
 #include "handmade_tile.h"
 
 typedef struct world
@@ -13,6 +15,12 @@ typedef struct app_state
     world *World;
 
     tile_map_position PlayerP;
-    loaded_bitmap LoadedBitmap;
+
+    loaded_bitmap Backdrop;
+
+    loaded_bitmap HeroHead;
+    loaded_bitmap HeroCape;
+    loaded_bitmap HeroTorso;
 
 } app_state;
+
