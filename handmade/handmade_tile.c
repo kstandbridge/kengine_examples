@@ -172,3 +172,21 @@ AreOnSameTile(tile_map_position *A, tile_map_position *B)
 
     return Result;
 }
+
+internal tile_map_difference
+Subtract(tile_map *TileMap, tile_map_position *A, tile_map_position *B)
+{
+    tile_map_difference Result;
+
+    f32 dTileX = (f32)A->AbsTileX - (f32)B->AbsTileX;
+    f32 dTileY = (f32)A->AbsTileY - (f32)B->AbsTileY;
+    f32 dTileZ = (f32)A->AbsTileZ - (f32)B->AbsTileZ;
+
+    Result.dX = TileMap->TileSideInMeters*dTileX + (A->OffsetX - B->OffsetX);
+    Result.dY = TileMap->TileSideInMeters*dTileY + (A->OffsetY - B->OffsetY);
+
+    // TODO(kstandbridge): Think about what we want to do about Z 
+    Result.dZ = TileMap->TileSideInMeters*dTileZ;
+
+    return Result;
+}

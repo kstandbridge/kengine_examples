@@ -1,5 +1,12 @@
 #if !defined(HANDMADE_TILE_H)
 
+typedef struct tile_map_difference
+{
+    f32 dX;
+    f32 dY;
+    f32 dZ;
+} tile_map_difference;
+
 typedef struct tile_map_position
 {
     // NOTE(kstandbridge): These are fixed point tile locations. the high

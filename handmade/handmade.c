@@ -1,4 +1,3 @@
-#include "kengine/kengine_types.h"
 #define KENGINE_LIBRARY 1
 #define KENGINE_OPENGL 1
 #define KENGINE_IMPLEMENTATION 1
@@ -116,20 +115,29 @@ DrawRectangle(offscreen_buffer *Buffer,
 }
 
 internal void
-DrawBitmap(offscreen_buffer *Buffer, loaded_bitmap *Bitmap, f32 RealX, f32 RealY)
+DrawBitmap(offscreen_buffer *Buffer, loaded_bitmap *Bitmap,
+           f32 RealX, f32 RealY,
+           s32 AlignX, s32 AlignY)
 {
+    RealX -= (f32)AlignX;
+    RealY -= (f32)AlignY;
+
     s32 MinX = RoundF32ToS32(RealX);
     s32 MinY = RoundF32ToS32(RealY);
     s32 MaxX = RoundF32ToS32(RealX + (f32)Bitmap->Width);
     s32 MaxY = RoundF32ToS32(RealY + (f32)Bitmap->Height);
 
+    s32 SourceOffsetX = 0;
     if(MinX < 0)
     {
+        SourceOffsetX = -MinX;
         MinX = 0;
     }
 
+    s32 SourceOffsetY = 0;
     if(MinY < 0)
     {
+        SourceOffsetY = -MinY;
         MinY = 0;
     }
 
@@ -145,6 +153,7 @@ DrawBitmap(offscreen_buffer *Buffer, loaded_bitmap *Bitmap, f32 RealX, f32 RealY
 
     // TODO(kstandbridge): SourceRow needs to be changed based on clipping.
     u32 *SourceRow = Bitmap->Memory + Bitmap->Width*(Bitmap->Height - 1);
+    SourceRow += -SourceOffsetY*Bitmap->Width + SourceOffsetX;
     u8 *DestRow = ((u8 *)Buffer->Memory +
                       MinX*Buffer->BytesPerPixel +
                       MinY*Buffer->Pitch);
@@ -206,14 +215,41 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
     if(AppState == 0)
     {
         AppState = AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
-        string BackdropFile = PlatformReadEntireFile(&AppState->Arena, String("test/test_background.bmp"));
-        AppState->Backdrop = LoadBMP(BackdropFile);
-        string HeroHeadFile = PlatformReadEntireFile(&AppState->Arena, String("test/test_hero_front_head.bmp"));
-        AppState->HeroHead = LoadBMP(HeroHeadFile);
-        string HeroCapeFile = PlatformReadEntireFile(&AppState->Arena, String("test/test_hero_front_cape.bmp"));
-        AppState->HeroCape = LoadBMP(HeroCapeFile);
-        string HeroTorsoFile = PlatformReadEntireFile(&AppState->Arena, String("test/test_hero_front_torso.bmp"));
-        AppState->HeroTorso = LoadBMP(HeroTorsoFile);
+
+        AppState->Backdrop = LoadBMP(PlatformReadEntireFile(&AppState->Arena, String("test/test_background.bmp")));
+
+        hero_bitmaps *Bitmap = AppState->HeroBitmaps;
+
+        Bitmap->Head = LoadBMP(PlatformReadEntireFile(&AppState->Arena, String("test/test_hero_right_head.bmp")));
+        Bitmap->Cape = LoadBMP(PlatformReadEntireFile(&AppState->Arena, String("test/test_hero_right_cape.bmp")));
+        Bitmap->Torso = LoadBMP(PlatformReadEntireFile(&AppState->Arena, String("test/test_hero_right_torso.bmp")));
+        Bitmap->AlignX = 72;
+        Bitmap->AlignY = 182;
+        ++Bitmap;
+
+        Bitmap->Head = LoadBMP(PlatformReadEntireFile(&AppState->Arena, String("test/test_hero_back_head.bmp")));
+        Bitmap->Cape = LoadBMP(PlatformReadEntireFile(&AppState->Arena, String("test/test_hero_back_cape.bmp")));
+        Bitmap->Torso = LoadBMP(PlatformReadEntireFile(&AppState->Arena, String("test/test_hero_back_torso.bmp")));
+        Bitmap->AlignX = 72;
+        Bitmap->AlignY = 182;
+        ++Bitmap;
+
+        Bitmap->Head = LoadBMP(PlatformReadEntireFile(&AppState->Arena, String("test/test_hero_left_head.bmp")));
+        Bitmap->Cape = LoadBMP(PlatformReadEntireFile(&AppState->Arena, String("test/test_hero_left_cape.bmp")));
+        Bitmap->Torso = LoadBMP(PlatformReadEntireFile(&AppState->Arena, String("test/test_hero_left_torso.bmp")));
+        Bitmap->AlignX = 72;
+        Bitmap->AlignY = 182;
+        ++Bitmap;
+
+        Bitmap->Head = LoadBMP(PlatformReadEntireFile(&AppState->Arena, String("test/test_hero_front_head.bmp")));
+        Bitmap->Cape = LoadBMP(PlatformReadEntireFile(&AppState->Arena, String("test/test_hero_front_cape.bmp")));
+        Bitmap->Torso = LoadBMP(PlatformReadEntireFile(&AppState->Arena, String("test/test_hero_front_torso.bmp")));
+        Bitmap->AlignX = 72;
+        Bitmap->AlignY = 182;
+        ++Bitmap;
+
+        AppState->CameraP.AbsTileX = 17/2;
+        AppState->CameraP.AbsTileY = 9/2;
 
         // TODO(kstandbridge): Make random?
         AppState->RandomState.Value = 1234;
@@ -408,18 +444,22 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
             
             if(Controller->MoveUp.EndedDown)
             {
+                AppState->HeroFacingDirection = 1;
                 dPlayerY = 1.0f;
             }
             if(Controller->MoveDown.EndedDown)
             {
+                AppState->HeroFacingDirection = 3;
                 dPlayerY = -1.0f;
             }
             if(Controller->MoveLeft.EndedDown)
             {
+                AppState->HeroFacingDirection = 2;
                 dPlayerX = -1.0f;
             }
             if(Controller->MoveRight.EndedDown)
             {
+                AppState->HeroFacingDirection = 0;
                 dPlayerX = 1.0f;
             }
             f32 PlayerSpeed = 2.0f;
@@ -466,10 +506,29 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
                 AppState->PlayerP = NewPlayerP;
             }
 
+            AppState->CameraP.AbsTileZ = AppState->PlayerP.AbsTileZ;
+
+            tile_map_difference Diff = Subtract(TileMap, &AppState->PlayerP, &AppState->CameraP);
+            if(Diff.dX > (9.0f*TileMap->TileSideInMeters))
+            {
+                AppState->CameraP.AbsTileX += 17;
+            }
+            if(Diff.dX < -(9.0f*TileMap->TileSideInMeters))
+            {
+                AppState->CameraP.AbsTileX -= 17;
+            }
+            if(Diff.dY > (5.0f*TileMap->TileSideInMeters))
+            {
+                AppState->CameraP.AbsTileY += 9;
+            }
+            if(Diff.dY < -(5.0f*TileMap->TileSideInMeters))
+            {
+                AppState->CameraP.AbsTileY -= 9;
+            }
         }
     }
     
-    DrawBitmap(Buffer, &AppState->Backdrop, 0, 0);
+    DrawBitmap(Buffer, &AppState->Backdrop, 0, 0, 0, 0);
 
     f32 ScreenCenterX = 0.5f*(f32)Buffer->Width;
     f32 ScreenCenterY = 0.5f*(f32)Buffer->Height;
@@ -482,9 +541,9 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
             RelColumn < 20;
             ++RelColumn)
         {
-            u32 Column = AppState->PlayerP.AbsTileX + RelColumn;
-            u32 Row = AppState->PlayerP.AbsTileY + RelRow;
-            u32 TileID = GetTileValue_(TileMap, Column, Row, AppState->PlayerP.AbsTileZ);
+            u32 Column = AppState->CameraP.AbsTileX + RelColumn;
+            u32 Row = AppState->CameraP.AbsTileY + RelRow;
+            u32 TileID = GetTileValue_(TileMap, Column, Row, AppState->CameraP.AbsTileZ);
 
             if(TileID > 1)
             {
@@ -499,14 +558,14 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
                     Gray = 0.25f;
                 }
 
-                if((Column == AppState->PlayerP.AbsTileX) &&
-                   (Row == AppState->PlayerP.AbsTileY))
+                if((Column == AppState->CameraP.AbsTileX) &&
+                   (Row == AppState->CameraP.AbsTileY))
                 {
                     Gray = 0.0f;
                 }
 
-                f32 CenX = ScreenCenterX - MetersToPixels*AppState->PlayerP.OffsetX + ((f32)RelColumn)*TileSideInPixels;
-                f32 CenY = ScreenCenterY + MetersToPixels*AppState->PlayerP.OffsetY - ((f32)RelRow)*TileSideInPixels;
+                f32 CenX = ScreenCenterX - MetersToPixels*AppState->CameraP.OffsetX + ((f32)RelColumn)*TileSideInPixels;
+                f32 CenY = ScreenCenterY + MetersToPixels*AppState->CameraP.OffsetY - ((f32)RelRow)*TileSideInPixels;
                 f32 MinX = CenX - 0.5f*TileSideInPixels;
                 f32 MinY = CenY - 0.5f*TileSideInPixels;
                 f32 MaxX = CenX + 0.5f*TileSideInPixels;
@@ -515,18 +574,26 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
             }
         }
     }
+
+    tile_map_difference Diff = Subtract(TileMap, &AppState->PlayerP, &AppState->CameraP);
     
     f32 PlayerR = 1.0f;
     f32 PlayerG = 1.0f;
     f32 PlayerB = 0.0f;
-    f32 PlayerLeft = ScreenCenterX - 0.5f*MetersToPixels*PlayerWidth;
-    f32 PlayerTop = ScreenCenterY - MetersToPixels*PlayerHeight;
+    f32 PlayerGroundPointX = ScreenCenterX + MetersToPixels*Diff.dX;
+    f32 PlayerGroundPointY = ScreenCenterY - MetersToPixels*Diff.dY;
+    f32 PlayerLeft = PlayerGroundPointX - 0.5f*MetersToPixels*PlayerWidth;
+    f32 PlayerTop = PlayerGroundPointY - MetersToPixels*PlayerHeight;
     DrawRectangle(Buffer,
                   PlayerLeft, PlayerTop,
                   PlayerLeft + MetersToPixels*PlayerWidth,
                   PlayerTop + MetersToPixels*PlayerHeight,
                   PlayerR, PlayerG, PlayerB);
-    DrawBitmap(Buffer, &AppState->HeroHead, PlayerLeft, PlayerTop);
+
+    hero_bitmaps *HeroBitmaps = &AppState->HeroBitmaps[AppState->HeroFacingDirection];
+    DrawBitmap(Buffer, &HeroBitmaps->Torso, PlayerGroundPointX, PlayerGroundPointY, HeroBitmaps->AlignX, HeroBitmaps->AlignY);
+    DrawBitmap(Buffer, &HeroBitmaps->Cape, PlayerGroundPointX, PlayerGroundPointY, HeroBitmaps->AlignX, HeroBitmaps->AlignY);
+    DrawBitmap(Buffer, &HeroBitmaps->Head, PlayerGroundPointX, PlayerGroundPointY, HeroBitmaps->AlignX, HeroBitmaps->AlignY);
 }
 
 extern void

@@ -7,6 +7,16 @@ typedef struct world
     tile_map *TileMap;
 } world;
 
+typedef struct hero_bitmaps
+{
+    s32 AlignX;
+    s32 AlignY;
+    
+    loaded_bitmap Head;
+    loaded_bitmap Cape;
+    loaded_bitmap Torso;
+} hero_bitmaps;
+
 typedef struct app_state
 {
     memory_arena Arena;
@@ -14,13 +24,12 @@ typedef struct app_state
 
     world *World;
 
+    tile_map_position CameraP;
     tile_map_position PlayerP;
 
     loaded_bitmap Backdrop;
+    u32 HeroFacingDirection;
 
-    loaded_bitmap HeroHead;
-    loaded_bitmap HeroCape;
-    loaded_bitmap HeroTorso;
-
+    hero_bitmaps HeroBitmaps[4];
 } app_state;
 
