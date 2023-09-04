@@ -449,7 +449,7 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         }
     }
     
-    DrawBitmap(Buffer, &AppState->HeroHead, 0, 0);
+    DrawBitmap(Buffer, &AppState->Backdrop, 0, 0);
 
     f32 ScreenCenterX = 0.5f*(f32)Buffer->Width;
     f32 ScreenCenterY = 0.5f*(f32)Buffer->Height;
@@ -507,7 +507,7 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
                   PlayerTop + MetersToPixels*PlayerHeight,
                   PlayerR, PlayerG, PlayerB);
     // DrawBitmap(Buffer, &AppState->HeroHead, PlayerLeft, PlayerTop);
-    // DrawBitmap(Buffer, &AppState->HeroHead, 0, 0);
+    DrawBitmap(Buffer, &AppState->HeroHead, 0, 0);
 }
 
 extern void
