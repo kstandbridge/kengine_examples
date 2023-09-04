@@ -158,7 +158,27 @@ DrawBitmap(offscreen_buffer *Buffer, loaded_bitmap *Bitmap, f32 RealX, f32 RealY
             X < MaxX;
             ++X)
         {            
-            *Dest++ = *Source++;
+            f32 A = (f32)((*Source >> 24) & 0xFF) / 255.0f;
+            f32 SR = (f32)((*Source >> 16) & 0xFF);
+            f32 SG = (f32)((*Source >> 8) & 0xFF);
+            f32 SB = (f32)((*Source >> 0) & 0xFF);
+
+            f32 DR = (f32)((*Dest >> 16) & 0xFF);
+            f32 DG = (f32)((*Dest >> 8) & 0xFF);
+            f32 DB = (f32)((*Dest >> 0) & 0xFF);
+
+            // TODO(kstandbridge): Someday, we need to talk about premultiplied alpha!
+            // (this is not premultiplied alpha)
+            f32 R = (1.0f-A)*DR + A*SR;
+            f32 G = (1.0f-A)*DG + A*SG;
+            f32 B = (1.0f-A)*DB + A*SB;
+
+            *Dest = (((u32)(R + 0.5f) << 16) |
+                     ((u32)(G + 0.5f) << 8) |
+                     ((u32)(B + 0.5f) << 0));
+            
+            ++Dest;
+            ++Source;
         }
 
         DestRow += Buffer->Pitch;
@@ -506,8 +526,7 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
                   PlayerLeft + MetersToPixels*PlayerWidth,
                   PlayerTop + MetersToPixels*PlayerHeight,
                   PlayerR, PlayerG, PlayerB);
-    // DrawBitmap(Buffer, &AppState->HeroHead, PlayerLeft, PlayerTop);
-    DrawBitmap(Buffer, &AppState->HeroHead, 0, 0);
+    DrawBitmap(Buffer, &AppState->HeroHead, PlayerLeft, PlayerTop);
 }
 
 extern void
