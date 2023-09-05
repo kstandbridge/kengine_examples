@@ -26,6 +26,7 @@ typedef struct app_state
 
     tile_map_position CameraP;
     tile_map_position PlayerP;
+    v2 dPlayerP;
 
     loaded_bitmap Backdrop;
     u32 HeroFacingDirection;

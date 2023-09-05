@@ -437,42 +437,50 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         else
         {
             // NOTE(kstandbridge): Use digital movement tuning
-            v2 dPlayer = {0};
+            v2 ddPlayer = V2Set1(0);
             
             if(Controller->MoveUp.EndedDown)
             {
                 AppState->HeroFacingDirection = 1;
-                dPlayer.Y = 1.0f;
+                ddPlayer.Y = 1.0f;
             }
             if(Controller->MoveDown.EndedDown)
             {
                 AppState->HeroFacingDirection = 3;
-                dPlayer.Y = -1.0f;
+                ddPlayer.Y = -1.0f;
             }
             if(Controller->MoveLeft.EndedDown)
             {
                 AppState->HeroFacingDirection = 2;
-                dPlayer.X = -1.0f;
+                ddPlayer.X = -1.0f;
             }
             if(Controller->MoveRight.EndedDown)
             {
                 AppState->HeroFacingDirection = 0;
-                dPlayer.X = 1.0f;
+                ddPlayer.X = 1.0f;
             }
-            f32 PlayerSpeed = 2.0f;
+            
+            if((ddPlayer.X != 0.0f) && (ddPlayer.Y != 0.0f))
+            {
+                ddPlayer = V2MultiplyScalar(ddPlayer, 0.707106781187f);
+            }
+
+            f32 PlayerSpeed = 10.0f;
             if(Controller->ActionUp.EndedDown)
             {
-                PlayerSpeed = 10.0f;
+                PlayerSpeed = 50.0f;
             }
-            dPlayer = V2MultiplyScalar(dPlayer, PlayerSpeed);
+            ddPlayer = V2MultiplyScalar(ddPlayer, PlayerSpeed);
 
-            if((dPlayer.X != 0.0f) && (dPlayer.Y != 0.0f))
-            {
-                dPlayer = V2MultiplyScalar(dPlayer, 0.707106781187f);
-            }
+            // TODO(kstandbridge): ODE here!
+            ddPlayer = V2Add(ddPlayer, V2MultiplyScalar(AppState->dPlayerP, -1.5f));
+            
             // TODO(kstandbridge): Diagonal will be faster!  Fix once we have vectors :)
             tile_map_position NewPlayerP = AppState->PlayerP;
-            NewPlayerP.Offset = V2Add(NewPlayerP.Offset, V2MultiplyScalar(dPlayer, Input->dtForFrame));
+            NewPlayerP.Offset = (V2Add(V2MultiplyScalar(V2MultiplyScalar(ddPlayer, 0.5f), Square(Input->dtForFrame)),
+                                       V2Add(V2MultiplyScalar(AppState->dPlayerP, Input->dtForFrame),
+                                             NewPlayerP.Offset)));
+            AppState->dPlayerP = V2Add(V2MultiplyScalar(ddPlayer, Input->dtForFrame), AppState->dPlayerP);
             NewPlayerP = RecanonicalizePosition(TileMap, NewPlayerP);
             // TODO(kstandbridge): Delta function that auto recanonicalizes
 

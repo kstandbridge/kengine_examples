@@ -295,7 +295,7 @@
 			"args": [
 				""
 			],
-			"problemMatcher": "$gcc",
+			"problemMatcher": [],
 			"type": "shell",
 			"options": {
 				"cwd": "${workspaceFolder}"
