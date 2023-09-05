@@ -157,8 +157,8 @@ RecanonicalizePosition(tile_map *TileMap, tile_map_position Pos)
 {
     tile_map_position Result = Pos;
 
-    RecanonicalizeCoord(TileMap, &Result.AbsTileX, &Result.OffsetX);
-    RecanonicalizeCoord(TileMap, &Result.AbsTileY, &Result.OffsetY);
+    RecanonicalizeCoord(TileMap, &Result.AbsTileX, &Result.Offset.X);
+    RecanonicalizeCoord(TileMap, &Result.AbsTileY, &Result.Offset.Y);
 
     return Result;
 }
@@ -178,12 +178,13 @@ Subtract(tile_map *TileMap, tile_map_position *A, tile_map_position *B)
 {
     tile_map_difference Result;
 
-    f32 dTileX = (f32)A->AbsTileX - (f32)B->AbsTileX;
-    f32 dTileY = (f32)A->AbsTileY - (f32)B->AbsTileY;
+    v2 dTileXY = V2((f32)A->AbsTileX - (f32)B->AbsTileX,
+                    (f32)A->AbsTileY - (f32)B->AbsTileY);
     f32 dTileZ = (f32)A->AbsTileZ - (f32)B->AbsTileZ;
 
-    Result.dX = TileMap->TileSideInMeters*dTileX + (A->OffsetX - B->OffsetX);
-    Result.dY = TileMap->TileSideInMeters*dTileY + (A->OffsetY - B->OffsetY);
+    Result.dXY = V2Add(V2MultiplyScalar(dTileXY, TileMap->TileSideInMeters),
+                       V2Subtract(A->Offset, B->Offset));
+    // Result.dXY = TileMap->TileSideInMeters*dTileXY + (A->Offset - B->Offset);
 
     // TODO(kstandbridge): Think about what we want to do about Z 
     Result.dZ = TileMap->TileSideInMeters*dTileZ;

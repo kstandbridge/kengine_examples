@@ -282,15 +282,15 @@
 			"problemMatcher": [
 				"$msCompile"
 			],
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			},
+			"group": "build",
 			"detail": "compiler: cl.exe"
 		},
 		{
 			"label": "handmade linux debug build",
-			"group": "build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
 			"command": "handmade/build.sh",
 			"args": [
 				""

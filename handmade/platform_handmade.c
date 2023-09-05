@@ -1,6 +1,5 @@
 #define _GNU_SOURCE
 
-#define KENGINE_IMMEDIATE
-#define KENGINE_IMPLEMENTATION
+#define KENGINE_IMMEDIATE 1
+#define KENGINE_IMPLEMENTATION 1
 #include "kengine.h"
-

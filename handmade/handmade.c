@@ -62,16 +62,14 @@ RenderWeirdGradient(offscreen_buffer *Buffer, s32 BlueOffset, s32 GreenOffset)
 }
 
 internal void
-DrawRectangle(offscreen_buffer *Buffer,
-              f32 RealMinX, f32 RealMinY, f32 RealMaxX, f32 RealMaxY,
-              f32 R, f32 G, f32 B)
+DrawRectangle(offscreen_buffer *Buffer, v2 vMin, v2 vMax, f32 R, f32 G, f32 B)
 {
     // TODO(kstandbridge): Color as float
 
-    s32 MinX = RoundF32ToS32(RealMinX);
-    s32 MinY = RoundF32ToS32(RealMinY);
-    s32 MaxX = RoundF32ToS32(RealMaxX);
-    s32 MaxY = RoundF32ToS32(RealMaxY);
+    s32 MinX = RoundF32ToS32(vMin.X);
+    s32 MinY = RoundF32ToS32(vMin.Y);
+    s32 MaxX = RoundF32ToS32(vMax.X);
+    s32 MaxY = RoundF32ToS32(vMax.Y);
 
     if(MinX < 0)
     {
@@ -256,8 +254,8 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
 
         AppState->PlayerP.AbsTileX = 1;
         AppState->PlayerP.AbsTileY = 3;
-        AppState->PlayerP.OffsetX = 5.0f;
-        AppState->PlayerP.OffsetY = 5.0f;
+        AppState->PlayerP.Offset.X = 5.0f;
+        AppState->PlayerP.Offset.Y = 5.0f;
 
         AppState->World = PushStruct(&AppState->Arena, world);
         world *World = AppState->World;
@@ -439,50 +437,51 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         else
         {
             // NOTE(kstandbridge): Use digital movement tuning
-            f32 dPlayerX = 0.0f; // pixels/second
-            f32 dPlayerY = 0.0f; // pixels/second
+            v2 dPlayer = {0};
             
             if(Controller->MoveUp.EndedDown)
             {
                 AppState->HeroFacingDirection = 1;
-                dPlayerY = 1.0f;
+                dPlayer.Y = 1.0f;
             }
             if(Controller->MoveDown.EndedDown)
             {
                 AppState->HeroFacingDirection = 3;
-                dPlayerY = -1.0f;
+                dPlayer.Y = -1.0f;
             }
             if(Controller->MoveLeft.EndedDown)
             {
                 AppState->HeroFacingDirection = 2;
-                dPlayerX = -1.0f;
+                dPlayer.X = -1.0f;
             }
             if(Controller->MoveRight.EndedDown)
             {
                 AppState->HeroFacingDirection = 0;
-                dPlayerX = 1.0f;
+                dPlayer.X = 1.0f;
             }
             f32 PlayerSpeed = 2.0f;
             if(Controller->ActionUp.EndedDown)
             {
                 PlayerSpeed = 10.0f;
             }
-            dPlayerX *= PlayerSpeed;
-            dPlayerY *= PlayerSpeed;
+            dPlayer = V2MultiplyScalar(dPlayer, PlayerSpeed);
 
+            if((dPlayer.X != 0.0f) && (dPlayer.Y != 0.0f))
+            {
+                dPlayer = V2MultiplyScalar(dPlayer, 0.707106781187f);
+            }
             // TODO(kstandbridge): Diagonal will be faster!  Fix once we have vectors :)
             tile_map_position NewPlayerP = AppState->PlayerP;
-            NewPlayerP.OffsetX += Input->dtForFrame*dPlayerX;
-            NewPlayerP.OffsetY += Input->dtForFrame*dPlayerY;
+            NewPlayerP.Offset = V2Add(NewPlayerP.Offset, V2MultiplyScalar(dPlayer, Input->dtForFrame));
             NewPlayerP = RecanonicalizePosition(TileMap, NewPlayerP);
             // TODO(kstandbridge): Delta function that auto recanonicalizes
 
             tile_map_position PlayerLeft = NewPlayerP;
-            PlayerLeft.OffsetX -= 0.5f*PlayerWidth;
+            PlayerLeft.Offset.X -= 0.5f*PlayerWidth;
             PlayerLeft = RecanonicalizePosition(TileMap, PlayerLeft);
 
             tile_map_position PlayerRight = NewPlayerP;
-            PlayerRight.OffsetX += 0.5f*PlayerWidth;
+            PlayerRight.Offset.X += 0.5f*PlayerWidth;
             PlayerRight = RecanonicalizePosition(TileMap, PlayerRight);
 
             if(IsTileMapPointEmpty(TileMap, NewPlayerP),
@@ -509,19 +508,19 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
             AppState->CameraP.AbsTileZ = AppState->PlayerP.AbsTileZ;
 
             tile_map_difference Diff = Subtract(TileMap, &AppState->PlayerP, &AppState->CameraP);
-            if(Diff.dX > (9.0f*TileMap->TileSideInMeters))
+            if(Diff.dXY.X > (9.0f*TileMap->TileSideInMeters))
             {
                 AppState->CameraP.AbsTileX += 17;
             }
-            if(Diff.dX < -(9.0f*TileMap->TileSideInMeters))
+            if(Diff.dXY.X < -(9.0f*TileMap->TileSideInMeters))
             {
                 AppState->CameraP.AbsTileX -= 17;
             }
-            if(Diff.dY > (5.0f*TileMap->TileSideInMeters))
+            if(Diff.dXY.Y > (5.0f*TileMap->TileSideInMeters))
             {
                 AppState->CameraP.AbsTileY += 9;
             }
-            if(Diff.dY < -(5.0f*TileMap->TileSideInMeters))
+            if(Diff.dXY.Y < -(5.0f*TileMap->TileSideInMeters))
             {
                 AppState->CameraP.AbsTileY -= 9;
             }
@@ -564,13 +563,12 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
                     Gray = 0.0f;
                 }
 
-                f32 CenX = ScreenCenterX - MetersToPixels*AppState->CameraP.OffsetX + ((f32)RelColumn)*TileSideInPixels;
-                f32 CenY = ScreenCenterY + MetersToPixels*AppState->CameraP.OffsetY - ((f32)RelRow)*TileSideInPixels;
-                f32 MinX = CenX - 0.5f*TileSideInPixels;
-                f32 MinY = CenY - 0.5f*TileSideInPixels;
-                f32 MaxX = CenX + 0.5f*TileSideInPixels;
-                f32 MaxY = CenY + 0.5f*TileSideInPixels;
-                DrawRectangle(Buffer, MinX, MinY, MaxX, MaxY, Gray, Gray, Gray);
+                v2 TileSide = V2Set1(0.5f*TileSideInPixels);
+                v2 Cen = V2(ScreenCenterX - MetersToPixels*AppState->CameraP.Offset.X + ((f32)RelColumn)*TileSideInPixels,
+                            ScreenCenterY + MetersToPixels*AppState->CameraP.Offset.Y - ((f32)RelRow)*TileSideInPixels);
+                v2 Min = V2Subtract(Cen, TileSide);
+                v2 Max = V2Add(Cen, TileSide);
+                DrawRectangle(Buffer, Min, Max, Gray, Gray, Gray);
             }
         }
     }
@@ -580,14 +578,14 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
     f32 PlayerR = 1.0f;
     f32 PlayerG = 1.0f;
     f32 PlayerB = 0.0f;
-    f32 PlayerGroundPointX = ScreenCenterX + MetersToPixels*Diff.dX;
-    f32 PlayerGroundPointY = ScreenCenterY - MetersToPixels*Diff.dY;
-    f32 PlayerLeft = PlayerGroundPointX - 0.5f*MetersToPixels*PlayerWidth;
-    f32 PlayerTop = PlayerGroundPointY - MetersToPixels*PlayerHeight;
+    f32 PlayerGroundPointX = ScreenCenterX + MetersToPixels*Diff.dXY.X;
+    f32 PlayerGroundPointY = ScreenCenterY - MetersToPixels*Diff.dXY.Y;
+    v2 PlayerLeftTop = V2(PlayerGroundPointX - 0.5f*MetersToPixels*PlayerWidth,
+                           PlayerGroundPointY - MetersToPixels*PlayerHeight);
+    v2 PlayerWidthHeight = V2(PlayerWidth, PlayerHeight);
     DrawRectangle(Buffer,
-                  PlayerLeft, PlayerTop,
-                  PlayerLeft + MetersToPixels*PlayerWidth,
-                  PlayerTop + MetersToPixels*PlayerHeight,
+                  PlayerLeftTop,
+                  V2Add(PlayerLeftTop, V2MultiplyScalar(PlayerWidthHeight, MetersToPixels)),
                   PlayerR, PlayerG, PlayerB);
 
     hero_bitmaps *HeroBitmaps = &AppState->HeroBitmaps[AppState->HeroFacingDirection];
