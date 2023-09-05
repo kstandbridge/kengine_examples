@@ -17,20 +17,30 @@ typedef struct hero_bitmaps
     loaded_bitmap Torso;
 } hero_bitmaps;
 
+typedef struct entity
+{
+    b32 Exists;
+    tile_map_position P;
+    v2 dP;
+    u32 FacingDirection;
+    f32 Width, Height;
+} entity;
+
 typedef struct app_state
 {
     memory_arena Arena;
-    random_state RandomState;
 
     world *World;
 
+    // TODO(kstandbridge): Should we allow split-screen?
+    u32 CameraFollowingEntityIndex;
     tile_map_position CameraP;
-    tile_map_position PlayerP;
-    v2 dPlayerP;
+
+    u32 PlayerIndexForController[ArrayCount(((app_input *)0)->Controllers)];
+    u32 EntityCount;
+    entity Entities[256];
 
     loaded_bitmap Backdrop;
-    u32 HeroFacingDirection;
-
     hero_bitmaps HeroBitmaps[4];
 } app_state;
 

@@ -7,6 +7,7 @@
 
 #include "handmade.h"
 #include "handmade_tile.c"
+#include "handmade_random.h"
 
 internal void
 AppOutputSound(app_state *AppState, sound_output_buffer *SoundBuffer, s32 ToneHz)
@@ -193,6 +194,209 @@ DrawBitmap(offscreen_buffer *Buffer, loaded_bitmap *Bitmap,
     }
 }
 
+internal entity *
+GetEntity(app_state *AppState, u32 Index)
+{
+    entity *Result = 0;
+
+    if((Index > 0) && (Index < ArrayCount(AppState->Entities)))
+    {
+        Result = &AppState->Entities[Index];
+    }
+    
+    return Result;
+}
+
+internal void
+InitializePlayer(app_state *AppState, u32 EntityIndex)
+{
+    entity *Entity = GetEntity(AppState, EntityIndex);
+
+    Entity->Exists = true;
+    Entity->P.AbsTileX = 1;
+    Entity->P.AbsTileY = 3;
+    Entity->P.Offset.X = 5.0;
+    Entity->P.Offset.Y = 5.0;
+    Entity->Height = 1.4f;
+    Entity->Width = 0.75f*Entity->Height;
+
+    if(!GetEntity(AppState, AppState->CameraFollowingEntityIndex))
+    {
+        AppState->CameraFollowingEntityIndex = EntityIndex;
+    }
+}
+
+internal u32
+AddEntity(app_state *AppState)
+{
+    u32 Result = AppState->EntityCount++;
+
+    Assert(AppState->EntityCount < ArrayCount(AppState->Entities));
+    entity *Entity = &AppState->Entities[Result];
+    ZeroStruct(Entity);
+
+    return Result;
+}
+
+internal void
+MovePlayer(app_state *AppState, entity *Entity, f32 dt, v2 ddP)
+{
+    tile_map *TileMap = AppState->World->TileMap;
+
+    if((ddP.X != 0.0f) && (ddP.Y != 0.0f))
+    {
+        ddP = V2MultiplyScalar(ddP, 0.707106781187f);
+    }
+
+    f32 PlayerSpeed = 50.0f; // m/s^2
+    ddP = V2MultiplyScalar(ddP, PlayerSpeed);
+
+    // TODO(kstandbridge): ODE here!
+    ddP = V2Add(ddP, V2MultiplyScalar(Entity->dP, -8.0f));
+    
+    tile_map_position OldPlayerP = Entity->P;
+    tile_map_position NewPlayerP = OldPlayerP;
+    v2 PlayerDelta = V2Add(V2MultiplyScalar(V2MultiplyScalar(ddP, 0.5f), Square(dt)),
+                           V2MultiplyScalar(Entity->dP, dt));
+    NewPlayerP.Offset = V2Add(NewPlayerP.Offset, PlayerDelta);
+    Entity->dP = V2Add(V2MultiplyScalar(ddP, dt), Entity->dP);
+    NewPlayerP = RecanonicalizePosition(TileMap, NewPlayerP);
+    // TODO(kstandbridge): Delta function that auto recanonicalizes
+
+#if 1
+    tile_map_position PlayerLeft = NewPlayerP;
+    PlayerLeft.Offset.X -= 0.5f*Entity->Width;
+    PlayerLeft = RecanonicalizePosition(TileMap, PlayerLeft);
+
+    tile_map_position PlayerRight = NewPlayerP;
+    PlayerRight.Offset.X += 0.5f*Entity->Width;
+    PlayerRight = RecanonicalizePosition(TileMap, PlayerRight);
+
+    b32 Collided = false;
+    tile_map_position ColP = {0};
+    if(!IsTileMapPointEmpty(TileMap, NewPlayerP))
+    {
+        ColP = NewPlayerP;
+        Collided = true;
+    }
+    if(!IsTileMapPointEmpty(TileMap, PlayerLeft))
+    {
+        ColP = PlayerLeft;
+        Collided = true;
+    }
+    if(!IsTileMapPointEmpty(TileMap, PlayerRight))
+    {
+        ColP = PlayerRight;
+        Collided = true;
+    }
+
+    if(Collided)
+    {
+        v2 r = V2Set1(0);
+        if(ColP.AbsTileX < Entity->P.AbsTileX)
+        {
+            r = V2(1, 0);
+        }
+        if(ColP.AbsTileX > Entity->P.AbsTileX)
+        {
+            r = V2(-1, 0);
+        }
+        if(ColP.AbsTileY < Entity->P.AbsTileY)
+        {
+            r = V2(0, 1);
+        }
+        if(ColP.AbsTileY > Entity->P.AbsTileY)
+        {
+            r = V2(0, -1);
+        }
+
+        Entity->dP = V2Subtract(Entity->dP, V2MultiplyScalar(r, Inner(Entity->dP, r)));
+    }
+    else
+    {
+        Entity->P = NewPlayerP;
+    }
+#else
+    u32 MinTileX = 0;
+    u32 MinTileY = 0;
+    u32 OnePastMaxTileX = 0;
+    u32 OnePastMaxTileY = 0;
+    u32 AbsTileZ = Entity->P.AbsTileZ;
+    tile_map_position BestPlayerP = Entity->P;
+    f32 BestDistanceSq = LengthSq(PlayerDelta);
+    for(u32 AbsTileY = MinTileY;
+        AbsTileY != OnePastMaxTileY;
+        ++AbsTileY)
+    {
+        for(u32 AbsTileX = MinTileX;
+            AbsTileX != OnePastMaxTileX;
+            ++AbsTileX)
+        {
+            tile_map_position TestTileP = CenteredTilePoint(AbsTileX, AbsTileY, AbsTileZ);
+            u32 TileValue = GetTileValue(TileMap, TestTileP);
+            if(IsTileValueEmpty(TileValue))
+            {
+                v2 MinCorner = V2MultiplyScalar(V2Set1(TileMap->TileSideInMeters), -0.5f);
+                v2 MaxCorner = V2MultiplyScalar(V2Set1(TileMap->TileSideInMeters), 0.5f);
+
+                tile_map_difference RelNewPlayerP = Subtract(TileMap, &TestTileP, &NewPlayerP);
+                v2 TestP = ClosetPointInRectangle(MinCorner, MaxCorner, RelNewPlayerP);
+                TestDistanceSq = ;
+                if(BestDistanceSq > TestDistanceSq)
+                {
+                    BestPlayerP = ;
+                    BestDistanceSq = ;
+                }
+            }
+        }
+    }
+#endif
+
+    // 
+    // NOTE(kstandbridge): Update camera/player Z based on last movement.
+    //
+    if(!AreOnSameTile(&OldPlayerP, &Entity->P))
+    {
+        u32 NewTileValue = GetTileValue(TileMap, Entity->P);
+
+        if(NewTileValue == 3)
+        {
+            ++Entity->P.AbsTileZ;
+        }
+        else if(NewTileValue == 4)
+        {
+            --Entity->P.AbsTileZ;
+        }
+    }
+
+    if((Entity->dP.X == 0.0f) && (Entity->dP.Y == 0.0f))
+    {
+        // NOTE(kstandbridge): Leave FacingDirection whatever it was
+    }
+    else if(AbsoluteValue(Entity->dP.X) > AbsoluteValue(Entity->dP.Y))
+    {
+        if(Entity->dP.X > 0)
+        {
+            Entity->FacingDirection = 0;
+        }
+        else 
+        {
+            Entity->FacingDirection = 2;
+        }
+    }
+    else 
+    {
+        if(Entity->dP.Y > 0)
+        {
+            Entity->FacingDirection = 1;
+        }
+        else
+        {
+            Entity->FacingDirection = 3;
+        }
+    }
+}
+
 extern void 
 AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Buffer)
 {
@@ -200,9 +404,6 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
     
     Assert((&Input->Controllers[0].Terminator - &Input->Controllers[0].Buttons[0]) ==
         (ArrayCount(Input->Controllers[0].Buttons)));
-
-    f32 PlayerHeight = 1.4f;
-    f32 PlayerWidth = 0.75f*PlayerHeight;
 
 #if 0
     f32 LowerLeftX = -(f32)World.TileSideInPixels/2.0f;
@@ -213,6 +414,9 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
     if(AppState == 0)
     {
         AppState = AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
+
+        // NOTE(kstandbridge): Reserve entity slot 0 for the null entity
+        AddEntity(AppState);
 
         AppState->Backdrop = LoadBMP(PlatformReadEntireFile(&AppState->Arena, String("test/test_background.bmp")));
 
@@ -249,13 +453,6 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         AppState->CameraP.AbsTileX = 17/2;
         AppState->CameraP.AbsTileY = 9/2;
 
-        // TODO(kstandbridge): Make random?
-        AppState->RandomState.Value = 1234;
-
-        AppState->PlayerP.AbsTileX = 1;
-        AppState->PlayerP.AbsTileY = 3;
-        AppState->PlayerP.Offset.X = 5.0f;
-        AppState->PlayerP.Offset.Y = 5.0f;
 
         AppState->World = PushStruct(&AppState->Arena, world);
         world *World = AppState->World;
@@ -278,6 +475,7 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
 
         TileMap->TileSideInMeters = 1.4f;
 
+        u32 RandomNumberIndex = 0;
         u32 TilesPerWidth = 17;
         u32 TilesPerHeight = 9;
         u32 ScreenX = 0;
@@ -295,14 +493,17 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
             ScreenIndex < 100;
             ++ScreenIndex)
         {
-            u32 RandomChoice = RandomU32(&AppState->RandomState);
+            // TODO(kstandbridge): Random number generator!
+            Assert(RandomNumberIndex < ArrayCount(RandomNumberTable));
+
+            u32 RandomChoice;
             if(DoorUp || DoorDown)
             {
-                RandomChoice %= 2;
+                RandomChoice = RandomNumberTable[RandomNumberIndex++] % 2;
             }
             else 
             {
-                RandomChoice %= 3;
+                RandomChoice = RandomNumberTable[RandomNumberIndex++] % 3;
             }
 
             b32 CreatedZDoor = false;
@@ -431,171 +632,76 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         ++ControllerIndex)
     {
         controller_input *Controller = GetController(Input, ControllerIndex);
-        if(Controller->IsAnalog)
+        entity *ControllingEntity = GetEntity(AppState,
+                                              AppState->PlayerIndexForController[ControllerIndex]);
+        if(ControllingEntity)
         {
-            // NOTE(kstandbridge): Use analog movement tuning
-        }
-        else
-        {
-            // NOTE(kstandbridge): Use digital movement tuning
-            v2 ddPlayer = V2Set1(0);
-            
-            if(Controller->MoveUp.EndedDown)
-            {
-                AppState->HeroFacingDirection = 1;
-                ddPlayer.Y = 1.0f;
-            }
-            if(Controller->MoveDown.EndedDown)
-            {
-                AppState->HeroFacingDirection = 3;
-                ddPlayer.Y = -1.0f;
-            }
-            if(Controller->MoveLeft.EndedDown)
-            {
-                AppState->HeroFacingDirection = 2;
-                ddPlayer.X = -1.0f;
-            }
-            if(Controller->MoveRight.EndedDown)
-            {
-                AppState->HeroFacingDirection = 0;
-                ddPlayer.X = 1.0f;
-            }
-            
-            if((ddPlayer.X != 0.0f) && (ddPlayer.Y != 0.0f))
-            {
-                ddPlayer = V2MultiplyScalar(ddPlayer, 0.707106781187f);
-            }
+            v2 ddP = V2Set1(0);
 
-            f32 PlayerSpeed = 10.0f;
-            if(Controller->ActionUp.EndedDown)
+            if(Controller->IsAnalog)
             {
-                PlayerSpeed = 50.0f;
-            }
-            ddPlayer = V2MultiplyScalar(ddPlayer, PlayerSpeed);
-
-            // TODO(kstandbridge): ODE here!
-            ddPlayer = V2Add(ddPlayer, V2MultiplyScalar(AppState->dPlayerP, -1.5f));
-            
-            // TODO(kstandbridge): Diagonal will be faster!  Fix once we have vectors :)
-            tile_map_position NewPlayerP = AppState->PlayerP;
-            v2 PlayerDelta = V2Add(V2MultiplyScalar(V2MultiplyScalar(ddPlayer, 0.5f), Square(Input->dtForFrame)),
-                                   V2MultiplyScalar(AppState->dPlayerP, Input->dtForFrame));
-            NewPlayerP.Offset = V2Add(NewPlayerP.Offset, PlayerDelta);
-            AppState->dPlayerP = V2Add(V2MultiplyScalar(ddPlayer, Input->dtForFrame), AppState->dPlayerP);
-
-            NewPlayerP = RecanonicalizePosition(TileMap, NewPlayerP);
-            // TODO(kstandbridge): Delta function that auto recanonicalizes
-
-#if 1
-            tile_map_position PlayerLeft = NewPlayerP;
-            PlayerLeft.Offset.X -= 0.5f*PlayerWidth;
-            PlayerLeft = RecanonicalizePosition(TileMap, PlayerLeft);
-
-            tile_map_position PlayerRight = NewPlayerP;
-            PlayerRight.Offset.X += 0.5f*PlayerWidth;
-            PlayerRight = RecanonicalizePosition(TileMap, PlayerRight);
-
-            b32 Collided = false;
-            tile_map_position ColP = {0};
-            if(!IsTileMapPointEmpty(TileMap, NewPlayerP))
-            {
-                ColP = NewPlayerP;
-                Collided = true;
-            }
-            if(!IsTileMapPointEmpty(TileMap, PlayerLeft))
-            {
-                ColP = PlayerLeft;
-                Collided = true;
-            }
-            if(!IsTileMapPointEmpty(TileMap, PlayerRight))
-            {
-                ColP = PlayerRight;
-                Collided = true;
-            }
-
-            if(Collided)
-            {
-                v2 r = V2Set1(0);
-                if(ColP.AbsTileX < AppState->PlayerP.AbsTileX)
-                {
-                    r = V2(1, 0);
-                }
-                if(ColP.AbsTileX > AppState->PlayerP.AbsTileX)
-                {
-                    r = V2(-1, 0);
-                }
-                if(ColP.AbsTileY < AppState->PlayerP.AbsTileY)
-                {
-                    r = V2(0, 1);
-                }
-                if(ColP.AbsTileY > AppState->PlayerP.AbsTileY)
-                {
-                    r = V2(0, -1);
-                }
-
-                AppState->dPlayerP = V2Subtract(AppState->dPlayerP, V2MultiplyScalar(r, Inner(AppState->dPlayerP, r)));
+                // NOTE(kstandbridge): Use analog movement tuning
+                ddP = V2(Controller->StickAverageX, Controller->StickAverageY);
             }
             else
             {
-                AppState->PlayerP = NewPlayerP;
-            }
-#else
-            u32 MinTileX = 0;
-            u32 MinTileY = 0;
-            u32 OnePastMaxTileX = 0;
-            u32 OnePastMaxTileY = 0;
-            u32 AbsTileZ = AppState->PlayerP.AbsTileZ;
-            tile_map_position BestPlayerP = AppState->PlayerP;
-            f32 BestDistanceSq = LengthSq(PlayerDelta);
-            for(u32 AbsTileY = MinTileY;
-                AbsTileY != OnePastMaxTileY;
-                ++AbsTileY)
-            {
-                for(u32 AbsTileX = MinTileX;
-                    AbsTileX != OnePastMaxTileX;
-                    ++AbsTileX)
+                // NOTE(kstandbridge): Use digital movement tuning
+                if(Controller->MoveUp.EndedDown)
                 {
-                    tile_map_position TestTileP = CenteredTilePoint(AbsTileX, AbsTileY, AbsTileZ);
-                    u32 TileValue = GetTileValue(TileMap, TestTileP);
-                    if(IsTileValueEmpty(TileValue))
-                    {
-                        v2 MinCorner = V2MultiplyScalar(V2Set1(TileMap->TileSideInMeters), -0.5f);
-                        v2 MaxCorner = V2MultiplyScalar(V2Set1(TileMap->TileSideInMeters), 0.5f);
-
-                        tile_map_difference RelNewPlayerP = Subtract(TileMap, &TestTileP, &NewPlayerP);
-                        v2 TestP = ClosetPointInRectangle(MinCorner, MaxCorner, RelNewPlayerP);
-                        TestDistanceSq = ;
-                        if(BestDistanceSq > TestDistanceSq)
-                        {
-                            BestPlayerP = ;
-                            BestDistanceSq = ;
-                        }
-                    }
+                    ddP.Y = 1.0f;
+                }
+                if(Controller->MoveDown.EndedDown)
+                {
+                    ddP.Y = -1.0f;
+                }
+                if(Controller->MoveLeft.EndedDown)
+                {
+                    ddP.X = -1.0f;
+                }
+                if(Controller->MoveRight.EndedDown)
+                {
+                    ddP.X = 1.0f;
                 }
             }
-#endif
-        }
-    }
-    AppState->CameraP.AbsTileZ = AppState->PlayerP.AbsTileZ;
 
-    tile_map_difference Diff = Subtract(TileMap, &AppState->PlayerP, &AppState->CameraP);
-    if(Diff.dXY.X > (9.0f*TileMap->TileSideInMeters))
-    {
-        AppState->CameraP.AbsTileX += 17;
+            MovePlayer(AppState, ControllingEntity, Input->dtForFrame, ddP);
+        }
+        else 
+        {
+            if(Controller->Start.EndedDown)
+            {
+                u32 EntityIndex = AddEntity(AppState);
+                InitializePlayer(AppState, EntityIndex);
+                AppState->PlayerIndexForController[ControllerIndex] = EntityIndex;
+            }
+        }
+
     }
-    if(Diff.dXY.X < -(9.0f*TileMap->TileSideInMeters))
+
+    entity *CameraFollowingEntity = GetEntity(AppState, AppState->CameraFollowingEntityIndex);
+    if(CameraFollowingEntity)
     {
-        AppState->CameraP.AbsTileX -= 17;
+        AppState->CameraP.AbsTileZ = CameraFollowingEntity->P.AbsTileZ;
+
+        tile_map_difference Diff = Subtract(TileMap, &CameraFollowingEntity->P, &AppState->CameraP);
+        if(Diff.dXY.X > (9.0f*TileMap->TileSideInMeters))
+        {
+            AppState->CameraP.AbsTileX += 17;
+        }
+        if(Diff.dXY.X < -(9.0f*TileMap->TileSideInMeters))
+        {
+            AppState->CameraP.AbsTileX -= 17;
+        }
+        if(Diff.dXY.Y > (5.0f*TileMap->TileSideInMeters))
+        {
+            AppState->CameraP.AbsTileY += 9;
+        }
+        if(Diff.dXY.Y < -(5.0f*TileMap->TileSideInMeters))
+        {
+            AppState->CameraP.AbsTileY -= 9;
+        }
+
     }
-    if(Diff.dXY.Y > (5.0f*TileMap->TileSideInMeters))
-    {
-        AppState->CameraP.AbsTileY += 9;
-    }
-    if(Diff.dXY.Y < -(5.0f*TileMap->TileSideInMeters))
-    {
-        AppState->CameraP.AbsTileY -= 9;
-    }
-    Diff = Subtract(TileMap, &AppState->PlayerP, &AppState->CameraP);
     
     // 
     // NOTE(kstandbridge): Render 
@@ -646,24 +752,36 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         }
     }
 
-    
-    f32 PlayerR = 1.0f;
-    f32 PlayerG = 1.0f;
-    f32 PlayerB = 0.0f;
-    f32 PlayerGroundPointX = ScreenCenterX + MetersToPixels*Diff.dXY.X;
-    f32 PlayerGroundPointY = ScreenCenterY - MetersToPixels*Diff.dXY.Y;
-    v2 PlayerLeftTop = V2(PlayerGroundPointX - 0.5f*MetersToPixels*PlayerWidth,
-                           PlayerGroundPointY - MetersToPixels*PlayerHeight);
-    v2 PlayerWidthHeight = V2(PlayerWidth, PlayerHeight);
-    DrawRectangle(Buffer,
-                  PlayerLeftTop,
-                  V2Add(PlayerLeftTop, V2MultiplyScalar(PlayerWidthHeight, MetersToPixels)),
-                  PlayerR, PlayerG, PlayerB);
 
-    hero_bitmaps *HeroBitmaps = &AppState->HeroBitmaps[AppState->HeroFacingDirection];
-    DrawBitmap(Buffer, &HeroBitmaps->Torso, PlayerGroundPointX, PlayerGroundPointY, HeroBitmaps->AlignX, HeroBitmaps->AlignY);
-    DrawBitmap(Buffer, &HeroBitmaps->Cape, PlayerGroundPointX, PlayerGroundPointY, HeroBitmaps->AlignX, HeroBitmaps->AlignY);
-    DrawBitmap(Buffer, &HeroBitmaps->Head, PlayerGroundPointX, PlayerGroundPointY, HeroBitmaps->AlignX, HeroBitmaps->AlignY);
+    entity *Entity = AppState->Entities;
+    for(u32 EntityIndex = 0;
+        EntityIndex < AppState->EntityCount;
+        ++EntityIndex, ++Entity)
+    {
+        // TODO(kstandbridge): Culling of entities based on Z / camera view
+        if(Entity->Exists)
+        {
+            tile_map_difference Diff = Subtract(TileMap, &Entity->P, &AppState->CameraP);
+
+            f32 PlayerR = 1.0f;
+            f32 PlayerG = 1.0f;
+            f32 PlayerB = 0.0f;
+            f32 PlayerGroundPointX = ScreenCenterX + MetersToPixels*Diff.dXY.X;
+            f32 PlayerGroundPointY = ScreenCenterY - MetersToPixels*Diff.dXY.Y;
+            v2 PlayerLeftTop = V2(PlayerGroundPointX - 0.5f*MetersToPixels*Entity->Width,
+                    PlayerGroundPointY - MetersToPixels*Entity->Height);
+            v2 EntityWidthHeight = V2(Entity->Width, Entity->Height);
+            DrawRectangle(Buffer,
+                    PlayerLeftTop,
+                    V2Add(PlayerLeftTop, V2MultiplyScalar(EntityWidthHeight, MetersToPixels)),
+                    PlayerR, PlayerG, PlayerB);
+
+            hero_bitmaps *HeroBitmaps = &AppState->HeroBitmaps[Entity->FacingDirection];
+            DrawBitmap(Buffer, &HeroBitmaps->Torso, PlayerGroundPointX, PlayerGroundPointY, HeroBitmaps->AlignX, HeroBitmaps->AlignY);
+            DrawBitmap(Buffer, &HeroBitmaps->Cape, PlayerGroundPointX, PlayerGroundPointY, HeroBitmaps->AlignX, HeroBitmaps->AlignY);
+            DrawBitmap(Buffer, &HeroBitmaps->Head, PlayerGroundPointX, PlayerGroundPointY, HeroBitmaps->AlignX, HeroBitmaps->AlignY);
+        }
+    }
 }
 
 extern void

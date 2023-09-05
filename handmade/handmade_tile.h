@@ -1,5 +1,6 @@
 #if !defined(HANDMADE_TILE_H)
 
+// TODO(kstandbridge): Replace this with a v3 once we get to v3
 typedef struct tile_map_difference
 {
     v2 dXY;
