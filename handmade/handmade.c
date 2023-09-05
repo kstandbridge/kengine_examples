@@ -424,7 +424,8 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
 
     // f32 LowerLeftX = -(f32)TileSideInPixels/2;
     // f32 LowerLeftY = (f32)Buffer->Height;
-
+    // tile_map_position OldPlayerP = AppState->PlayerP;
+ 
     for(int ControllerIndex = 0;
         ControllerIndex < ArrayCount(Input->Controllers);
         ++ControllerIndex)
@@ -477,14 +478,15 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
             
             // TODO(kstandbridge): Diagonal will be faster!  Fix once we have vectors :)
             tile_map_position NewPlayerP = AppState->PlayerP;
-            NewPlayerP.Offset = (V2Add(V2MultiplyScalar(V2MultiplyScalar(ddPlayer, 0.5f), Square(Input->dtForFrame)),
-                                       V2Add(V2MultiplyScalar(AppState->dPlayerP, Input->dtForFrame),
-                                             NewPlayerP.Offset)));
+            v2 PlayerDelta = V2Add(V2MultiplyScalar(V2MultiplyScalar(ddPlayer, 0.5f), Square(Input->dtForFrame)),
+                                   V2MultiplyScalar(AppState->dPlayerP, Input->dtForFrame));
+            NewPlayerP.Offset = V2Add(NewPlayerP.Offset, PlayerDelta);
             AppState->dPlayerP = V2Add(V2MultiplyScalar(ddPlayer, Input->dtForFrame), AppState->dPlayerP);
 
             NewPlayerP = RecanonicalizePosition(TileMap, NewPlayerP);
             // TODO(kstandbridge): Delta function that auto recanonicalizes
 
+#if 1
             tile_map_position PlayerLeft = NewPlayerP;
             PlayerLeft.Offset.X -= 0.5f*PlayerWidth;
             PlayerLeft = RecanonicalizePosition(TileMap, PlayerLeft);
@@ -535,45 +537,69 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
             }
             else
             {
-                if(!AreOnSameTile(&AppState->PlayerP, &NewPlayerP))
-                {
-                    u32 NewTileValue = GetTileValue(TileMap, NewPlayerP);
-
-                    if(NewTileValue == 3)
-                    {
-                        ++NewPlayerP.AbsTileZ;
-                    }
-                    else if(NewTileValue == 4)
-                    {
-                        --NewPlayerP.AbsTileZ;
-                    }
-                }
-
                 AppState->PlayerP = NewPlayerP;
             }
+#else
+            u32 MinTileX = 0;
+            u32 MinTileY = 0;
+            u32 OnePastMaxTileX = 0;
+            u32 OnePastMaxTileY = 0;
+            u32 AbsTileZ = AppState->PlayerP.AbsTileZ;
+            tile_map_position BestPlayerP = AppState->PlayerP;
+            f32 BestDistanceSq = LengthSq(PlayerDelta);
+            for(u32 AbsTileY = MinTileY;
+                AbsTileY != OnePastMaxTileY;
+                ++AbsTileY)
+            {
+                for(u32 AbsTileX = MinTileX;
+                    AbsTileX != OnePastMaxTileX;
+                    ++AbsTileX)
+                {
+                    tile_map_position TestTileP = CenteredTilePoint(AbsTileX, AbsTileY, AbsTileZ);
+                    u32 TileValue = GetTileValue(TileMap, TestTileP);
+                    if(IsTileValueEmpty(TileValue))
+                    {
+                        v2 MinCorner = V2MultiplyScalar(V2Set1(TileMap->TileSideInMeters), -0.5f);
+                        v2 MaxCorner = V2MultiplyScalar(V2Set1(TileMap->TileSideInMeters), 0.5f);
 
-            AppState->CameraP.AbsTileZ = AppState->PlayerP.AbsTileZ;
-
-            tile_map_difference Diff = Subtract(TileMap, &AppState->PlayerP, &AppState->CameraP);
-            if(Diff.dXY.X > (9.0f*TileMap->TileSideInMeters))
-            {
-                AppState->CameraP.AbsTileX += 17;
+                        tile_map_difference RelNewPlayerP = Subtract(TileMap, &TestTileP, &NewPlayerP);
+                        v2 TestP = ClosetPointInRectangle(MinCorner, MaxCorner, RelNewPlayerP);
+                        TestDistanceSq = ;
+                        if(BestDistanceSq > TestDistanceSq)
+                        {
+                            BestPlayerP = ;
+                            BestDistanceSq = ;
+                        }
+                    }
+                }
             }
-            if(Diff.dXY.X < -(9.0f*TileMap->TileSideInMeters))
-            {
-                AppState->CameraP.AbsTileX -= 17;
-            }
-            if(Diff.dXY.Y > (5.0f*TileMap->TileSideInMeters))
-            {
-                AppState->CameraP.AbsTileY += 9;
-            }
-            if(Diff.dXY.Y < -(5.0f*TileMap->TileSideInMeters))
-            {
-                AppState->CameraP.AbsTileY -= 9;
-            }
+#endif
         }
     }
+    AppState->CameraP.AbsTileZ = AppState->PlayerP.AbsTileZ;
+
+    tile_map_difference Diff = Subtract(TileMap, &AppState->PlayerP, &AppState->CameraP);
+    if(Diff.dXY.X > (9.0f*TileMap->TileSideInMeters))
+    {
+        AppState->CameraP.AbsTileX += 17;
+    }
+    if(Diff.dXY.X < -(9.0f*TileMap->TileSideInMeters))
+    {
+        AppState->CameraP.AbsTileX -= 17;
+    }
+    if(Diff.dXY.Y > (5.0f*TileMap->TileSideInMeters))
+    {
+        AppState->CameraP.AbsTileY += 9;
+    }
+    if(Diff.dXY.Y < -(5.0f*TileMap->TileSideInMeters))
+    {
+        AppState->CameraP.AbsTileY -= 9;
+    }
+    Diff = Subtract(TileMap, &AppState->PlayerP, &AppState->CameraP);
     
+    // 
+    // NOTE(kstandbridge): Render 
+    //
     DrawBitmap(Buffer, &AppState->Backdrop, 0, 0, 0, 0);
 
     f32 ScreenCenterX = 0.5f*(f32)Buffer->Width;
@@ -620,7 +646,6 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         }
     }
 
-    tile_map_difference Diff = Subtract(TileMap, &AppState->PlayerP, &AppState->CameraP);
     
     f32 PlayerR = 1.0f;
     f32 PlayerG = 1.0f;

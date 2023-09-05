@@ -402,5 +402,13 @@
             "environment": [],
             "console": "integratedTerminal"
         },
+        
+        {
+            "name": "handmade linux debug",
+            "type": "codelldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/platform_handmade",
+            "cwd": "${workspaceFolder}/handmade/data"
+        }
     ]
 }

@@ -38,19 +38,6 @@ SetTileValueUnchecked(tile_map *TileMap, tile_chunk *TileChunk, u32 TileX, u32 T
     TileChunk->Tiles[TileY*TileMap->ChunkDim + TileX] = TileValue;
 }
 
-internal u32
-GetTileValue__(tile_map *TileMap, tile_chunk *TileChunk, u32 TestTileX, u32 TestTileY)
-{
-    u32 Result = 0;
-
-    if(TileChunk && TileChunk->Tiles)
-    {
-        Result = GetTileValueUnchecked(TileMap, TileChunk, TestTileX, TestTileY);
-    }
-
-    return Result;
-}
-
 internal void
 SetTileValue_(tile_map *TileMap, tile_chunk *TileChunk, 
               u32 TestTileX, u32 TestTileY, u32 TileValue)
@@ -77,6 +64,19 @@ GetChunkPositionFor(tile_map *TileMap, u32 AbsTileX, u32 AbsTileY, u32 AbsTileZ)
 }
 
 internal u32
+GetTileValue__(tile_map *TileMap, tile_chunk *TileChunk, u32 TestTileX, u32 TestTileY)
+{
+    u32 Result = 0;
+
+    if(TileChunk && TileChunk->Tiles)
+    {
+        Result = GetTileValueUnchecked(TileMap, TileChunk, TestTileX, TestTileY);
+    }
+
+    return Result;
+}
+
+internal u32
 GetTileValue_(tile_map *TileMap, u32 AbsTileX, u32 AbsTileY, u32 AbsTileZ)
 {
     tile_chunk_position ChunkPos = GetChunkPositionFor(TileMap, AbsTileX, AbsTileY, AbsTileZ);
@@ -95,14 +95,21 @@ GetTileValue(tile_map *TileMap, tile_map_position Pos)
 }
 
 internal b32
+IsTileValueEmpty(u32 TileValue)
+{
+    b32 Result = ((TileValue == 1) ||
+                 (TileValue == 3) ||
+                 (TileValue == 4));
+
+    return Result;
+}
+
+internal b32
 IsTileMapPointEmpty(tile_map *TileMap, tile_map_position Pos)
 {
-
     u32 TileChunkValue = GetTileValue(TileMap, Pos);
-    b32 Result = ((TileChunkValue == 1) ||
-                  (TileChunkValue == 3) ||
-                  (TileChunkValue == 4));
-    
+    b32 Result = IsTileValueEmpty(TileChunkValue);
+
     return Result;
 }
 
@@ -188,6 +195,19 @@ Subtract(tile_map *TileMap, tile_map_position *A, tile_map_position *B)
 
     // TODO(kstandbridge): Think about what we want to do about Z 
     Result.dZ = TileMap->TileSideInMeters*dTileZ;
+
+    return Result;
+}
+
+inline tile_map_position
+CenteredTilePoint(u32 AbsTileX, u32 AbsTileY, u32 AbsTileZ)
+{
+    tile_map_position Result =
+    {
+        .AbsTileX = AbsTileX,
+        .AbsTileY = AbsTileY,
+        .AbsTileZ = AbsTileZ,
+    };
 
     return Result;
 }
