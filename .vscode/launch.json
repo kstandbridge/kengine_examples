@@ -394,7 +394,7 @@
         },
         {
             "name": "handmade win32 debug",
-            "type": "cppvsdbg",
+            "type": "lldb",
             "request": "launch",
             "program": "${workspaceFolder}\\bin\\platform_handmade.exe",
             "stopAtEntry": false,

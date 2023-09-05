@@ -287,10 +287,7 @@
 		},
 		{
 			"label": "handmade linux debug build",
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			},
+			"group": "build",
 			"command": "handmade/build.sh",
 			"args": [
 				""
@@ -311,7 +308,7 @@
 		},
 		{
 			"label": "handmade win32 debug build",
-			"type": "cppbuild",
+			"type": "shell",
 			"command": "handmade\\build.bat",
 			"args": [],
 			"options": {
@@ -328,7 +325,10 @@
 			"problemMatcher": [
 				"$msCompile"
 			],
-			"group": "build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
 			"detail": "compiler: cl.exe"
 		}
 	]
