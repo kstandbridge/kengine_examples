@@ -481,6 +481,7 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
                                        V2Add(V2MultiplyScalar(AppState->dPlayerP, Input->dtForFrame),
                                              NewPlayerP.Offset)));
             AppState->dPlayerP = V2Add(V2MultiplyScalar(ddPlayer, Input->dtForFrame), AppState->dPlayerP);
+
             NewPlayerP = RecanonicalizePosition(TileMap, NewPlayerP);
             // TODO(kstandbridge): Delta function that auto recanonicalizes
 
@@ -492,9 +493,47 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
             PlayerRight.Offset.X += 0.5f*PlayerWidth;
             PlayerRight = RecanonicalizePosition(TileMap, PlayerRight);
 
-            if(IsTileMapPointEmpty(TileMap, NewPlayerP),
-               IsTileMapPointEmpty(TileMap, PlayerLeft),
-               IsTileMapPointEmpty(TileMap, PlayerRight))
+            b32 Collided = false;
+            tile_map_position ColP = {0};
+            if(!IsTileMapPointEmpty(TileMap, NewPlayerP))
+            {
+                ColP = NewPlayerP;
+                Collided = true;
+            }
+            if(!IsTileMapPointEmpty(TileMap, PlayerLeft))
+            {
+                ColP = PlayerLeft;
+                Collided = true;
+            }
+            if(!IsTileMapPointEmpty(TileMap, PlayerRight))
+            {
+                ColP = PlayerRight;
+                Collided = true;
+            }
+
+            if(Collided)
+            {
+                v2 r = V2Set1(0);
+                if(ColP.AbsTileX < AppState->PlayerP.AbsTileX)
+                {
+                    r = V2(1, 0);
+                }
+                if(ColP.AbsTileX > AppState->PlayerP.AbsTileX)
+                {
+                    r = V2(-1, 0);
+                }
+                if(ColP.AbsTileY < AppState->PlayerP.AbsTileY)
+                {
+                    r = V2(0, 1);
+                }
+                if(ColP.AbsTileY > AppState->PlayerP.AbsTileY)
+                {
+                    r = V2(0, -1);
+                }
+
+                AppState->dPlayerP = V2Subtract(AppState->dPlayerP, V2MultiplyScalar(r, Inner(AppState->dPlayerP, r)));
+            }
+            else
             {
                 if(!AreOnSameTile(&AppState->PlayerP, &NewPlayerP))
                 {
