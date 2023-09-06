@@ -239,6 +239,25 @@ AddEntity(app_state *AppState)
 }
 
 internal void
+TestWall(f32 WallX, f32 RelX, f32 RelY, f32 PlayerDeltaX, f32 PlayerDeltaY,
+         f32 *tMin, f32 MinY, f32 MaxY)
+{
+    f32 tEpsilon = 0.0001f;
+    if(PlayerDeltaX != 0.0f)
+    {
+        f32 tResult = (WallX - RelX) / PlayerDeltaX;
+        f32 Y = RelY + tResult*PlayerDeltaY;
+        if((tResult >= 0.0f) && (*tMin > tResult))
+        {
+            if((Y >= MinY) && (Y <= MaxY))
+            {
+                *tMin = Maximum(0.0f, tResult - tEpsilon);
+            }
+        }
+    }
+}
+
+internal void
 MovePlayer(app_state *AppState, entity *Entity, f32 dt, v2 ddP)
 {
     tile_map *TileMap = AppState->World->TileMap;
@@ -256,15 +275,17 @@ MovePlayer(app_state *AppState, entity *Entity, f32 dt, v2 ddP)
     ddP = V2Add(ddP, V2MultiplyScalar(Entity->dP, -8.0f));
     
     tile_map_position OldPlayerP = Entity->P;
-    tile_map_position NewPlayerP = OldPlayerP;
     v2 PlayerDelta = V2Add(V2MultiplyScalar(V2MultiplyScalar(ddP, 0.5f), Square(dt)),
                            V2MultiplyScalar(Entity->dP, dt));
-    NewPlayerP.Offset = V2Add(NewPlayerP.Offset, PlayerDelta);
     Entity->dP = V2Add(V2MultiplyScalar(ddP, dt), Entity->dP);
+    tile_map_position NewPlayerP = OldPlayerP;
+    NewPlayerP.Offset = V2Add(NewPlayerP.Offset, PlayerDelta);
     NewPlayerP = RecanonicalizePosition(TileMap, NewPlayerP);
     // TODO(kstandbridge): Delta function that auto recanonicalizes
 
-#if 1
+#if 0
+    // TODO(kstandbridge): Delta function that auto-recanonicalizes
+    //
     tile_map_position PlayerLeft = NewPlayerP;
     PlayerLeft.Offset.X -= 0.5f*Entity->Width;
     PlayerLeft = RecanonicalizePosition(TileMap, PlayerLeft);
@@ -340,15 +361,25 @@ MovePlayer(app_state *AppState, entity *Entity, f32 dt, v2 ddP)
                 v2 MinCorner = V2MultiplyScalar(V2Set1(TileMap->TileSideInMeters), -0.5f);
                 v2 MaxCorner = V2MultiplyScalar(V2Set1(TileMap->TileSideInMeters), 0.5f);
 
-                tile_map_difference RelNewPlayerP = Subtract(TileMap, &TestTileP, &NewPlayerP);
-                v2 Rel = RelNewPlayerP.dXY;
+                tile_map_difference RelOldPlayerP = Subtract(TileMap, &OldPlayerP, &TestTileP);
+                v2 Rel = RelOldPlayerP.dXY;
 
-                // TODO(kstandbridge): Test all four walls and take minmum Z.
-                tResult = (WallX - RelNewPlayerP.x) / PlayerDelta.X;
-                TestWall(MinCorner.X, MinCorner.Y, MaxCorner.Y, RelNewPlayerP.dXY.X);
+                TestWall(MinCorner.X, Rel.X, Rel.Y, PlayerDelta.X, PlayerDelta.Y,
+                         &tMin, MinCorner.Y, MaxCorner.Y);
+                TestWall(MaxCorner.X, Rel.X, Rel.Y, PlayerDelta.X, PlayerDelta.Y,
+                         &tMin, MinCorner.Y, MaxCorner.Y);
+                TestWall(MinCorner.Y, Rel.Y, Rel.X, PlayerDelta.Y, PlayerDelta.X,
+                         &tMin, MinCorner.X, MaxCorner.X);
+                TestWall(MaxCorner.Y, Rel.Y, Rel.X, PlayerDelta.Y, PlayerDelta.X,
+                         &tMin, MinCorner.X, MaxCorner.X);
             }
         }
     }
+
+    NewPlayerP = OldPlayerP;
+    NewPlayerP.Offset = V2Add(NewPlayerP.Offset, V2MultiplyScalar(PlayerDelta, tMin));
+    Entity->P = NewPlayerP;
+    NewPlayerP = RecanonicalizePosition(TileMap, NewPlayerP);
 #endif
 
     // 
@@ -744,8 +775,8 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
                 v2 TileSide = V2Set1(0.5f*TileSideInPixels);
                 v2 Cen = V2(ScreenCenterX - MetersToPixels*AppState->CameraP.Offset.X + ((f32)RelColumn)*TileSideInPixels,
                             ScreenCenterY + MetersToPixels*AppState->CameraP.Offset.Y - ((f32)RelRow)*TileSideInPixels);
-                v2 Min = V2Subtract(Cen, TileSide);
-                v2 Max = V2Add(Cen, TileSide);
+                v2 Min = V2Subtract(Cen, V2MultiplyScalar(TileSide, 0.9f));
+                v2 Max = V2Add(Cen, V2MultiplyScalar(TileSide, 0.9f));
                 DrawRectangle(Buffer, Min, Max, Gray, Gray, Gray);
             }
         }

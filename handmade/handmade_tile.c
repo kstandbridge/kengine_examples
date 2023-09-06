@@ -154,9 +154,9 @@ RecanonicalizeCoord(tile_map *TileMap, u32 *Tile, f32 *TileRel)
     *Tile += Offset;
     *TileRel -= Offset*TileMap->TileSideInMeters;
 
-    // TODO(kstandbridge): Fix floating point math so this can be <
-    Assert(*TileRel >= -0.5f*TileMap->TileSideInMeters);
-    Assert(*TileRel <= 0.5f*TileMap->TileSideInMeters);
+    // TODO(kstandbridge): Fix floating point math so this can be exact?
+    Assert(*TileRel >= -0.5001f*TileMap->TileSideInMeters);
+    Assert(*TileRel <= 0.5001f*TileMap->TileSideInMeters);
 }
 
 internal tile_map_position
