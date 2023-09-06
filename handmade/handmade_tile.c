@@ -164,8 +164,8 @@ RecanonicalizePosition(tile_map *TileMap, tile_map_position Pos)
 {
     tile_map_position Result = Pos;
 
-    RecanonicalizeCoord(TileMap, &Result.AbsTileX, &Result.Offset.X);
-    RecanonicalizeCoord(TileMap, &Result.AbsTileY, &Result.Offset.Y);
+    RecanonicalizeCoord(TileMap, &Result.AbsTileX, &Result.Offset_.X);
+    RecanonicalizeCoord(TileMap, &Result.AbsTileY, &Result.Offset_.Y);
 
     return Result;
 }
@@ -190,7 +190,7 @@ Subtract(tile_map *TileMap, tile_map_position *A, tile_map_position *B)
     f32 dTileZ = (f32)A->AbsTileZ - (f32)B->AbsTileZ;
 
     Result.dXY = V2Add(V2MultiplyScalar(dTileXY, TileMap->TileSideInMeters),
-                       V2Subtract(A->Offset, B->Offset));
+                       V2Subtract(A->Offset_, B->Offset_));
     // Result.dXY = TileMap->TileSideInMeters*dTileXY + (A->Offset - B->Offset);
 
     // TODO(kstandbridge): Think about what we want to do about Z 
@@ -199,7 +199,7 @@ Subtract(tile_map *TileMap, tile_map_position *A, tile_map_position *B)
     return Result;
 }
 
-inline tile_map_position
+internal tile_map_position
 CenteredTilePoint(u32 AbsTileX, u32 AbsTileY, u32 AbsTileZ)
 {
     tile_map_position Result =
@@ -210,4 +210,13 @@ CenteredTilePoint(u32 AbsTileX, u32 AbsTileY, u32 AbsTileZ)
     };
 
     return Result;
+}
+
+internal tile_map_position
+Offset(tile_map *TileMap, tile_map_position P, v2 Offset)
+{
+    P.Offset_ = V2Add(P.Offset_, Offset);
+    P = RecanonicalizePosition(TileMap, P);
+
+    return P;
 }

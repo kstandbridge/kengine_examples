@@ -19,7 +19,7 @@ typedef struct tile_map_position
 
     // NOTE(kstandbridge): These are the offsets from the tile center
     
-    v2 Offset;
+    v2 Offset_;
 } tile_map_position;
 
 typedef struct tile_chunk_position

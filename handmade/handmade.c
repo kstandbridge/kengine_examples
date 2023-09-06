@@ -215,8 +215,8 @@ InitializePlayer(app_state *AppState, u32 EntityIndex)
     Entity->Exists = true;
     Entity->P.AbsTileX = 1;
     Entity->P.AbsTileY = 3;
-    Entity->P.Offset.X = 5.0;
-    Entity->P.Offset.Y = 5.0;
+    Entity->P.Offset_.X = 0;
+    Entity->P.Offset_.Y = 0;
     Entity->Height = 1.4f;
     Entity->Width = 0.75f*Entity->Height;
 
@@ -278,20 +278,18 @@ MovePlayer(app_state *AppState, entity *Entity, f32 dt, v2 ddP)
     v2 PlayerDelta = V2Add(V2MultiplyScalar(V2MultiplyScalar(ddP, 0.5f), Square(dt)),
                            V2MultiplyScalar(Entity->dP, dt));
     Entity->dP = V2Add(V2MultiplyScalar(ddP, dt), Entity->dP);
-    tile_map_position NewPlayerP = OldPlayerP;
-    NewPlayerP.Offset = V2Add(NewPlayerP.Offset, PlayerDelta);
-    NewPlayerP = RecanonicalizePosition(TileMap, NewPlayerP);
+    tile_map_position NewPlayerP = Offset(TileMap, OldPlayerP, PlayerDelta);
     // TODO(kstandbridge): Delta function that auto recanonicalizes
 
 #if 0
     // TODO(kstandbridge): Delta function that auto-recanonicalizes
     //
     tile_map_position PlayerLeft = NewPlayerP;
-    PlayerLeft.Offset.X -= 0.5f*Entity->Width;
+    PlayerLeft.Offset_.X -= 0.5f*Entity->Width;
     PlayerLeft = RecanonicalizePosition(TileMap, PlayerLeft);
 
     tile_map_position PlayerRight = NewPlayerP;
-    PlayerRight.Offset.X += 0.5f*Entity->Width;
+    PlayerRight.Offset_.X += 0.5f*Entity->Width;
     PlayerRight = RecanonicalizePosition(TileMap, PlayerRight);
 
     b32 Collided = false;
@@ -339,20 +337,35 @@ MovePlayer(app_state *AppState, entity *Entity, f32 dt, v2 ddP)
         Entity->P = NewPlayerP;
     }
 #else
+
+#if 0
     u32 MinTileX = Minimum(OldPlayerP.AbsTileX, NewPlayerP.AbsTileX);
     u32 MinTileY = Minimum(OldPlayerP.AbsTileY, NewPlayerP.AbsTileY);
     u32 OnePastMaxTileX = Maximum(OldPlayerP.AbsTileX, NewPlayerP.AbsTileX) + 1;
     u32 OnePastMaxTileY = Maximum(OldPlayerP.AbsTileY, NewPlayerP.AbsTileY) + 1;
+#else 
+    u32 StartTileX = OldPlayerP.AbsTileX;
+    u32 StartTileY = OldPlayerP.AbsTileY;
+    u32 EndTileX = NewPlayerP.AbsTileX;
+    u32 EndTileY = NewPlayerP.AbsTileY;
+
+    if(EndTileY > StartTileY)
+    {
+        // int x = 4;
+    }
+
+    s32 DeltaX = SignOfS32(EndTileX - StartTileX);
+    s32 DeltaY = SignOfS32(EndTileY - StartTileY);
+#endif
 
     u32 AbsTileZ = Entity->P.AbsTileZ;
     f32 tMin = 1.0f;
-    for(u32 AbsTileY = MinTileY;
-        AbsTileY != OnePastMaxTileY;
-        ++AbsTileY)
+
+    u32 AbsTileY = StartTileY;
+    for(;;)
     {
-        for(u32 AbsTileX = MinTileX;
-            AbsTileX != OnePastMaxTileX;
-            ++AbsTileX)
+        u32 AbsTileX = StartTileX;
+        for(;;)
         {
             tile_map_position TestTileP = CenteredTilePoint(AbsTileX, AbsTileY, AbsTileZ);
             u32 TileValue = GetTileValue(TileMap, TestTileP);
@@ -373,13 +386,28 @@ MovePlayer(app_state *AppState, entity *Entity, f32 dt, v2 ddP)
                 TestWall(MaxCorner.Y, Rel.Y, Rel.X, PlayerDelta.Y, PlayerDelta.X,
                          &tMin, MinCorner.X, MaxCorner.X);
             }
+
+            if(AbsTileX == EndTileX)
+            {
+                break;
+            }
+            else 
+            {
+                AbsTileX += DeltaX;
+            }
+        }
+
+        if(AbsTileY == EndTileY)
+        {
+            break;
+        }
+        else 
+        {
+            AbsTileY += DeltaY;
         }
     }
 
-    NewPlayerP = OldPlayerP;
-    NewPlayerP.Offset = V2Add(NewPlayerP.Offset, V2MultiplyScalar(PlayerDelta, tMin));
-    Entity->P = NewPlayerP;
-    NewPlayerP = RecanonicalizePosition(TileMap, NewPlayerP);
+    Entity->P = Offset(TileMap, OldPlayerP, V2MultiplyScalar(PlayerDelta, tMin));
 #endif
 
     // 
@@ -508,8 +536,14 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         u32 RandomNumberIndex = 0;
         u32 TilesPerWidth = 17;
         u32 TilesPerHeight = 9;
+#if 0
+        // TODO(kstandbridge): Waiting for full sparseness
+        u32 ScreenX = S32Max / 2;
+        u32 ScreenY = S32Max / 2;
+#else
         u32 ScreenX = 0;
         u32 ScreenY = 0;
+#endif
         u32 AbsTileZ = 0;
 
         // TODO(kstandbridge): Replace all this with real world generation!
@@ -773,8 +807,8 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
                 }
 
                 v2 TileSide = V2Set1(0.5f*TileSideInPixels);
-                v2 Cen = V2(ScreenCenterX - MetersToPixels*AppState->CameraP.Offset.X + ((f32)RelColumn)*TileSideInPixels,
-                            ScreenCenterY + MetersToPixels*AppState->CameraP.Offset.Y - ((f32)RelRow)*TileSideInPixels);
+                v2 Cen = V2(ScreenCenterX - MetersToPixels*AppState->CameraP.Offset_.X + ((f32)RelColumn)*TileSideInPixels,
+                            ScreenCenterY + MetersToPixels*AppState->CameraP.Offset_.Y - ((f32)RelRow)*TileSideInPixels);
                 v2 Min = V2Subtract(Cen, V2MultiplyScalar(TileSide, 0.9f));
                 v2 Max = V2Add(Cen, V2MultiplyScalar(TileSide, 0.9f));
                 DrawRectangle(Buffer, Min, Max, Gray, Gray, Gray);
