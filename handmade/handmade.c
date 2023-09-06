@@ -243,9 +243,10 @@ MovePlayer(app_state *AppState, entity *Entity, f32 dt, v2 ddP)
 {
     tile_map *TileMap = AppState->World->TileMap;
 
+    f32 ddPLength = LengthSq(ddP);
     if((ddP.X != 0.0f) && (ddP.Y != 0.0f))
     {
-        ddP = V2MultiplyScalar(ddP, 0.707106781187f);
+        ddP = V2MultiplyScalar(ddP, 1.0f / SquareRoot(ddPLength));
     }
 
     f32 PlayerSpeed = 50.0f; // m/s^2
@@ -317,13 +318,13 @@ MovePlayer(app_state *AppState, entity *Entity, f32 dt, v2 ddP)
         Entity->P = NewPlayerP;
     }
 #else
-    u32 MinTileX = 0;
-    u32 MinTileY = 0;
-    u32 OnePastMaxTileX = 0;
-    u32 OnePastMaxTileY = 0;
+    u32 MinTileX = Minimum(OldPlayerP.AbsTileX, NewPlayerP.AbsTileX);
+    u32 MinTileY = Minimum(OldPlayerP.AbsTileY, NewPlayerP.AbsTileY);
+    u32 OnePastMaxTileX = Maximum(OldPlayerP.AbsTileX, NewPlayerP.AbsTileX) + 1;
+    u32 OnePastMaxTileY = Maximum(OldPlayerP.AbsTileY, NewPlayerP.AbsTileY) + 1;
+
     u32 AbsTileZ = Entity->P.AbsTileZ;
-    tile_map_position BestPlayerP = Entity->P;
-    f32 BestDistanceSq = LengthSq(PlayerDelta);
+    f32 tMin = 1.0f;
     for(u32 AbsTileY = MinTileY;
         AbsTileY != OnePastMaxTileY;
         ++AbsTileY)
@@ -334,19 +335,17 @@ MovePlayer(app_state *AppState, entity *Entity, f32 dt, v2 ddP)
         {
             tile_map_position TestTileP = CenteredTilePoint(AbsTileX, AbsTileY, AbsTileZ);
             u32 TileValue = GetTileValue(TileMap, TestTileP);
-            if(IsTileValueEmpty(TileValue))
+            if(!IsTileValueEmpty(TileValue))
             {
                 v2 MinCorner = V2MultiplyScalar(V2Set1(TileMap->TileSideInMeters), -0.5f);
                 v2 MaxCorner = V2MultiplyScalar(V2Set1(TileMap->TileSideInMeters), 0.5f);
 
                 tile_map_difference RelNewPlayerP = Subtract(TileMap, &TestTileP, &NewPlayerP);
-                v2 TestP = ClosetPointInRectangle(MinCorner, MaxCorner, RelNewPlayerP);
-                TestDistanceSq = ;
-                if(BestDistanceSq > TestDistanceSq)
-                {
-                    BestPlayerP = ;
-                    BestDistanceSq = ;
-                }
+                v2 Rel = RelNewPlayerP.dXY;
+
+                // TODO(kstandbridge): Test all four walls and take minmum Z.
+                tResult = (WallX - RelNewPlayerP.x) / PlayerDelta.X;
+                TestWall(MinCorner.X, MinCorner.Y, MaxCorner.Y, RelNewPlayerP.dXY.X);
             }
         }
     }
