@@ -15,9 +15,8 @@ typedef struct hero_bitmaps
 typedef struct high_entity
 {
     v2 P; // NOTE(kstandbridge): Relative to the camera!
-    
     v2 dP;
-    u32 AbsTileZ;
+    u32 ChunkZ;
     u32 FacingDirection;
 
     f32 Z;
@@ -74,5 +73,7 @@ typedef struct app_state
     loaded_bitmap Backdrop;
     loaded_bitmap Shadow;
     hero_bitmaps HeroBitmaps[4];
+
+    loaded_bitmap Tree;
 } app_state;
 

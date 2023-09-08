@@ -210,6 +210,47 @@ GetLowEntity(app_state *AppState, u32 Index)
     return Result;
 }
 
+internal v2 
+GetCameraSpaceP(app_state *AppState, low_entity *EntityLow)
+{
+    // NOTE(kstandbridge): Map the entity into camera space
+    world_difference Diff = Subtract(AppState->World, &EntityLow->P, &AppState->CameraP);
+    v2 Result = Diff.dXY;
+
+    return Result;
+}
+
+internal high_entity *
+MakeEntityHighFrequency_(app_state *AppState, low_entity *EntityLow, u32 LowIndex, v2 CameraSpaceP)
+{
+    high_entity *Result = 0;
+
+    Assert(EntityLow->HighEntityIndex == 0);
+
+    if(EntityLow->HighEntityIndex == 0)
+    {
+        if(AppState->HighEntityCount < ArrayCount(AppState->HighEntities_))
+        {
+            u32 HighIndex = AppState->HighEntityCount++;
+            Result = AppState->HighEntities_ + HighIndex;
+
+            Result->P = CameraSpaceP;
+            Result->dP = V2Set1(0);
+            Result->ChunkZ = EntityLow->P.ChunkZ;
+            Result->FacingDirection = 0;
+            Result->LowEntityIndex = LowIndex;
+
+            EntityLow->HighEntityIndex = HighIndex;
+        }
+        else 
+        {
+            InvalidCodePath;
+        }
+    }
+
+    return Result;
+}
+
 internal high_entity *
 MakeEntityHighFrequency(app_state *AppState, u32 LowIndex)
 {
@@ -222,26 +263,8 @@ MakeEntityHighFrequency(app_state *AppState, u32 LowIndex)
     }
     else 
     {
-        if(AppState->HighEntityCount < ArrayCount(AppState->HighEntities_))
-        {
-            u32 HighIndex = AppState->HighEntityCount++;
-            Result = AppState->HighEntities_ + HighIndex;
-
-            // NOTE(Kstandbridge): Map the entity into camera space
-            world_difference Diff = Subtract(AppState->World,
-                                             &EntityLow->P, &AppState->CameraP);
-            Result->P = Diff.dXY;
-            Result->dP = V2Set1(0);
-            Result->AbsTileZ = EntityLow->P.AbsTileZ;
-            Result->FacingDirection = 0;
-            Result->LowEntityIndex = LowIndex;
-
-            EntityLow->HighEntityIndex = HighIndex;
-        }
-        else 
-        {
-            InvalidCodePath;
-        }
+        v2 CameraSpaceP = GetCameraSpaceP(AppState, EntityLow);
+        Result = MakeEntityHighFrequency_(AppState, EntityLow, LowIndex, CameraSpaceP);
     }
 
     return Result;
@@ -283,35 +306,60 @@ MakeEntityLowFrequency(app_state *AppState, u32 LowIndex)
     }
 }
 
+internal b32 
+ValidateEntityPairs(app_state *AppState)
+{
+    b32 Result = true;
+
+    for(u32 HighEntityIndex = 1;
+        HighEntityIndex < AppState->HighEntityCount;
+        ++HighEntityIndex)
+    {
+        high_entity *High = AppState->HighEntities_ + HighEntityIndex;
+        Result = Result &&
+                 (AppState->LowEntities[High->LowEntityIndex].HighEntityIndex == HighEntityIndex);
+    }
+
+    return Result;
+}
+
 internal void
 OffsetAndCheckFrequencyhByArena(app_state *AppState, v2 Offset, rectangle2 HighFrequencyBounds)
 {
-    for(u32 EntityIndex = 1;
-        EntityIndex < AppState->HighEntityCount;
+    for(u32 HighEntityIndex = 1;
+        HighEntityIndex < AppState->HighEntityCount;
         )
     {
-        high_entity *High = AppState->HighEntities_ + EntityIndex;
+        high_entity *High = AppState->HighEntities_ + HighEntityIndex;
 
         High->P = V2Add(High->P, Offset);
         if(Rectangle2IsIn(HighFrequencyBounds, High->P))
         {
-            ++EntityIndex;
+            ++HighEntityIndex;
         }
         else 
         {
+            Assert(AppState->LowEntities[High->LowEntityIndex].HighEntityIndex == HighEntityIndex);
             MakeEntityLowFrequency(AppState, High->LowEntityIndex);
         }
     }
 }
 
 internal u32
-AddLowEntity(app_state *AppState, entity_type Type)
+AddLowEntity(app_state *AppState, entity_type Type, world_position *P)
 {
     Assert(AppState->LowEntityCount < ArrayCount(AppState->LowEntities));
     u32 Result = AppState->LowEntityCount++;
 
-    ZeroStruct(AppState->LowEntities[Result]);
-    AppState->LowEntities[Result].Type = Type;
+    low_entity *EntityLow = AppState->LowEntities + Result;
+    ZeroStruct(*EntityLow);
+    EntityLow->Type = Type;
+
+    if(P)
+    {
+        EntityLow->P = *P;
+        ChangeEntityLocation(&AppState->WorldArena, AppState->World, Result, 0, P);
+    }
 
     return Result;
 }
@@ -319,12 +367,11 @@ AddLowEntity(app_state *AppState, entity_type Type)
 internal u32
 AddWall(app_state *AppState, u32 AbsTileX, u32 AbsTileY, u32 AbsTileZ)
 {
-    u32 Result = AddLowEntity(AppState, EntityType_Wall);
+    world_position P = ChunkPositionFromTilePosition(AppState->World, AbsTileX, AbsTileY, AbsTileZ);
+    u32 Result = AddLowEntity(AppState, EntityType_Wall, &P);
+
     low_entity *EntityLow = GetLowEntity(AppState, Result);
 
-    EntityLow->P.AbsTileX = AbsTileX;
-    EntityLow->P.AbsTileY = AbsTileY;
-    EntityLow->P.AbsTileZ = AbsTileZ;
     EntityLow->Height = AppState->World->TileSideInMeters;
     EntityLow->Width = EntityLow->Height;
     EntityLow->Collides = true;
@@ -335,12 +382,10 @@ AddWall(app_state *AppState, u32 AbsTileX, u32 AbsTileY, u32 AbsTileZ)
 internal u32
 AddPlayer(app_state *AppState)
 {
-    u32 Result = AddLowEntity(AppState, EntityType_Hero);
+    world_position P = AppState->CameraP;
+    u32 Result = AddLowEntity(AppState, EntityType_Hero, &P);
     low_entity *EntityLow = GetLowEntity(AppState, Result);
 
-    EntityLow->P = AppState->CameraP;
-    EntityLow->P.Offset_.X = 0;
-    EntityLow->P.Offset_.Y = 0;
     EntityLow->Height = 0.5f; // 1.4f;
     EntityLow->Width = 1.0f;
     EntityLow->Collides = true;
@@ -482,9 +527,10 @@ MovePlayer(app_state *AppState, entity Entity, f32 dt, v2 ddP)
             PlayerDelta = V2Subtract(DesiredPosition, Entity.High->P);
             PlayerDelta = V2Subtract(PlayerDelta, V2MultiplyScalar(WallNormal, Inner(PlayerDelta, WallNormal)));
 
-            high_entity *HitHigh = AppState->HighEntities_ + HitHighEntityIndex;
-            low_entity *HitLow = AppState->LowEntities + HitHigh->LowEntityIndex;
-            Entity.High->AbsTileZ += HitLow->dAbsTileZ;
+            // high_entity *HitHigh = AppState->HighEntities_ + HitHighEntityIndex;
+            // low_entity *HitLow = AppState->LowEntities + HitHigh->LowEntityIndex;
+            // TODO(kstandbridge): Stairs
+            // Entity.High->AbsTileZ += HitLow->dAbsTileZ;
         }
         else 
         {
@@ -520,13 +566,20 @@ MovePlayer(app_state *AppState, entity Entity, f32 dt, v2 ddP)
         }
     }
 
-    Entity.Low->P = MapIntoTileSpace(AppState->World, AppState->CameraP, Entity.High->P);
+    world_position NewP = MapIntoChunkSpace(AppState->World, AppState->CameraP, Entity.High->P);
+
+    // TODO(kstandbridge): Bundle these together as the position update?
+    ChangeEntityLocation(&AppState->WorldArena, AppState->World, Entity.LowIndex,
+                         &Entity.Low->P, &NewP);
+    Entity.Low->P = NewP;
 }
 
 internal void
 SetCamera(app_state *AppState, world_position NewCameraP)
 {
     world *World = AppState->World;
+
+    Assert(ValidateEntityPairs(AppState));
 
     world_difference dCameraP = Subtract(World, &NewCameraP, &AppState->CameraP);
     AppState->CameraP = NewCameraP;
@@ -539,28 +592,47 @@ SetCamera(app_state *AppState, world_position NewCameraP)
     v2 EntityOffsetForFrame = V2Invert(dCameraP.dXY);
     OffsetAndCheckFrequencyhByArena(AppState, EntityOffsetForFrame, CameraBounds);
 
-    // TODO(kstandbridge): This needs to be accelerated, but man, this CPU is crazy fast!
-    s32 MinTileX = NewCameraP.AbsTileX - TileSpanX/2;
-    s32 MaxTileX = NewCameraP.AbsTileX + TileSpanX/2;
-    s32 MinTileY = NewCameraP.AbsTileY - TileSpanY/2;
-    s32 MaxTileY = NewCameraP.AbsTileY + TileSpanY/2;
-    for(u32 EntityIndex = 1;
-        EntityIndex < AppState->LowEntityCount;
-        ++EntityIndex)
+    Assert(ValidateEntityPairs(AppState));
+
+    // TODO(kstandbridge): Do this in terms of tile chunks!
+    world_position MinChunkP = MapIntoChunkSpace(World, NewCameraP, CameraBounds.Min);
+    world_position MaxChunkP = MapIntoChunkSpace(World, NewCameraP, CameraBounds.Max);
+    for(s32 ChunkY = MinChunkP.ChunkY;
+        ChunkY <= MaxChunkP.ChunkY;
+        ++ChunkY)
     {
-        low_entity *Low = AppState->LowEntities + EntityIndex;
-        if(Low->HighEntityIndex == 0)
+        for(s32 ChunkX = MinChunkP.ChunkX;
+            ChunkX <= MaxChunkP.ChunkX;
+            ++ChunkX)
         {
-            if((Low->P.AbsTileZ == NewCameraP.AbsTileZ) &&
-               (Low->P.AbsTileX >= MinTileX) &&
-               (Low->P.AbsTileX <= MaxTileX) &&
-               (Low->P.AbsTileY >= MinTileY) &&
-               (Low->P.AbsTileY <= MaxTileY))
+            world_chunk *Chunk = GetWorldChunk(World, ChunkX, ChunkY, NewCameraP.ChunkZ, 0);
+            if(Chunk)
             {
-                MakeEntityHighFrequency(AppState, EntityIndex);
+                for(world_entity_block *Block = &Chunk->FirstBlock;
+                    Block;
+                    Block = Block->Next)
+                {
+                    for(u32 EntityIndexIndex = 0;
+                        EntityIndexIndex < Block->EntityCount;
+                        ++EntityIndexIndex)
+                    {
+                        u32 LowEntityIndex = Block->LowEntityIndex[EntityIndexIndex];
+                        low_entity *Low = AppState->LowEntities + LowEntityIndex;
+                        if(Low->HighEntityIndex == 0)
+                        {
+                            v2 CameraSpaceP = GetCameraSpaceP(AppState, Low);
+                            if(Rectangle2IsIn(CameraBounds, CameraSpaceP))
+                            {
+                                MakeEntityHighFrequency_(AppState, Low, LowEntityIndex, CameraSpaceP);
+                            }
+                        }
+                    }
+                }
             }
         }
     }
+
+    Assert(ValidateEntityPairs(AppState));
 }
 
 extern void 
@@ -582,11 +654,12 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         AppState = AppMemory->AppState = BootstrapPushStruct(app_state, WorldArena);
 
         // NOTE(kstandbridge): Reserve entity slot 0 for the null entity
-        AddLowEntity(AppState, EntityType_Null);
+        AddLowEntity(AppState, EntityType_Null, 0);
         AppState->HighEntityCount = 1;
 
         AppState->Backdrop = LoadBMP(PlatformReadEntireFile(&AppState->WorldArena, String("test/test_background.bmp")));
         AppState->Shadow = LoadBMP(PlatformReadEntireFile(&AppState->WorldArena, String("test/test_hero_shadow.bmp")));
+        AppState->Tree = LoadBMP(PlatformReadEntireFile(&AppState->WorldArena, String("test2/tree00.bmp")));
 
         hero_bitmaps *Bitmap = AppState->HeroBitmaps;
 
@@ -641,7 +714,7 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         b32 DoorUp = false;
         b32 DoorDown = false;
         for(u32 ScreenIndex = 0;
-            ScreenIndex < 2;
+            ScreenIndex < 2000;
             ++ScreenIndex)
         {
             // TODO(kstandbridge): Random number generator!
@@ -778,12 +851,10 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         }
 #endif
 
-        world_position NewCameraP =
-        {
-            .AbsTileX = ScreenBaseX*TilesPerWidth + 17/2,
-            .AbsTileY = ScreenBaseY*TilesPerHeight + 9/2,
-            .AbsTileZ = ScreenBaseZ,
-        };
+        world_position NewCameraP = ChunkPositionFromTilePosition(AppState->World,
+                                                                  ScreenBaseX*TilesPerWidth + 17/2,
+                                                                  ScreenBaseY*TilesPerHeight + 9/2,
+                                                                  ScreenBaseZ);
         SetCamera(AppState, NewCameraP);
     }
 
@@ -857,7 +928,7 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
     {
         world_position NewCameraP = AppState->CameraP;
 
-        NewCameraP.AbsTileZ = CameraFollowingEntity.Low->P.AbsTileZ;
+        NewCameraP.ChunkZ = CameraFollowingEntity.Low->P.ChunkZ;
 
 #if 0
         if(CameraFollowingEntity.High->P.X > (9.0f*World->TileSideInMeters))
@@ -889,7 +960,11 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
     // 
     // NOTE(kstandbridge): Render 
     //
+#if 1 
+    DrawRectangle(Buffer, V2Set1(0), V2(Buffer->Width, Buffer->Height), 0.5f, 0.5f, 0.5f);
+#else
     DrawBitmap(Buffer, &AppState->Backdrop, 0, 0, 0, 0, 1);
+#endif 
 
     f32 ScreenCenterX = 0.5f*(f32)Buffer->Width;
     f32 ScreenCenterY = 0.5f*(f32)Buffer->Height;
@@ -960,15 +1035,15 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
             CAlpha = 0.0f;
         }
 
-        f32 PlayerR = 1.0f;
-        f32 PlayerG = 1.0f;
-        f32 PlayerB = 0.0f;
+        // f32 PlayerR = 1.0f;
+        // f32 PlayerG = 1.0f;
+        // f32 PlayerB = 0.0f;
         f32 PlayerGroundPointX = ScreenCenterX + MetersToPixels*HighEntity->P.X;
         f32 PlayerGroundPointY = ScreenCenterY - MetersToPixels*HighEntity->P.Y;
         f32 Z = -MetersToPixels*HighEntity->Z;
-        v2 PlayerLeftTop = V2(PlayerGroundPointX - 0.5f*MetersToPixels*LowEntity->Width,
-                              PlayerGroundPointY - 0.5f*MetersToPixels*LowEntity->Height);
-        v2 EntityWidthHeight = V2(LowEntity->Width, LowEntity->Height);
+        // v2 PlayerLeftTop = V2(PlayerGroundPointX - 0.5f*MetersToPixels*LowEntity->Width,
+                              // PlayerGroundPointY - 0.5f*MetersToPixels*LowEntity->Height);
+        // v2 EntityWidthHeight = V2(LowEntity->Width, LowEntity->Height);
 
         if(LowEntity->Type == EntityType_Hero)
         {
@@ -981,10 +1056,16 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         }
         else 
         {
+#if 0
             DrawRectangle(Buffer,
                           PlayerLeftTop,
                           V2Add(PlayerLeftTop, V2MultiplyScalar(EntityWidthHeight, MetersToPixels)),
                           PlayerR, PlayerG, PlayerB);
+#else 
+            DrawBitmap(Buffer, &AppState->Tree,
+                       PlayerGroundPointX, PlayerGroundPointY + Z,
+                       40, 80, 1.0f);
+#endif 
         }
     }
 }

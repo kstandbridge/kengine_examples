@@ -2,6 +2,40 @@
 #define TILE_CHUNK_SAFE_MARGIN (S32Max/64)
 #define TILE_CHUNK_UNINITIALIZED S32Max
 
+#define TILES_PER_CHUNK 16
+
+internal b32
+IsCanonical_(world *World, f32 TileRel)
+{
+    // TODO(kstandbridge): Fix floating point math so this can be exact?
+    b32 Result = ((TileRel >= -0.5f*World->ChunkSideInMeters) &&
+                  (TileRel <= 0.5f*World->ChunkSideInMeters));
+
+    return Result;
+}
+
+internal b32
+IsCanonical(world *World, v2 Offset)
+{
+    b32 Result = (IsCanonical_(World, Offset.X) &&
+                  IsCanonical_(World, Offset.Y));
+
+    return Result;
+}
+
+internal b32
+AreInSameChunk(world *World, world_position *A, world_position *B)
+{
+    Assert(IsCanonical(World, A->Offset_));
+    Assert(IsCanonical(World, B->Offset_));
+
+    b32 Result = ((A->ChunkX == B->ChunkX) &&
+                  (A->ChunkY == B->ChunkY) &&
+                  (A->ChunkZ == B->ChunkZ));
+
+    return Result;
+}
+
 internal world_chunk *
 GetWorldChunk(world *World, s32 ChunkX, s32 ChunkY, s32 ChunkZ,
              memory_arena *Arena)
@@ -37,14 +71,11 @@ GetWorldChunk(world *World, s32 ChunkX, s32 ChunkY, s32 ChunkZ,
         
         if(Arena && (Chunk->ChunkX == TILE_CHUNK_UNINITIALIZED))
         {
-            // u32 TileCount = World->ChunkDim*World->ChunkDim;
-
             Chunk->ChunkX = ChunkX;
             Chunk->ChunkY = ChunkY;
             Chunk->ChunkZ = ChunkZ;
 
             Chunk->NextInHash = 0;
-
             break;
         }
 
@@ -54,35 +85,19 @@ GetWorldChunk(world *World, s32 ChunkX, s32 ChunkY, s32 ChunkZ,
     return(Chunk);
 }
 
-#if 0
-internal world_chunk_position
-GetChunkPositionFor(world *World, u32 AbsTileX, u32 AbsTileY, u32 AbsTileZ)
-{
-    tile_chunk_position Result;
-
-    Result.ChunkX = AbsTileX >> World->ChunkShift;
-    Result.ChunkY = AbsTileY >> World->ChunkShift;
-    Result.ChunkZ = AbsTileZ;
-    Result.RelTileX = AbsTileX & World->ChunkMask;
-    Result.RelTileY = AbsTileY & World->ChunkMask;
-
-    return(Result);
-}
-#endif
-
 internal void
 InitializeWorld(world *World, f32 TileSideInMeters)
 {
-    World->ChunkShift = 4;
-    World->ChunkMask = (1 << World->ChunkShift) - 1;
-    World->ChunkDim = (1 << World->ChunkShift);        
     World->TileSideInMeters = TileSideInMeters;
+    World->ChunkSideInMeters = (f32)TILES_PER_CHUNK*TileSideInMeters;
+    World->FirstFree = 0;
 
     for(u32 ChunkIndex = 0;
         ChunkIndex < ArrayCount(World->ChunkHash);
         ++ChunkIndex)
     {
         World->ChunkHash[ChunkIndex].ChunkX = TILE_CHUNK_UNINITIALIZED;
+        World->ChunkHash[ChunkIndex].FirstBlock.EntityCount = 0;
     }
 }
 
@@ -97,37 +112,46 @@ RecanonicalizeCoord(world *World, s32 *Tile, f32 *TileRel)
     // for recanonicalizing because this can end up rounding back on to the tile
     // you just came from.
 
-    // NOTE(kstandbridge): World is assumed to be toroidal topology, if you
-    // step off one end you come back on the other!
-    s32 Offset = RoundF32ToS32(*TileRel / World->TileSideInMeters);
+    // NOTE(kstandbridge): Wrapping IS NOT ALLOWED, so all coordinates are assumed to be 
+    // within the safe margin!
+    // TODO(kstandbridge): Assert that we are nowhere near the edges of the world.
+
+    s32 Offset = RoundF32ToS32(*TileRel / World->ChunkSideInMeters);
     *Tile += Offset;
-    *TileRel -= Offset*World->TileSideInMeters;
+    *TileRel -= Offset*World->ChunkSideInMeters;
 
     // TODO(kstandbridge): Fix floating point math so this can be exact?
-    Assert(*TileRel > -0.5f*World->TileSideInMeters);
-    Assert(*TileRel < 0.5f*World->TileSideInMeters);
+    Assert(IsCanonical_(World, *TileRel));
 }
 
 internal world_position
-MapIntoTileSpace(world *World, world_position BasePos, v2 Offset)
+MapIntoChunkSpace(world *World, world_position BasePos, v2 Offset)
 {
     world_position Result = BasePos;
 
     Result.Offset_ = V2Add(Result.Offset_, Offset);
-    RecanonicalizeCoord(World, &Result.AbsTileX, &Result.Offset_.X);
-    RecanonicalizeCoord(World, &Result.AbsTileY, &Result.Offset_.Y);
+    RecanonicalizeCoord(World, &Result.ChunkX, &Result.Offset_.X);
+    RecanonicalizeCoord(World, &Result.ChunkY, &Result.Offset_.Y);
     
     return(Result);
 }
 
-internal b32
-AreOnSameTile(world_position *A, world_position *B)
+internal world_position
+ChunkPositionFromTilePosition(world *World, s32 AbsTileX, s32 AbsTileY, s32 AbstileZ)
 {
-    b32 Result = ((A->AbsTileX == B->AbsTileX) &&
-                     (A->AbsTileY == B->AbsTileY) &&
-                     (A->AbsTileZ == B->AbsTileZ));
+    world_position Result =
+    {
+        .ChunkX = AbsTileX / TILES_PER_CHUNK,
+        .ChunkY = AbsTileY / TILES_PER_CHUNK,
+        .ChunkZ = AbstileZ / TILES_PER_CHUNK,
+    };
 
-    return(Result);
+    // TODO(kstandbridge): DECIDE ON TILE ALIGNMENT IN CHUNKS!
+    Result.Offset_.X = (f32)(AbsTileX - (Result.ChunkX*TILES_PER_CHUNK)) * World->TileSideInMeters;
+    Result.Offset_.Y = (f32)(AbsTileY - (Result.ChunkY*TILES_PER_CHUNK)) * World->TileSideInMeters;
+    // TODO(kstandbridge): Move to 3D Z!!!
+    
+    return Result;
 }
 
 internal world_difference
@@ -135,28 +159,107 @@ Subtract(world *World, world_position *A, world_position *B)
 {
     world_difference Result;
 
-    v2 dTileXY = V2((f32)A->AbsTileX - (f32)B->AbsTileX,
-                    (f32)A->AbsTileY - (f32)B->AbsTileY);
-    f32 dTileZ = (f32)A->AbsTileZ - (f32)B->AbsTileZ;
+    v2 dTileXY = V2((f32)A->ChunkX - (f32)B->ChunkX,
+                    (f32)A->ChunkY - (f32)B->ChunkY);
+    f32 dTileZ = (f32)A->ChunkZ - (f32)B->ChunkZ;
     
-    Result.dXY = V2Add(V2MultiplyScalar(dTileXY, World->TileSideInMeters),
+    Result.dXY = V2Add(V2MultiplyScalar(dTileXY, World->ChunkSideInMeters),
                        V2Subtract(A->Offset_, B->Offset_));
 
     // TODO(kstandbridge): Think about what we want to do about Z
-    Result.dZ = World->TileSideInMeters*dTileZ;
+    Result.dZ = World->ChunkSideInMeters*dTileZ;
 
     return(Result);
 }
 
 internal world_position
-CenteredTilePoint(u32 AbsTileX, u32 AbsTileY, u32 AbsTileZ)
+CenteredChunkPoint(u32 ChunkX, u32 ChunkY, u32 ChunkZ)
 {
     world_position Result =
     {
-        .AbsTileX = AbsTileX,
-        .AbsTileY = AbsTileY,
-        .AbsTileZ = AbsTileZ,
+        .ChunkX = ChunkX,
+        .ChunkY = ChunkY,
+        .ChunkZ = ChunkZ,
     };
 
     return(Result);
+}
+
+internal void
+ChangeEntityLocation(memory_arena *Arena, world *World, u32 LowEntityIndex,
+                     world_position *OldP, world_position *NewP)
+{
+    if(OldP && AreInSameChunk(World, OldP, NewP))
+    {
+        // NOTE(kstandbridge): Leave entity where it is
+    }
+    else 
+    {
+        if(OldP)
+        {
+            // NOTE(kstandbridge): Pull the entity out of its old entity block 
+            world_chunk *Chunk = GetWorldChunk(World, OldP->ChunkX, OldP->ChunkY, OldP->ChunkZ, 0);
+            Assert(Chunk);
+            if(Chunk)
+            {
+                b32 NotFound = true;
+                world_entity_block *FirstBlock = &Chunk->FirstBlock;
+                for(world_entity_block *Block = FirstBlock;
+                    Block && NotFound;
+                    Block = Block->Next)
+                {
+                    for(u32 Index = 0;
+                        (Index < Block->EntityCount) && NotFound;
+                        ++Index)
+                    {
+                        if(Block->LowEntityIndex[Index] == LowEntityIndex)
+                        {
+                            Assert(FirstBlock->EntityCount > 0);
+                            Block->LowEntityIndex[Index] =
+                                FirstBlock->LowEntityIndex[--FirstBlock->EntityCount];
+                            if(FirstBlock->EntityCount == 0)
+                            {
+                                if(FirstBlock->Next)
+                                {
+                                    world_entity_block *NextBlock = FirstBlock->Next;
+                                    *FirstBlock = *NextBlock;
+
+                                    NextBlock->Next = World->FirstFree;
+                                    World->FirstFree = NextBlock;
+                                }
+                            }
+
+                            NotFound = false;
+                        }
+                    }
+                }
+            }
+        }
+
+        // NOTE(kstandbridge): Insert the entity into its new entity block 
+        world_chunk *Chunk = GetWorldChunk(World, NewP->ChunkX, NewP->ChunkY, NewP->ChunkZ, Arena);
+        Assert(Chunk);
+
+        world_entity_block *Block = &Chunk->FirstBlock;
+        if(Block->EntityCount == ArrayCount(Block->LowEntityIndex))
+        {
+            // NOTE(kstandbridge): We're out of room, get a new block!
+            world_entity_block *OldBlock = World->FirstFree;
+            if(OldBlock)
+            {
+                World->FirstFree = OldBlock->Next;
+            }
+            else 
+            {
+                OldBlock = PushStruct(Arena, world_entity_block);
+            }
+
+            *OldBlock = *Block;
+            Block->Next = OldBlock;
+            Block->EntityCount = 0;
+        }
+
+        Assert(Block->EntityCount < ArrayCount(Block->LowEntityIndex));
+        Block->LowEntityIndex[Block->EntityCount++] = LowEntityIndex;
+    }
 }
