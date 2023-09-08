@@ -12,27 +12,125 @@ typedef struct app_state
     memory_arena Arena;
 } app_state;
 
+typedef enum allocation_type
+{
+    AllocType_none,
+    AllocType_malloc,
+
+    AllocTyp_Count,
+} allocation_type;
+
+typedef struct read_parameters
+{
+    allocation_type AllocType;
+    string Dest;
+    char *FilePath;
+} read_parameters;
+
+typedef void read_overhead_test_func(repetition_tester *Tester, read_parameters *Params);
+
+internal string
+AllocateBuffer(umm Size)
+{
+    string Result =
+    {
+        .Data = (u8 *)malloc(Size),
+        .Size = Size,
+    };
+
+    return Result;
+}
+
 internal void
-ReadViaFRead(repetition_tester *Tester, string *Output, char *FilePath)
+FreeBuffer(string *Buffer)
+{
+    if(Buffer->Data)
+    {
+        free(Buffer->Data);
+    }
+    ZeroStruct(Buffer);
+}
+
+internal string
+AllocationTypeToString(allocation_type Type)
+{
+    string Result;
+
+    switch(Type)
+    {
+        case AllocType_none:    { Result = String(""); } break;
+        case AllocType_malloc:  { Result = String("malloc"); } break;
+        default:                { Result = String("UNKNOWN"); } break;
+    }
+
+    return Result;
+}
+
+internal void
+HandleAllocation(read_parameters *Params, string *Buffer)
+{
+    switch (Params->AllocType)
+    {
+        case AllocType_none:
+        {
+            
+        } break;
+
+        case AllocType_malloc:
+        {
+            *Buffer = AllocateBuffer(Params->Dest.Size);
+        } break;
+
+        InvalidDefaultCase;
+    
+    }
+}
+
+internal void
+HandleDeallocation(read_parameters *Params, string *Buffer)
+{
+    switch (Params->AllocType)
+    {
+        case AllocType_none:
+        {
+            
+        } break;
+
+        case AllocType_malloc:
+        {
+            FreeBuffer(Buffer);
+        } break;
+
+        InvalidDefaultCase;
+    
+    }
+}
+
+internal void
+ReadViaFRead(repetition_tester *Tester, read_parameters *Params)
 {
     while(RepetitionTestIsTesting(Tester))
     {
-        FILE *File = fopen(FilePath, "rb");
+        FILE *File = fopen(Params->FilePath, "rb");
         if(File)
         {
+            string DestBuffer = Params->Dest;
+            HandleAllocation(Params, &DestBuffer);
+
             RepetitionTestBeginTime(Tester);
-            size_t Result = fread(Output->Data, Output->Size, 1, File);
+            size_t Result = fread(DestBuffer.Data, DestBuffer.Size, 1, File);
             RepetitionTestEndTime(Tester);
 
             if(Result == 1)
             {
-                RepetitionTestCountBytes(Tester, Output->Size);
+                RepetitionTestCountBytes(Tester, DestBuffer.Size);
             }
             else
             {
                 RepetitionTestError(Tester, "fread failed");
             }
 
+            HandleDeallocation(Params, &DestBuffer);
             fclose(File);
         }
         else
@@ -44,21 +142,25 @@ ReadViaFRead(repetition_tester *Tester, string *Output, char *FilePath)
 
 #if KENGINE_LINUX
 internal void
-ReadViaRead(repetition_tester *Tester, string *Output, char *FilePath)
+ReadViaRead(repetition_tester *Tester, read_parameters *Params)
 {
     while(RepetitionTestIsTesting(Tester))
     {
-        s32 FileHandle = open(FilePath, O_RDONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+        s32 FileHandle = open(Params->FilePath, O_RDONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
         if(FileHandle >= 0)
         {
+            string DestBuffer = Params->Dest;
+            HandleAllocation(Params, &DestBuffer);
+
+
             RepetitionTestBeginTime(Tester);
             s64 Offset = 0;
-            ssize_t BytesRead = pread(FileHandle, Output->Data, Output->Size, Offset);
+            ssize_t BytesRead = pread(FileHandle, DestBuffer.Data, DestBuffer.Size, Offset);
             RepetitionTestEndTime(Tester);
         
-            if(Output->Size == (umm)BytesRead)
+            if(DestBuffer.Size == (umm)BytesRead)
             {
-                RepetitionTestCountBytes(Tester, Output->Size);
+                RepetitionTestCountBytes(Tester, DestBuffer.Size);
             }
             else
             {
@@ -66,6 +168,7 @@ ReadViaRead(repetition_tester *Tester, string *Output, char *FilePath)
             }
 
 
+            HandleDeallocation(Params, &DestBuffer);
             close(FileHandle);
         }
         else
@@ -111,6 +214,18 @@ ReadViaRead(repetition_tester *Tester, string *Output, char *FilePath)
 #error Platform not supported
 #endif
 
+
+typedef struct test_fuction
+{
+    char *Name;
+    read_overhead_test_func *Func;
+} test_function;
+test_function TestFunctions[] =
+{
+    { "fread", ReadViaFRead },
+    { "ReadFile", ReadViaFRead },
+};
+
 s32
 MainLoop(app_memory *AppMemory)
 {
@@ -126,25 +241,47 @@ MainLoop(app_memory *AppMemory)
         string FilePath = Args->Entry;
         char CPath[MAX_PATH];
         StringToCString(FilePath, sizeof(CPath), CPath);
-        string FileCacheHack = PlatformReadEntireFile(Arena, FilePath);
 
-        string Buffer = 
+#if KENGINE_WIN32
+        struct __stat64 Stat;
+        __stat64(CPath, &Stat);
+#elif KENGINE_LINUX
+        struct stat Stat;
+        stat(CPath, &Stat);
+#else 
+        #error Unsupported OS 
+#endif 
+
+        read_parameters Params =
         {
-            .Size = FileCacheHack.Size,
-            .Data = PushSize(Arena, FileCacheHack.Size),
+            .Dest = AllocateBuffer(Stat.st_size),
+            .FilePath = CPath,
         };
 
+        if(Params.Dest.Size > 0)
         {
-            repetition_tester Tester = {0};
-            PlatformConsoleOut("\n--- ReadViaFRead ---\n");
-            RepetitionTestNewTestWave(&Tester, Buffer.Size, CPUTimerFreq, 10);
-            ReadViaFRead(&Tester, &Buffer, CPath);
-        }
-        {
-            repetition_tester Tester = {0};
-            PlatformConsoleOut("\n--- ReadViaRead ---\n");
-            RepetitionTestNewTestWave(&Tester, Buffer.Size, CPUTimerFreq, 10);
-            ReadViaRead(&Tester, &Buffer, CPath);
+            repetition_tester Testers[ArrayCount(TestFunctions)][AllocTyp_Count] = {0};
+
+            for(;;)
+            {
+                for(u32 FuncIndex = 0; FuncIndex < ArrayCount(TestFunctions); ++FuncIndex)
+                {
+                    for(u32 AllocType = 0; AllocType < AllocTyp_Count; ++AllocType)
+                    {
+                        Params.AllocType = (allocation_type)AllocType;
+
+                        repetition_tester *Tester = &Testers[FuncIndex][AllocType];
+                        test_function TestFunc = TestFunctions[FuncIndex];
+
+                        PlatformConsoleOut("\n--- %S%s%s ---\n",
+                                           AllocationTypeToString(Params.AllocType),
+                                           Params.AllocType ? " + " : "",
+                                           TestFunc.Name);
+                        RepetitionTestNewTestWave(Tester, Params.Dest.Size, CPUTimerFreq, 10);
+                        TestFunc.Func(Tester, &Params);
+                    }
+                }
+            }
         }
     }
     else

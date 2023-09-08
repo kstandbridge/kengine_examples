@@ -404,6 +404,14 @@
         },
         
         {
+            "name": "read_overhead_test linux debug",
+            "type": "codelldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/read_overhead_test",
+            "cwd": "${workspaceFolder}/bin",
+            "args": [ "output.json" ]
+        },
+        {
             "name": "handmade linux debug",
             "type": "codelldb",
             "request": "launch",
