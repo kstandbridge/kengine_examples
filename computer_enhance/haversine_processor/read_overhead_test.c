@@ -17,6 +17,7 @@ typedef enum allocation_type
 {
     AllocType_none,
     AllocType_malloc,
+    AllocType_arena,
 
     AllocTyp_Count,
 } allocation_type;
@@ -61,11 +62,15 @@ AllocationTypeToString(allocation_type Type)
     {
         case AllocType_none:    { Result = String(""); } break;
         case AllocType_malloc:  { Result = String("malloc"); } break;
+        case AllocType_arena:  { Result = String("arena"); } break;
         default:                { Result = String("UNKNOWN"); } break;
     }
 
     return Result;
 }
+
+global memory_arena *GlobalArena;
+global temporary_memory GlobalTempMemory;
 
 internal void
 HandleAllocation(read_parameters *Params, string *Buffer)
@@ -80,6 +85,13 @@ HandleAllocation(read_parameters *Params, string *Buffer)
         case AllocType_malloc:
         {
             *Buffer = AllocateBuffer(Params->Dest.Size);
+        } break;
+
+        case AllocType_arena:
+        {
+            GlobalTempMemory = BeginTemporaryMemory(GlobalArena);
+            Buffer->Data = (u8 *)PushSize(GlobalArena, Params->Dest.Size);
+            Buffer->Size = Params->Dest.Size;
         } break;
 
         InvalidDefaultCase;
@@ -100,6 +112,11 @@ HandleDeallocation(read_parameters *Params, string *Buffer)
         case AllocType_malloc:
         {
             FreeBuffer(Buffer);
+        } break;
+
+        case AllocType_arena:
+        {
+            EndTemporaryMemory(GlobalTempMemory);
         } break;
 
         InvalidDefaultCase;
@@ -232,6 +249,7 @@ MainLoop(app_memory *AppMemory)
 {
     app_state *AppState = AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
     memory_arena *Arena = &AppState->Arena;
+    GlobalArena = &AppState->Arena;
 
     u64 CPUTimerFreq = EstimateCPUTimerFrequency();
     
