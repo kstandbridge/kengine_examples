@@ -10,7 +10,7 @@
 
 typedef struct app_state
 {
-    memory_arena Arena;
+    memory_arena *Arena;
 } app_state;
 
 typedef enum allocation_type
@@ -69,7 +69,7 @@ AllocationTypeToString(allocation_type Type)
     return Result;
 }
 
-global memory_arena *GlobalArena;
+global memory_arena GlobalArena;
 global temporary_memory GlobalTempMemory;
 
 internal void
@@ -89,8 +89,8 @@ HandleAllocation(read_parameters *Params, string *Buffer)
 
         case AllocType_arena:
         {
-            GlobalTempMemory = BeginTemporaryMemory(GlobalArena);
-            Buffer->Data = (u8 *)PushSize(GlobalArena, Params->Dest.Size);
+            GlobalTempMemory = BeginTemporaryMemory(&GlobalArena);
+            Buffer->Data = (u8 *)PushSize(&GlobalArena, Params->Dest.Size);
             Buffer->Size = Params->Dest.Size;
         } break;
 
@@ -247,9 +247,9 @@ test_function TestFunctions[] =
 s32
 MainLoop(app_memory *AppMemory)
 {
-    app_state *AppState = AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
-    memory_arena *Arena = &AppState->Arena;
-    GlobalArena = &AppState->Arena;
+    GlobalArena.MinimumBlockSize = Gigabytes(2);
+    app_state *AppState = AppMemory->AppState = PushStruct(&GlobalArena, app_state);
+    memory_arena *Arena = AppState->Arena = &GlobalArena;
 
     u64 CPUTimerFreq = EstimateCPUTimerFrequency();
     
