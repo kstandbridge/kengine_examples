@@ -35,6 +35,14 @@ typedef enum entity_type
     EntityType_Monstar,
 } entity_type;
 
+#define HIT_POINT_SUB_COUNT 4
+typedef struct hit_point 
+{
+    // TODO(kstandbridge): Bake this down into one variable
+    u8 Flags;
+    u8 FilledAmount;
+} hit_point;
+
 typedef struct low_entity
 {
     entity_type Type;
@@ -47,6 +55,10 @@ typedef struct low_entity
     s32 dAbsTileZ;
 
     u32 HighEntityIndex;
+
+    // TODO(kstandbridge): Should hitpoints themselves be entities?
+    u32 HitPointMax;
+    hit_point HitPoint[16];
 } low_entity;
 
 typedef struct entity
@@ -61,14 +73,12 @@ typedef struct entity_visible_piece
     loaded_bitmap *Bitmap;
     v2 Offset;
     f32 OffsetZ;
-    f32 Alpha;
-} entity_visible_piece;
+    f32 EntityZC;
 
-typedef struct entity_visible_piece_group
-{
-    u32 PieceCount;
-    entity_visible_piece Pieces[8];
-} entity_visible_piece_group;
+    f32 R, G, B, A;
+
+    v2 Dim;
+} entity_visible_piece;
 
 typedef struct app_state
 {
@@ -92,5 +102,16 @@ typedef struct app_state
     hero_bitmaps HeroBitmaps[4];
 
     loaded_bitmap Tree;
+    f32 MetersToPixels;
 } app_state;
+
+// TODO(kstandbridge): This is dumb, this should just be part of 
+// the renderer pushbuffer - add correction of coordinates
+// in there and be done with it.
+typedef struct entity_visible_piece_group
+{
+    app_state *AppState;
+    u32 PieceCount;
+    entity_visible_piece Pieces[32];
+} entity_visible_piece_group;
 
