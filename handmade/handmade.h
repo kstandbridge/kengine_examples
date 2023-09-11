@@ -4,8 +4,7 @@
 
 typedef struct hero_bitmaps
 {
-    s32 AlignX;
-    s32 AlignY;
+    v2 Align;
 
     loaded_bitmap Head;
     loaded_bitmap Cape;
@@ -19,6 +18,8 @@ typedef struct high_entity
     u32 ChunkZ;
     u32 FacingDirection;
 
+    f32 tBob;
+
     f32 Z;
     f32 dZ;
     u32 LowEntityIndex;
@@ -30,6 +31,8 @@ typedef enum entity_type
 
     EntityType_Hero,
     EntityType_Wall,
+    EntityType_Familiar,
+    EntityType_Monstar,
 } entity_type;
 
 typedef struct low_entity
@@ -52,6 +55,20 @@ typedef struct entity
     low_entity *Low;
     high_entity *High;
 } entity;
+
+typedef struct entity_visible_piece
+{
+    loaded_bitmap *Bitmap;
+    v2 Offset;
+    f32 OffsetZ;
+    f32 Alpha;
+} entity_visible_piece;
+
+typedef struct entity_visible_piece_group
+{
+    u32 PieceCount;
+    entity_visible_piece Pieces[8];
+} entity_visible_piece_group;
 
 typedef struct app_state
 {
