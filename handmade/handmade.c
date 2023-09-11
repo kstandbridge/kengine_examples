@@ -356,11 +356,7 @@ AddLowEntity(app_state *AppState, entity_type Type, world_position *P)
     ZeroStruct(*EntityLow);
     EntityLow->Type = Type;
 
-    if(P)
-    {
-        EntityLow->P = *P;
-        ChangeEntityLocation(&AppState->WorldArena, AppState->World, EntityIndex, 0, P);
-    }
+    ChangeEntityLocation(&AppState->WorldArena, AppState->World, EntityIndex, EntityLow, 0, P);
 
     add_low_entity_result Result = 
     {
@@ -388,19 +384,47 @@ AddWall(app_state *AppState, u32 AbsTileX, u32 AbsTileY, u32 AbsTileZ)
     return Result;
 }
 
+internal void
+InitHitPoints(low_entity *EntityLow, u32 HitPointCount)
+{
+    Assert(HitPointCount <= ArrayCount(EntityLow->HitPoint));
+    EntityLow->HitPointMax = HitPointCount;
+    for(u32 HitPointIndex = 0;
+        HitPointIndex < EntityLow->HitPointMax;
+        ++HitPointIndex)
+    {
+        hit_point *HitPoint = EntityLow->HitPoint + HitPointIndex;
+        HitPoint->Flags = 0;
+        HitPoint->FilledAmount = HIT_POINT_SUB_COUNT;
+    }
+}
+
+internal add_low_entity_result
+AddSword(app_state *AppState)
+{
+    add_low_entity_result Result = AddLowEntity(AppState, EntityType_Sword, 0);
+
+    Result.Low->Height = 0.5f;
+    Result.Low->Width = 1.0f;
+    Result.Low->Collides = false;
+
+    return Result;
+}
+
 internal add_low_entity_result
 AddPlayer(app_state *AppState)
 {
     world_position P = AppState->CameraP;
     add_low_entity_result Result = AddLowEntity(AppState, EntityType_Hero, &P);
 
-    Result.Low->HitPointMax = 3;
-    Result.Low->HitPoint[2].FilledAmount = HIT_POINT_SUB_COUNT;
-    Result.Low->HitPoint[0] = Result.Low->HitPoint[1] = Result.Low->HitPoint[2];
-
     Result.Low->Height = 0.5f;
     Result.Low->Width = 1.0f;
     Result.Low->Collides = true;
+
+    InitHitPoints(Result.Low, 3);
+
+    add_low_entity_result Sword = AddSword(AppState);
+    Result.Low->SwordLowIndex = Sword.LowIndex;
 
     if(AppState->CameraFollowingEntityIndex == 0)
     {
@@ -419,6 +443,8 @@ AddMonstar(app_state *AppState, u32 AbsTileX, u32 AbsTileY, u32 AbsTileZ)
     Result.Low->Height = 0.5f;
     Result.Low->Width = 1.0f;
     Result.Low->Collides = true;
+
+    InitHitPoints(Result.Low, 3);
 
     return Result;
 }
@@ -608,10 +634,11 @@ MoveEntity(app_state *AppState, entity Entity, f32 dt, v2 ddP)
 
     // TODO(kstandbridge): Bundle these together as the position update?
     ChangeEntityLocation(&AppState->WorldArena, AppState->World, Entity.LowIndex,
-                         &Entity.Low->P, &NewP);
+                         Entity.Low, &Entity.Low->P, &NewP);
     Entity.Low->P = NewP;
 }
 
+global u32 TestHighEntityIndex = 0;
 internal void
 SetCamera(app_state *AppState, world_position NewCameraP)
 {
@@ -655,6 +682,10 @@ SetCamera(app_state *AppState, world_position NewCameraP)
                         ++EntityIndexIndex)
                     {
                         u32 LowEntityIndex = Block->LowEntityIndex[EntityIndexIndex];
+                        if(LowEntityIndex == TestHighEntityIndex)
+                        {
+                            // int Foo = 5;
+                        }
                         low_entity *Low = AppState->LowEntities + LowEntityIndex;
                         if(Low->HighEntityIndex == 0)
                         {
@@ -764,6 +795,32 @@ UpdateMonstar(app_state *AppState, entity Entity, f32 dt)
 {
 }
 
+internal void
+DrawHitpoints(low_entity *LowEntity, entity_visible_piece_group *PieceGroup)
+{
+    if(LowEntity->HitPointMax >= 1)
+    {
+        v2 HealthDim = V2Set1(0.2f);
+        f32 SpacingX = 1.5f*HealthDim.X;
+        v2 HitP = V2(-0.5f*(LowEntity->HitPointMax - 1)*SpacingX, -0.25f);
+        v2 dHitP = V2(SpacingX, 0.0f);
+        for(u32 HealthIndex = 0;
+            HealthIndex < LowEntity->HitPointMax;
+            ++HealthIndex)
+        {
+            hit_point *HitPoint = LowEntity->HitPoint + HealthIndex;
+            v4 Color = V4(1.0f, 0.0f, 0.0f, 1.0f);
+            if(HitPoint->FilledAmount == 0)
+            {
+                Color = V4(0.2f, 0.2f, 0.2f, 1.0f);
+            }
+
+            PushRect(PieceGroup, HitP, 0, HealthDim, Color, 0.0f);
+            HitP = V2Add(HitP, dHitP);
+        }
+    }
+}
+
 extern void 
 AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Buffer)
 {
@@ -789,6 +846,7 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
         AppState->Backdrop = LoadBMP(PlatformReadEntireFile(&AppState->WorldArena, String("test/test_background.bmp")));
         AppState->Shadow = LoadBMP(PlatformReadEntireFile(&AppState->WorldArena, String("test/test_hero_shadow.bmp")));
         AppState->Tree = LoadBMP(PlatformReadEntireFile(&AppState->WorldArena, String("test2/tree00.bmp")));
+        AppState->Sword = LoadBMP(PlatformReadEntireFile(&AppState->WorldArena, String("test2/rock03.bmp")));
 
         hero_bitmaps *Bitmap = AppState->HeroBitmaps;
 
@@ -1053,12 +1111,40 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
                 }
             }
 
-            if(Controller->ActionUp.EndedDown)
+            if(Controller->Start.EndedDown)
             {
                 ControllingEntity.High->dZ = 3.0f;
             }
 
+            v2 dSword = {0};
+            if(Controller->ActionUp.EndedDown)
+            {
+                dSword = V2(0.0f, 1.0f);
+            }
+            if(Controller->ActionDown.EndedDown)
+            {
+                dSword = V2(0.0f, -1.0f);
+            }
+            if(Controller->ActionLeft.EndedDown)
+            {
+                dSword = V2(-1.0f, 0.0f);
+            }
+            if(Controller->ActionRight.EndedDown)
+            {
+                dSword = V2(1.0f, 0.0f);;
+            }
+
             MoveEntity(AppState, ControllingEntity, Input->dtForFrame, ddP);
+            if((dSword.X != 0.0f) || (dSword.Y != 0.0f))
+            {
+                low_entity *Sword = GetLowEntity(AppState, ControllingEntity.Low->SwordLowIndex);
+                if(Sword && !IsValid(Sword->P))
+                {
+                    world_position SwordP = ControllingEntity.Low->P;
+                    ChangeEntityLocation(&AppState->WorldArena, AppState->World,
+                                         ControllingEntity.Low->SwordLowIndex, Sword, 0, &SwordP);
+                }
+            }
         }
     }
 
@@ -1148,33 +1234,18 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
                 PushBitmap(&PieceGroup, &HeroBitmaps->Cape, V2Set1(0.0f), 0, HeroBitmaps->Align, 1.0f, 1.0f);
                 PushBitmap(&PieceGroup, &HeroBitmaps->Head, V2Set1(0.0f), 0, HeroBitmaps->Align, 1.0f, 1.0f);
 
-                if(LowEntity->HitPointMax >= 1)
-                {
-                    v2 HealthDim = V2Set1(0.2f);
-                    f32 SpacingX = 1.5f*HealthDim.X;
-                    v2 HitP = V2(-0.5f*(LowEntity->HitPointMax - 1)*SpacingX, -0.25f);
-                    v2 dHitP = V2(SpacingX, 0.0f);
-                    for(u32 HealthIndex = 0;
-                        HealthIndex < LowEntity->HitPointMax;
-                        ++HealthIndex)
-                    {
-                        hit_point *HitPoint = LowEntity->HitPoint + HealthIndex;
-                        v4 Color = V4(1.0f, 0.0f, 0.0f, 1.0f);
-                        if(HitPoint->FilledAmount == 0)
-                        {
-                            Color = V4(0.2f, 0.2f, 0.2f, 1.0f);
-                        }
-
-                        PushRect(&PieceGroup, HitP, 0, HealthDim, Color, 0.0f);
-                        HitP = V2Add(HitP, dHitP);
-                    }
-                }
-
+                DrawHitpoints(LowEntity, &PieceGroup);
             } break;
 
             case EntityType_Wall:
             {
                 PushBitmap(&PieceGroup, &AppState->Tree, V2Set1(0.0f), 0, V2(40.0f, 80.0f), 1.0f, 1.0f);
+            } break;
+
+            case EntityType_Sword:
+            {
+                PushBitmap(&PieceGroup, &AppState->Shadow, V2Set1(0.0f), 0, HeroBitmaps->Align, ShadowAlpha, 0.0f);
+                PushBitmap(&PieceGroup, &AppState->Sword, V2Set1(0.0f), 0, V2(29.0f, 10.0f), 1.0f, 1.0f);
             } break;
 
             case EntityType_Familiar:
@@ -1195,6 +1266,8 @@ AppUpdateAndRender(app_memory *AppMemory, app_input *Input, offscreen_buffer *Bu
                 UpdateMonstar(AppState, Entity, dt);
                 PushBitmap(&PieceGroup, &AppState->Shadow, V2Set1(0.0f), 0, HeroBitmaps->Align, ShadowAlpha, 1.0f);
                 PushBitmap(&PieceGroup, &HeroBitmaps->Torso, V2Set1(0.0f), 0,  HeroBitmaps->Align, 1.0f, 1.0f);
+
+                DrawHitpoints(LowEntity, &PieceGroup);
             } break;
 
             default:
