@@ -229,7 +229,7 @@ ChangeEntityLocationRaw(memory_arena *Arena, world *World, u32 LowEntityIndex,
     Assert(!OldP || IsValid(*OldP));
     Assert(!NewP || IsValid(*NewP));
     
-    if(OldP && AreInSameChunk(World, OldP, NewP))
+    if(OldP && NewP && AreInSameChunk(World, OldP, NewP))
     {
         // NOTE(kstandbridge): Leave entity where it is
     }
