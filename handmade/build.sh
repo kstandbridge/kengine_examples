@@ -8,6 +8,8 @@ CommonCompilerFlags="-Og -g -ggdb -msse4.2 -maes -lm -Wall -Wno-unused-function 
 CommonLinkerFlags="-pthread"
 InternalCompilerFlags="-DKENGINE_INTERNAL -DKENGINE_SLOW"
 
+ctags -R kengine handmade
+
 [ -d $BuildDir ] || mkdir -p $BuildDir
 
 pushd $BuildDir > /dev/null
