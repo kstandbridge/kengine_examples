@@ -65,7 +65,6 @@ MainLoop(app_memory *AppMemory)
 
     app_state *AppState = AppMemory->AppState = BootstrapPushStruct(app_state, Arena);
     memory_arena *Arena = &AppState->Arena;
-    PlatformConsoleOut("Usage: haversine_processor [input.json] [input.f64]\n");
     
     string_list *Args = PlatformGetCommandLineArgs(Arena);
     u32 ArgsCount = GetStringListCount(Args);
@@ -87,7 +86,6 @@ MainLoop(app_memory *AppMemory)
         point *Points = ParseJsonPoints(Arena, Json, Args->Entry);
         END_TIMED_BLOCK(ParseJsonPoints);
         
-        BEGIN_TIMED_BLOCK(CountPoint);
         u64 PointCount = 0;
         for(point *Point = Points;
             Point;
@@ -95,8 +93,6 @@ MainLoop(app_memory *AppMemory)
         {
             ++PointCount;
         }
-        END_TIMED_BLOCK(CountPoint);
-        
 
         f64 HaversineSum = SumHaversineDistance(Points, PointCount);
 
@@ -118,7 +114,7 @@ MainLoop(app_memory *AppMemory)
     }
     else
     {
-        PlatformConsoleOut("Invalid arguments\n");
+        PlatformConsoleOut("Usage: haversine_processor [input.json] [input.f64]\n");
     }
 
     return 0;
