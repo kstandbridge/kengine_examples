@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #define KENGINE_CONSOLE
 #define KENGINE_IMPLEMENTATION
 #include "kengine.h"
@@ -22,6 +24,8 @@ MainLoop(app_memory *AppMemory)
     }
 
     u64 OSFrequency = PlatformGetOSTimerFrequency();
+
+    PlatformConsoleOut("\n");
     PlatformConsoleOut("\t\tOS Frequency: %lu (reported)\n", OSFrequency);
 
     u64 CPUStart = PlatformReadCPUTimer();

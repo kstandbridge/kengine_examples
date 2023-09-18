@@ -291,24 +291,8 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bin/haversine_processor",
-            "args": [ "output.json" ],
-            "stopAtEntry": false,
             "cwd": "${workspaceFolder}/bin",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing for gdb",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Set Disassembly Flavor to Intel",
-                    "text": "-gdb-set disassembly-flavor intel",
-                    "ignoreFailures": true
-                }
-            ]
+            "args": [ "/home/eowhat/Sources/dotnet/HaversineProcessor/bin/Debug/net7.0/data_flex.json" ],
         },
         {
             "name": "haversine read_overhead_test linux debug",

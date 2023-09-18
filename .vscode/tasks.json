@@ -80,7 +80,7 @@
 			"args": [
 				""
 			],
-			"problemMatcher": "$gcc",
+			"problemMatcher": [],
 			"type": "shell",
 			"options": {
 				"cwd": "${workspaceFolder}"
@@ -252,7 +252,10 @@
 		},
 		{
 			"label": "haversine_processor linux debug build",
-			"group": "build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
 			"command": "computer_enhance/haversine_processor/build.sh",
 			"args": [
 				""
@@ -325,10 +328,7 @@
 			"problemMatcher": [
 				"$msCompile"
 			],
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			},
+			"group": "build",
 			"detail": "compiler: cl.exe"
 		}
 	]

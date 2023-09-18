@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #define KENGINE_TEST
 #define KENGINE_IMPLEMENTATION
 #include "kengine.h"
@@ -1497,11 +1499,48 @@ ParseJsonTests(memory_arena *Arena)
         AssertEqualU32(JsonElement_Number, ValueElement->Type);
         AssertEqualString(String("4321"), ValueElement->Value);
     }
+    {
+        string Filename = String("/dev/null");
+        string FileData = String("{"
+                                    "\"pairs\": ["
+                                        "{ \"x0\": -122.16404366051066, \"y0\": 32.11899076424161, \"x1\": -108.68219357802062, \"y1\": 43.988229505979504 },"
+                                    "]"
+                                 "}");
+        json_element *DocElement = ParseJsonDocument(Arena, FileData, Filename);
+        AssertEqualU32(JsonElement_Object, DocElement->Type);
+    
+        json_element *PairsElement = GetJsonElement(DocElement, String("pairs"));
+        AssertEqualU32(JsonElement_Array, PairsElement->Type);
+
+        json_element *ArrayElement = PairsElement->Children;
+        AssertEqualU32(JsonElement_Object, ArrayElement->Type);
+
+        json_element *X0Element = GetJsonElement(ArrayElement, String("x0"));
+        AssertEqualU32(JsonElement_Number, X0Element->Type);
+        AssertEqualString(String("-122.16404366051066"), X0Element->Value);
+
+        json_element *Y0Element = GetJsonElement(ArrayElement, String("y0"));
+        AssertEqualU32(JsonElement_Number, Y0Element->Type);
+        AssertEqualString(String("32.11899076424161"), Y0Element->Value);
+
+        json_element *X1Element = GetJsonElement(ArrayElement, String("x1"));
+        AssertEqualU32(JsonElement_Number, X1Element->Type);
+        AssertEqualString(String("-108.68219357802062"), X1Element->Value);
+
+        json_element *Y1Element = GetJsonElement(ArrayElement, String("y1"));
+        AssertEqualU32(JsonElement_Number, Y1Element->Type);
+        AssertEqualString(String("43.988229505979504"), Y1Element->Value);
+    }
 }
 
 internal void
 RunF32FromStringTests()
 {
+    {
+        f32 Expected = -3.124f;
+        f32 Actual = F32FromString(String("-3.124"));
+        AssertEqualF32(Expected, Actual);
+    }
     {
         f32 Expected = 3.124f;
         f32 Actual = F32FromString(String("3.124"));
