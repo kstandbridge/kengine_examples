@@ -252,10 +252,7 @@
 		},
 		{
 			"label": "haversine_processor linux debug build",
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			},
+			"group": "build",
 			"command": "computer_enhance/haversine_processor/build.sh",
 			"args": [
 				""
@@ -285,8 +282,14 @@
 			"problemMatcher": [
 				"$msCompile"
 			],
-			"group": "build",
-			"detail": "compiler: cl.exe"
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"detail": "compiler: cl.exe",
+			"presentation": {
+				"clear": true
+			}
 		},
 		{
 			"label": "handmade linux debug build",

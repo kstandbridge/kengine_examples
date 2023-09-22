@@ -125,6 +125,27 @@ HandleDeallocation(read_parameters *Params, string *Buffer)
 }
 
 internal void
+WriteToAllBytes(repetition_tester *Tester, read_parameters *Params)
+{
+    while(RepetitionTestIsTesting(Tester))
+    {
+        string DestBuffer = Params->Dest;
+        HandleAllocation(Params, &DestBuffer);
+
+        RepetitionTestBeginTime(Tester);
+        for(u64 Index = 0; Index < DestBuffer.Size; ++Index)
+        {
+            DestBuffer.Data[Index] = (u8)Index;
+        }
+        RepetitionTestEndTime(Tester);
+
+        RepetitionTestCountBytes(Tester, DestBuffer.Size);
+
+        HandleDeallocation(Params, &DestBuffer);
+    }
+}
+
+internal void
 ReadViaFRead(repetition_tester *Tester, read_parameters *Params)
 {
     while(RepetitionTestIsTesting(Tester))
@@ -240,6 +261,7 @@ typedef struct test_fuction
 } test_function;
 test_function TestFunctions[] =
 {
+    { "WriteToAllBytes", WriteToAllBytes },
     { "fread", ReadViaFRead },
     { "ReadFile", ReadViaFRead },
 };
