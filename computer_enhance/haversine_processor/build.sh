@@ -30,6 +30,5 @@ pushd $BuildDir > /dev/null
 # ./fault_counter backward 32
 
 gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/fault_counter_test.c" -o fault_counter_test $CommonLinkerFlags
-./fault_counter_test
 
 popd > /dev/null

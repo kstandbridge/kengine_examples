@@ -26,9 +26,10 @@ REM performance_metrics.exe 1000
 
 REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\read_overhead_test.c /link %CommonLinkerFlags%
 
-cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\fault_counter.c /link %CommonLinkerFlags%
-fault_counter.exe 32
+REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\fault_counter.c /link %CommonLinkerFlags%
+REM fault_counter.exe backward 32
 
+cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\fault_counter_test.c /link %CommonLinkerFlags%
 
 popd
 
