@@ -266,7 +266,7 @@ test_function TestFunctions[] =
     { "ReadFile", ReadViaFRead },
 };
 
-s32
+
 MainLoop(app_memory *AppMemory)
 {
     GlobalArena.MinimumBlockSize = Gigabytes(2);

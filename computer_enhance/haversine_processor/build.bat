@@ -24,7 +24,11 @@ REM haversine_processor.exe output.json
 REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\performance_metrics.c /link %CommonLinkerFlags%
 REM performance_metrics.exe 1000
 
-cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\read_overhead_test.c /link %CommonLinkerFlags%
+REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\read_overhead_test.c /link %CommonLinkerFlags%
+
+cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\fault_counter.c /link %CommonLinkerFlags%
+fault_counter.exe 32
+
 
 popd
 
