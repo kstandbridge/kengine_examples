@@ -61,13 +61,25 @@ MainLoop(app_memory *AppMemory)
 
     string_list *Args = PlatformGetCommandLineArgs(Arena);
     u32 ArgsCount = GetStringListCount(Args);
-    if(ArgsCount == 1)
+    if(ArgsCount == 2)
     {
         u64 PageSize = GetPageSize();
-        u64 PageCount = U64FromString(&Args->Entry);
+        string Direction = Args->Entry;
+        b32 IsForward = true;
+        if(StringsAreEqual(String("backward"), Direction))
+        {
+            IsForward = false;
+        }
+        else if(!StringsAreEqual(String("backward"), Direction))
+        {
+            PlatformConsoleOut("Error: invalid direction \"%S\"\n", Direction);
+        }
+
+        u64 PageCount = U64FromString(&Args->Next->Entry);
         u64 TotalSize = PageSize*PageCount;
 
-        PlatformConsoleOut("# PageSize:%lu, PageCount:%lu, TotalSize:%lu\n", PageSize, PageCount, TotalSize);
+        PlatformConsoleOut("# Direction: %S, PageSize:%lu, PageCount:%lu, TotalSize:%lu\n",
+                           Direction, PageSize, PageCount, TotalSize);
 
         PlatformConsoleOut("Page Count, Touch Count, Fault Count, Extra Faults\n");
 
@@ -80,7 +92,14 @@ MainLoop(app_memory *AppMemory)
                 u64 StartFaultCount = PlatformReadOSPageFaultCount();
                 for(u64 Index = 0; Index < TouchSize; ++Index)
                 {
-                    Data[Index] = (u8)Index;
+                    if(IsForward)
+                    {
+                        Data[Index] = (u8)Index;
+                    }
+                    else
+                    {
+                        Data[TotalSize - 1 - Index] = (u8)Index;
+                    }
                 }
                 u64 EndFaultCount = PlatformReadOSPageFaultCount();
 
@@ -99,7 +118,7 @@ MainLoop(app_memory *AppMemory)
     }
     else
     {
-        PlatformConsoleOut("Usage: fault_counter [# of 4k pages to allocate]\n");
+        PlatformConsoleOut("Usage: fault_counter [forward/backward] [# of 4k pages to allocate]\n");
     }
 
     return 0;
