@@ -9,6 +9,50 @@ typedef struct app_state
     memory_arena Arena;
 } app_state;
 
+u64 
+GetPageSize()
+{
+    u64 Result;
+
+#if KENGINE_WIN32
+    Result = 4096;
+#elif KENGINE_LINUX
+    Result = sysconf(_SC_PAGESIZE);
+#else
+#error Unsupported platform
+#endif
+
+    return Result;
+}
+
+u8 *
+AllocateMemory(u64 TotalSize)
+{
+    u8 *Result;
+
+#if KENGINE_WIN32
+    Result = (u8 *)VirtualAlloc(0, TotalSize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+#elif KENGINE_LINUX
+    Result = (u8 *)mmap(0, TotalSize, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+#else
+#error Unsupported platform
+#endif
+
+    return Result;
+}
+
+void
+FreeMemory(u8 *Memory, u64 TotalSize)
+{
+#if KENGINE_WIN32
+    VirtualFree(Memory, 0, MEM_RELEASE);
+#elif KENGINE_LINUX
+#else
+    munmap(Memory, TotalSize);
+#error Unsupported platform
+#endif
+}
+
 s32
 MainLoop(app_memory *AppMemory)
 {
@@ -19,16 +63,18 @@ MainLoop(app_memory *AppMemory)
     u32 ArgsCount = GetStringListCount(Args);
     if(ArgsCount == 1)
     {
-        u64 PageSize = 4096;
+        u64 PageSize = GetPageSize();
         u64 PageCount = U64FromString(&Args->Entry);
         u64 TotalSize = PageSize*PageCount;
+
+        PlatformConsoleOut("# PageSize:%lu, PageCount:%lu, TotalSize:%lu\n", PageSize, PageCount, TotalSize);
 
         PlatformConsoleOut("Page Count, Touch Count, Fault Count, Extra Faults\n");
 
         for(u64 TouchCount = 0; TouchCount < PageCount; ++TouchCount)
         {
             u64 TouchSize = PageSize*TouchCount;
-            u8 *Data = (u8 *)VirtualAlloc(0, TotalSize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+            u8 *Data = AllocateMemory(TotalSize);
             if(Data)
             {
                 u64 StartFaultCount = PlatformReadOSPageFaultCount();
@@ -42,7 +88,7 @@ MainLoop(app_memory *AppMemory)
 
                 PlatformConsoleOut("%lu, %lu, %lu, %ld\n", PageCount, TouchCount, FaultCount, (FaultCount - TouchCount));
 
-                VirtualFree(Data, 0, MEM_RELEASE);
+                FreeMemory(Data, TotalSize);
             }
             else
             {

@@ -4,7 +4,7 @@ CurDir=$(pwd)
 BuildDir="$CurDir/bin"
 
 IncludeDirectories="-I $CurDir/kengine"
-CommonCompilerFlags="-Og -g -ggdb -msse4.2 -maes -Wall -Wno-unused-function -Wno-missing-braces -Wno-switch -Wno-strict-aliasing $IncludeDirectories"
+CommonCompilerFlags="-O2 -g -ggdb -msse4.2 -maes -Wall -Wno-unused-function -Wno-missing-braces -Wno-switch -Wno-strict-aliasing $IncludeDirectories"
 CommonLinkerFlags="-pthread -lm"
 InternalCompilerFlags="-DKENGINE_LINUX -DKENGINE_INTERNAL -DKENGINE_SLOW"
 
@@ -24,6 +24,9 @@ pushd $BuildDir > /dev/null
 # gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/performance_metrics.c" -o performance_metrics $CommonLinkerFlags
 # ./performance_metrics 1000
 
-gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/read_overhead_test.c" -o read_overhead_test $CommonLinkerFlags
+# gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/read_overhead_test.c" -o read_overhead_test $CommonLinkerFlags
+
+gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/fault_counter.c" -o fault_counter $CommonLinkerFlags
+./fault_counter 16
 
 popd > /dev/null
