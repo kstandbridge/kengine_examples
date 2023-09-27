@@ -26,7 +26,10 @@ pushd $BuildDir > /dev/null
 
 # gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/read_overhead_test.c" -o read_overhead_test $CommonLinkerFlags
 
-gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/fault_counter.c" -o fault_counter $CommonLinkerFlags
-./fault_counter backward 32
+# gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/fault_counter.c" -o fault_counter $CommonLinkerFlags
+# ./fault_counter backward 32
+
+gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/fault_counter_test.c" -o fault_counter_test $CommonLinkerFlags
+./fault_counter_test
 
 popd > /dev/null
