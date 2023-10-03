@@ -29,6 +29,14 @@ pushd $BuildDir > /dev/null
 # gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/fault_counter.c" -o fault_counter $CommonLinkerFlags
 # ./fault_counter backward 32
 
+<<<<<<< Updated upstream
 gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/fault_counter_test.c" -o fault_counter_test $CommonLinkerFlags
+=======
+# gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/fault_counter_test.c" -o fault_counter_test $CommonLinkerFlags
+# ./fault_counter_test
+
+gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/pointer_anatomy.c" -o pointer_anatomy $CommonLinkerFlags
+./pointer_anatomy
+>>>>>>> Stashed changes
 
 popd > /dev/null

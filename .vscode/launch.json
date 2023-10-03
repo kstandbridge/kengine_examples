@@ -402,6 +402,16 @@
             "program": "${workspaceFolder}/bin/read_overhead_test",
             "cwd": "${workspaceFolder}/bin",
             "args": [ "output.json" ]
+        },
+
+
+        {
+            "name": "pointer_anatomy linux debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/pointer_anatomy",
+            "cwd": "${workspaceFolder}/bin",
+            "args": []
         }
     ]
 }

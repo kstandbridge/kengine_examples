@@ -179,6 +179,18 @@ RunFormatStringSignedDecimalIntegerTests(memory_arena *Arena)
         string B = FormatString(Arena, "before %d after", S32Min);
         AssertEqualString(A, B);
     }
+
+    {
+        string A = String("before 0 after");
+        string B = FormatString(Arena, "before %u after", 0);
+        AssertEqualString(A, B);
+    }
+    {
+        string A = String("before  0 after");
+        string B = FormatString(Arena, "before %2u after", 0);
+        AssertEqualString(A, B);
+    }
+
 }
 
 internal void
