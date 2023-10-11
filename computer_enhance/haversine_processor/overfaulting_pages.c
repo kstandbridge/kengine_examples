@@ -4,21 +4,7 @@
 #define KENGINE_IMPLEMENTATION
 #include "kengine.h"
 
-u8 *
-AllocateMemory(u64 TotalSize)
-{
-    u8 *Result;
-
-#if KENGINE_WIN32
-    Result = (u8 *)VirtualAlloc(0, TotalSize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
-#elif KENGINE_LINUX
-    Result = (u8 *)mmap(0, TotalSize, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-#else
-#error Unsupported platform
-#endif
-
-    return Result;
-}
+#include "virtual_address.h"
 
 typedef struct app_state
 {
@@ -50,6 +36,12 @@ MainLoop(app_memory *AppMemory)
             {
                 PlatformConsoleOut("Page %lu: %lu extra faults (%lu pages since last increase)\n",
                                    PageIndex, OverFaultCount, (PageIndex - PriorPageIndex));
+                
+                if(PageIndex > 0)
+                {
+                    PrintAsLine(String("\tPrevious Pointer: "), DecomposePointer4K(Data + TotalSize - 1 - PageSize*(PageIndex - 1)));
+                }
+                PrintAsLine(    String("\t    This Pointer: "), DecomposePointer4K(Data + TotalSize - 1 - PageSize*PageIndex));
                 
                 PriorOverFaultCount = OverFaultCount;
                 PriorPageIndex = PageIndex;

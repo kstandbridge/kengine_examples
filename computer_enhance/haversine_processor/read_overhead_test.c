@@ -267,6 +267,7 @@ test_function TestFunctions[] =
 };
 
 
+s32
 MainLoop(app_memory *AppMemory)
 {
     GlobalArena.MinimumBlockSize = Gigabytes(2);
