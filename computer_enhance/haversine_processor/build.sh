@@ -31,7 +31,9 @@ pushd $BuildDir > /dev/null
 
 # gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/fault_counter_test.c" -o fault_counter_test $CommonLinkerFlags
 
-gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/pointer_anatomy.c" -o pointer_anatomy $CommonLinkerFlags
-./pointer_anatomy
+# gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/pointer_anatomy.c" -o pointer_anatomy $CommonLinkerFlags
+# ./pointer_anatomy
+
+gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine_processor/overfaulting_pages.c" -o overfaulting_pages $CommonLinkerFlags
 
 popd > /dev/null

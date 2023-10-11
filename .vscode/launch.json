@@ -404,12 +404,20 @@
             "args": [ "output.json" ]
         },
 
-
         {
             "name": "pointer_anatomy linux debug",
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bin/pointer_anatomy",
+            "cwd": "${workspaceFolder}/bin",
+            "args": []
+        },
+
+        {
+            "name": "overfaulting_pages linux debug",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/overfaulting_pages",
             "cwd": "${workspaceFolder}/bin",
             "args": []
         }

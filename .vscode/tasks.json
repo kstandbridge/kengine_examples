@@ -5,10 +5,7 @@
     "tasks": [
 		{
 			"label": "hello_console linux debug build",
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			},
+			"group": { "kind": "build", },
 			"command": "hello_console/build.sh",
 			"args": [
 				""
@@ -255,7 +252,10 @@
 		},
 		{
 			"label": "haversine_processor linux debug build",
-			"group": "build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
 			"command": "computer_enhance/haversine_processor/build.sh",
 			"args": [
 				""
@@ -293,10 +293,7 @@
 		},
 		{
 			"label": "handmade linux debug build",
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			},
+			"group": "build",
 			"command": "handmade/build.sh",
 			"args": [
 				""
