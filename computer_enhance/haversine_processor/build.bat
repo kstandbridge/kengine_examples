@@ -31,7 +31,9 @@ REM fault_counter.exe backward 32
 
 REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\fault_counter_test.c /link %CommonLinkerFlags%
 
-cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\pointer_anatomy.c /link %CommonLinkerFlags%
+REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\pointer_anatomy.c /link %CommonLinkerFlags%
+
+cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\overfaulting_pages.c /link %CommonLinkerFlags%
 
 popd
 
