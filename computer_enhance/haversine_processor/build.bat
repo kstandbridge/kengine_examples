@@ -29,7 +29,9 @@ REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\h
 REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\fault_counter.c /link %CommonLinkerFlags%
 REM fault_counter.exe backward 32
 
-cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\fault_counter_test.c /link %CommonLinkerFlags%
+REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\fault_counter_test.c /link %CommonLinkerFlags%
+
+cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine_processor\pointer_anatomy.c /link %CommonLinkerFlags%
 
 popd
 
