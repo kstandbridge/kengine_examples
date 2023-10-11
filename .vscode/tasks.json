@@ -5,7 +5,10 @@
     "tasks": [
 		{
 			"label": "hello_console linux debug build",
-			"group": "build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
 			"command": "hello_console/build.sh",
 			"args": [
 				""
