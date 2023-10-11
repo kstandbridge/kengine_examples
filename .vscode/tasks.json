@@ -255,10 +255,7 @@
 		},
 		{
 			"label": "haversine_processor linux debug build",
-			"group": {
-				"kind": "build",
-				"isDefault": true
-			},
+			"group": "build",
 			"command": "computer_enhance/haversine_processor/build.sh",
 			"args": [
 				""
@@ -296,7 +293,10 @@
 		},
 		{
 			"label": "handmade linux debug build",
-			"group": "build",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
 			"command": "handmade/build.sh",
 			"args": [
 				""

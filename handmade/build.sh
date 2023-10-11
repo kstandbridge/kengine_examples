@@ -4,11 +4,9 @@ CurDir=$(pwd)
 BuildDir="$CurDir/bin"
 
 IncludeDirectories="-I $CurDir/kengine -I $CurDir/handmade"
-CommonCompilerFlags="-Og -g -ggdb -msse4.2 -maes -lm -Wall -Wno-unused-function -Wno-missing-braces $IncludeDirectories"
+CommonCompilerFlags="-Og -g -ggdb -msse4.2 -maes -lm -Wall -Wno-unused-function -Wno-missing-braces -Wno-unused-result $IncludeDirectories"
 CommonLinkerFlags="-pthread"
 InternalCompilerFlags="-DKENGINE_INTERNAL -DKENGINE_SLOW"
-
-ctags -R kengine handmade
 
 [ -d $BuildDir ] || mkdir -p $BuildDir
 

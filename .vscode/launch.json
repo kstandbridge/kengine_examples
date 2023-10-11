@@ -354,7 +354,7 @@
 
         {
             "name": "handmade linux debug",
-            "type": "lldb",
+            "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bin/platform_handmade",
             "args": [],
