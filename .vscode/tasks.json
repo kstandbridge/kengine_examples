@@ -29,6 +29,12 @@
             "label": "kengine_test",
             "windows": { "command": "${workspaceFolder}/kengine_test/build.bat" },
             "linux": { "command": "${workspaceFolder}/kengine_test/build.sh" },
+        },
+        {
+            "type": "shell",
+            "label": "handmade",
+            "windows": { "command": "${workspaceFolder}/handmade/build.bat" },
+            "linux": { "command": "${workspaceFolder}/handmade/build.sh" },
             "group": { "kind": "build", "isDefault": true }
         }
     ],

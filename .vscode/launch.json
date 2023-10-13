@@ -41,5 +41,12 @@
             "program": "${workspaceFolder}/bin/kengine_test",
             "cwd": "${workspaceFolder}/bin",
         },
+        {
+            "name": "handmade",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/platform_handmade",
+            "cwd": "${workspaceFolder}/handmade/data",
+        }
     ]
 }
