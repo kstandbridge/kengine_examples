@@ -17,7 +17,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/bin/hello_preprocessor",
             "cwd": "${workspaceFolder}/hello_preprocessor",
-            "args": [ "hello_types.h "]
+            "args": [ "hello_types.h" ]
         }
     ]
 }
