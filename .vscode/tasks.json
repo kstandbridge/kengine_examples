@@ -23,6 +23,12 @@
             "label": "hello_test",
             "windows": { "command": "${workspaceFolder}/hello_test/build.bat" },
             "linux": { "command": "${workspaceFolder}/hello_test/build.sh" },
+        },
+        {
+            "type": "shell",
+            "label": "kengine_test",
+            "windows": { "command": "${workspaceFolder}/kengine_test/build.bat" },
+            "linux": { "command": "${workspaceFolder}/kengine_test/build.sh" },
             "group": { "kind": "build", "isDefault": true }
         }
     ],

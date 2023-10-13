@@ -34,5 +34,12 @@
             "program": "${workspaceFolder}/bin/hello_test",
             "cwd": "${workspaceFolder}/bin",
         },
+        {
+            "name": "kengine_test",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/kengine_test",
+            "cwd": "${workspaceFolder}/bin",
+        },
     ]
 }
