@@ -62,6 +62,73 @@
             "request": "launch",
             "program": "${workspaceFolder}/bin/sim8086_test",
             "cwd": "${workspaceFolder}/bin",
+        },
+        {
+            "name": "haversine_test",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/haversine_test",
+            "cwd": "${workspaceFolder}/bin",
+        },
+        {
+            "name": "haversine_generator",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/haversine_generator",
+            "cwd": "${workspaceFolder}/bin",
+            "args": [ "uniform", "1234", "32" ]
+        },
+        {
+            "name": "haversine_processor",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/haversine_processor",
+            "cwd": "${workspaceFolder}/bin",
+            "args": [ "output.json", "output.f64" ]
+        },
+        {
+            "name": "performance_metrics",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/performance_metrics",
+            "cwd": "${workspaceFolder}/bin"
+        },
+        {
+            "name": "read_overhead_test",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/read_overhead_test",
+            "cwd": "${workspaceFolder}/bin",
+            "args": [ "output.json" ]
+        },
+        {
+            "name": "fault_counter",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/fault_counter",
+            "cwd": "${workspaceFolder}/bin",
+            "args": [ "backward", "32" ]
+        },
+        {
+            "name": "fault_counter_test",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/fault_counter_test",
+            "cwd": "${workspaceFolder}/bin"
+        },
+        {
+            "name": "pointer_anatomy",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/pointer_anatomy",
+            "cwd": "${workspaceFolder}/bin"
+        },
+        {
+            "name": "overfaulting_pages",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/overfaulting_pages",
+            "cwd": "${workspaceFolder}/bin"
         }
     ]
 }

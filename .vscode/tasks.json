@@ -41,6 +41,12 @@
             "label": "sim8086",
             "windows": { "command": "${workspaceFolder}/computer_enhance/sim8086/build.bat" },
             "linux": { "command": "${workspaceFolder}/computer_enhance/sim8086/build.sh" },
+        },
+        {
+            "type": "shell",
+            "label": "haversine",
+            "windows": { "command": "${workspaceFolder}/computer_enhance/haversine/build.bat" },
+            "linux": { "command": "${workspaceFolder}/computer_enhance/haversine/build.sh" },
             "group": { "kind": "build", "isDefault": true }
         }
     ],
