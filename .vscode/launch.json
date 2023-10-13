@@ -47,6 +47,21 @@
             "request": "launch",
             "program": "${workspaceFolder}/bin/platform_handmade",
             "cwd": "${workspaceFolder}/handmade/data",
+        },
+        {
+            "name": "sim8086_console",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/sim8086_console",
+            "cwd": "${workspaceFolder}/bin",
+            "args": [ "-dump", "-clocks", "test" ]
+        },
+        {
+            "name": "sim8086_test",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/sim8086_test",
+            "cwd": "${workspaceFolder}/bin",
         }
     ]
 }

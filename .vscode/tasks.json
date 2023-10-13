@@ -35,6 +35,12 @@
             "label": "handmade",
             "windows": { "command": "${workspaceFolder}/handmade/build.bat" },
             "linux": { "command": "${workspaceFolder}/handmade/build.sh" },
+        },
+        {
+            "type": "shell",
+            "label": "sim8086",
+            "windows": { "command": "${workspaceFolder}/computer_enhance/sim8086/build.bat" },
+            "linux": { "command": "${workspaceFolder}/computer_enhance/sim8086/build.sh" },
             "group": { "kind": "build", "isDefault": true }
         }
     ],
