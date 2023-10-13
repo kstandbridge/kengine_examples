@@ -11,6 +11,12 @@
             "label": "hello_preprocessor",
             "windows": { "command": "${workspaceFolder}/hello_preprocessor/build.bat" },
             "linux": { "command": "${workspaceFolder}/hello_preprocessor/build.sh" },
+        },
+        {
+            "type": "shell",
+            "label": "kengine_preprocessor",
+            "windows": { "command": "${workspaceFolder}/kengine_preprocessor/build.bat" },
+            "linux": { "command": "${workspaceFolder}/kengine_preprocessor/build.sh" },
             "group": { "kind": "build", "isDefault": true }
         }
     ],
