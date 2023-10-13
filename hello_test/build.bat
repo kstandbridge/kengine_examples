@@ -13,6 +13,7 @@ IF NOT EXIST %BuildDir% mkdir %BuildDir%
 pushd %BuildDir%
 
 cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\hello_test\hello_test.c /link %CommonLinkerFlags%
+hello_test
 
 popd
 

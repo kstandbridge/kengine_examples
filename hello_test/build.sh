@@ -13,5 +13,6 @@ InternalCompilerFlags="-DKENGINE_LINUX -DKENGINE_INTERNAL -DKENGINE_SLOW"
 pushd $BuildDir > /dev/null
 
 gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/hello_test/hello_test.c" -o hello_test $CommonLinkerFlags
+./hello_test
 
 popd > /dev/null

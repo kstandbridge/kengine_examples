@@ -26,6 +26,13 @@
             "program": "${workspaceFolder}/bin/kengine_preprocessor",
             "cwd": "${workspaceFolder}/kengine/kengine",
             "args": [ "kengine_types.h" ]
-        }
+        },
+        {
+            "name": "hello_test",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/hello_test",
+            "cwd": "${workspaceFolder}/bin",
+        },
     ]
 }
