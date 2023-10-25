@@ -5,49 +5,57 @@
             "label": "hello_console",
             "windows": { "command": "${workspaceFolder}/hello_console/build.bat" },
             "linux": { "command": "${workspaceFolder}/hello_console/build.sh" },
+            "presentation": { "clear": true },
         },
         {
             "type": "shell",
             "label": "hello_preprocessor",
             "windows": { "command": "${workspaceFolder}/hello_preprocessor/build.bat" },
             "linux": { "command": "${workspaceFolder}/hello_preprocessor/build.sh" },
+            "presentation": { "clear": true },
         },
         {
             "type": "shell",
             "label": "kengine_preprocessor",
             "windows": { "command": "${workspaceFolder}/kengine_preprocessor/build.bat" },
             "linux": { "command": "${workspaceFolder}/kengine_preprocessor/build.sh" },
+            "presentation": { "clear": true },
         },
         {
             "type": "shell",
             "label": "hello_test",
             "windows": { "command": "${workspaceFolder}/hello_test/build.bat" },
             "linux": { "command": "${workspaceFolder}/hello_test/build.sh" },
+            "presentation": { "clear": true },
         },
         {
             "type": "shell",
             "label": "kengine_test",
             "windows": { "command": "${workspaceFolder}/kengine_test/build.bat" },
             "linux": { "command": "${workspaceFolder}/kengine_test/build.sh" },
+            "presentation": { "clear": true },
+            "group": { "kind": "build", "isDefault": true }
         },
         {
             "type": "shell",
             "label": "handmade",
             "windows": { "command": "${workspaceFolder}/handmade/build.bat" },
             "linux": { "command": "${workspaceFolder}/handmade/build.sh" },
+            "presentation": { "clear": true },
         },
         {
             "type": "shell",
             "label": "sim8086",
             "windows": { "command": "${workspaceFolder}/computer_enhance/sim8086/build.bat" },
             "linux": { "command": "${workspaceFolder}/computer_enhance/sim8086/build.sh" },
+            "presentation": { "clear": true },
         },
         {
             "type": "shell",
             "label": "haversine",
             "windows": { "command": "${workspaceFolder}/computer_enhance/haversine/build.bat" },
             "linux": { "command": "${workspaceFolder}/computer_enhance/haversine/build.sh" },
-            "group": { "kind": "build", "isDefault": true }
+            "presentation": { "clear": true },
         }
     ],
     "version": "2.0.0"

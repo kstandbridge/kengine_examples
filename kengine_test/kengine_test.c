@@ -213,6 +213,36 @@ RunFormatStringUnsignedDecimalIntegerTests(memory_arena *Arena)
         string B = FormatString(Arena, "before %5u after", 42);
         AssertEqualString(A, B);
     }
+
+    {
+        string A = String("[  262144]");
+        string B = FormatString(Arena, "[%8d]", 262144);
+        AssertEqualString(A, B);
+    }
+
+    {
+        string A = String("[       0]");
+        string B = FormatString(Arena, "[%8d]", 0);
+        AssertEqualString(A, B);
+    }
+
+    {
+        string A = String("[ -262144]");
+        string B = FormatString(Arena, "[%8d]", -262144);
+        AssertEqualString(A, B);
+    }
+
+    {
+        string A = String("[   123]");
+        string B = FormatString(Arena, "[%6d]", 123);
+        AssertEqualString(A, B);
+    }
+
+    {
+        string A = String("[  -123]");
+        string B = FormatString(Arena, "[%6d]", -123);
+        AssertEqualString(A, B);
+    }
 }
 
 internal void
@@ -255,6 +285,36 @@ RunFormatStringDecimalFloatingPoint(memory_arena *Arena)
         string A = String("before 3.14159265359 after");
         string B = FormatString(Arena, "before %.11f after", Pi32);
         AssertEqualU64(A.Size, B.Size);
+    }
+    
+    {
+        string A = String("[  262144.00]");
+        string B = FormatString(Arena, "[%8.2f]", 262144.0f);
+        AssertEqualString(A, B);
+    }
+
+    {
+        string A = String("[       0.00]");
+        string B = FormatString(Arena, "[%8.2f]", 0.0f);
+        AssertEqualString(A, B);
+    }
+
+    {
+        string A = String("[ -262144.00]");
+        string B = FormatString(Arena, "[%8.2f]", -262144.0f);
+        AssertEqualString(A, B);
+    }
+
+    {
+        string A = String("[   123.00]");
+        string B = FormatString(Arena, "[%6.2f]", 123.0f);
+        AssertEqualString(A, B);
+    }
+
+    {
+        string A = String("[  -123.00]");
+        string B = FormatString(Arena, "[%6.2f]", -123.0f);
+        AssertEqualString(A, B);
     }
 }
 
