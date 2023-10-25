@@ -129,6 +129,13 @@
             "request": "launch",
             "program": "${workspaceFolder}/bin/overfaulting_pages",
             "cwd": "${workspaceFolder}/bin"
+        },
+        {
+            "name": "circular_buffer",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/circular_buffer",
+            "cwd": "${workspaceFolder}/bin"
         }
     ]
 }
