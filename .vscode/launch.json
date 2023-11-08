@@ -143,6 +143,13 @@
             "request": "launch",
             "program": "${workspaceFolder}/bin/change_detection",
             "cwd": "${workspaceFolder}/bin"
+        },
+        {
+            "name": "sparse_memory",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/sparse_memory",
+            "cwd": "${workspaceFolder}/bin"
         }
     ]
 }
