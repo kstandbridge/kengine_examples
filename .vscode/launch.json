@@ -136,6 +136,13 @@
             "request": "launch",
             "program": "${workspaceFolder}/bin/circular_buffer",
             "cwd": "${workspaceFolder}/bin"
+        },
+        {
+            "name": "change_detection",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/change_detection",
+            "cwd": "${workspaceFolder}/bin"
         }
     ]
 }

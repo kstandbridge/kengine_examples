@@ -21,8 +21,8 @@ pushd %BuildDir%
 @REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\fault_counter_test.c /link %CommonLinkerFlags%
 @REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\pointer_anatomy.c /link %CommonLinkerFlags%
 @REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\overfaulting_pages.c /link %CommonLinkerFlags%
-cl %CommonCompilerFlags% %InternalCompilerFlags% -Od %CurDir%\computer_enhance\haversine\circular_buffer.c /link %CommonLinkerFlags%
-circular_buffer
+@REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\circular_buffer.c /link %CommonLinkerFlags%
+cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\change_detection.c /link %CommonLinkerFlags%
+change_detection
 
 popd
-

@@ -72,7 +72,7 @@ DecomposePointer1GB(void *Ptr)
     return Result;
 }
 
-u8 *
+internal u8 *
 AllocateMemory(u64 TotalSize)
 {
     u8 *Result;
@@ -86,6 +86,18 @@ AllocateMemory(u64 TotalSize)
 #endif
 
     return Result;
+}
+
+internal void
+DeallocateMemory(void *Ptr, u64 TotalSize)
+{
+#if KENGINE_WIN32
+    VirtualFree(Ptr, 0, MEM_RELEASE);
+#elif KENGINE_LINUX
+    munmap(Ptr, TotalSize);
+#else
+#error Unsupported platform
+#endif
 }
 
 internal void
