@@ -8,6 +8,8 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
+#pragma comment (lib, "advapi32.lib")
+
 typedef struct app_state
 {
     memory_arena *Arena;
@@ -16,6 +18,8 @@ typedef struct app_state
 typedef enum allocation_type
 {
     AllocType_none,
+    AllocType_VirtualAlloc,
+    AllocType_VirtualAllocLargePages,
     AllocType_malloc,
     AllocType_arena,
 
@@ -27,6 +31,7 @@ typedef struct read_parameters
     allocation_type AllocType;
     string Dest;
     char *FilePath;
+    u64 MinLargePageSize;
 } read_parameters;
 
 typedef void read_overhead_test_func(repetition_tester *Tester, read_parameters *Params);
@@ -60,10 +65,12 @@ AllocationTypeToString(allocation_type Type)
 
     switch(Type)
     {
-        case AllocType_none:    { Result = String(""); } break;
-        case AllocType_malloc:  { Result = String("malloc"); } break;
-        case AllocType_arena:  { Result = String("arena"); } break;
-        default:                { Result = String("UNKNOWN"); } break;
+        case AllocType_none:                    { Result = String(""); } break;
+        case AllocType_VirtualAlloc:            { Result = String("VirtualAlloc"); } break;
+        case AllocType_VirtualAllocLargePages:  { Result = String("VirtualAlloc (large)"); } break;
+        case AllocType_malloc:                  { Result = String("malloc"); } break;
+        case AllocType_arena:                   { Result = String("arena"); } break;
+        default:                                { Result = String("UNKNOWN"); } break;
     }
 
     return Result;
@@ -73,13 +80,44 @@ global memory_arena GlobalArena;
 global temporary_memory GlobalTempMemory;
 
 internal void
-HandleAllocation(read_parameters *Params, string *Buffer)
+HandleAllocation(repetition_tester *Tester, read_parameters *Params, string *Buffer)
 {
     switch (Params->AllocType)
     {
         case AllocType_none:
         {
             
+        } break;
+
+        case AllocType_VirtualAlloc:
+        case AllocType_VirtualAllocLargePages:
+        {
+            SIZE_T AllocSize = Params->Dest.Size;
+            DWORD Flags = MEM_COMMIT|MEM_RESERVE;
+            if(Params->AllocType == AllocType_VirtualAllocLargePages)
+            {
+                u64 MinLargePageSize = Params->MinLargePageSize;
+                if(MinLargePageSize != 0)
+                {
+                    Flags |= MEM_LARGE_PAGES;
+
+                    // NOTE(kstandbridge): Large page allocations need to be an even multiple of the large page size,
+                    // even though non-large allocations are automatically rounded up for you
+                    AllocSize = (AllocSize + MinLargePageSize - 1) & ~(MinLargePageSize - 1);
+                }                
+                else
+                {
+                    RepetitionTestError(Tester, "No large page support");
+                }
+            }
+
+            u8 *AllocData = (u8 *)VirtualAlloc(0, AllocSize, Flags, PAGE_READWRITE);
+            if(AllocData)
+            {
+                Buffer->Size = Params->Dest.Size;
+                Buffer->Data = AllocData;
+            }
+
         } break;
 
         case AllocType_malloc:
@@ -100,13 +138,23 @@ HandleAllocation(read_parameters *Params, string *Buffer)
 }
 
 internal void
-HandleDeallocation(read_parameters *Params, string *Buffer)
+HandleDeallocation(repetition_tester *Tester, read_parameters *Params, string *Buffer)
 {
     switch (Params->AllocType)
     {
         case AllocType_none:
         {
             
+        } break;
+
+        case AllocType_VirtualAlloc:
+        case AllocType_VirtualAllocLargePages:
+        {
+            if(Buffer->Data)
+            {
+                VirtualFree(Buffer->Data, 0, MEM_RELEASE);
+            }
+            ZeroStruct(Buffer);
         } break;
 
         case AllocType_malloc:
@@ -130,7 +178,7 @@ WriteToAllBytes(repetition_tester *Tester, read_parameters *Params)
     while(RepetitionTestIsTesting(Tester))
     {
         string DestBuffer = Params->Dest;
-        HandleAllocation(Params, &DestBuffer);
+        HandleAllocation(Tester, Params, &DestBuffer);
 
         RepetitionTestBeginTime(Tester);
         for(u64 Index = 0; Index < DestBuffer.Size; ++Index)
@@ -141,7 +189,7 @@ WriteToAllBytes(repetition_tester *Tester, read_parameters *Params)
 
         RepetitionTestCountBytes(Tester, DestBuffer.Size);
 
-        HandleDeallocation(Params, &DestBuffer);
+        HandleDeallocation(Tester, Params, &DestBuffer);
     }
 }
 
@@ -154,7 +202,7 @@ ReadViaFRead(repetition_tester *Tester, read_parameters *Params)
         if(File)
         {
             string DestBuffer = Params->Dest;
-            HandleAllocation(Params, &DestBuffer);
+            HandleAllocation(Tester, Params, &DestBuffer);
 
             RepetitionTestBeginTime(Tester);
             size_t Result = fread(DestBuffer.Data, DestBuffer.Size, 1, File);
@@ -169,7 +217,7 @@ ReadViaFRead(repetition_tester *Tester, read_parameters *Params)
                 RepetitionTestError(Tester, "fread failed");
             }
 
-            HandleDeallocation(Params, &DestBuffer);
+            HandleDeallocation(Tester, Params, &DestBuffer);
             fclose(File);
         }
         else
@@ -266,6 +314,37 @@ test_function TestFunctions[] =
     { "ReadFile", ReadViaFRead },
 };
 
+internal u64
+PlatformEnableLargePages()
+{
+    u64 Result = 0;
+
+    HANDLE TokenHandle;
+    if(OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES, &TokenHandle))
+    {
+        TOKEN_PRIVILEGES TokenPrivileges = 
+        {
+            .PrivilegeCount = 1,
+            .Privileges = 
+            {
+                { .Attributes = SE_PRIVILEGE_ENABLED, },
+            },
+        };
+        if(LookupPrivilegeValue(0, SE_LOCK_MEMORY_NAME, &TokenPrivileges.Privileges[0].Luid))
+        {
+            AdjustTokenPrivileges(TokenHandle, FALSE, &TokenPrivileges, 0, 0, 0);
+            if(GetLastError() == ERROR_SUCCESS)
+            {
+                Result = GetLargePageMinimum();
+            }
+        }
+
+        CloseHandle(TokenHandle);
+    }
+
+    return Result;
+}
+
 
 s32
 MainLoop(app_memory *AppMemory)
@@ -274,6 +353,7 @@ MainLoop(app_memory *AppMemory)
     app_state *AppState = AppMemory->AppState = PushStruct(&GlobalArena, app_state);
     memory_arena *Arena = AppState->Arena = &GlobalArena;
 
+    HANDLE ProcessHandle = GetCurrentProcess();
     u64 CPUTimerFreq = EstimateCPUTimerFrequency();
     
     string_list *Args = PlatformGetCommandLineArgs(Arena);
@@ -298,6 +378,7 @@ MainLoop(app_memory *AppMemory)
         {
             .Dest = AllocateBuffer(Stat.st_size),
             .FilePath = CPath,
+            .MinLargePageSize = PlatformEnableLargePages(),
         };
 
         if(Params.Dest.Size > 0)
@@ -328,7 +409,7 @@ MainLoop(app_memory *AppMemory)
     }
     else
     {
-        PlatformConsoleOut("Missing file path arg\n");
+        PlatformConsoleOut("Missing file path arg\n", 0);
     }
     
     return 0;
