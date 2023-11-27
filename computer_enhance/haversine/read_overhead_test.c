@@ -172,6 +172,50 @@ HandleDeallocation(repetition_tester *Tester, read_parameters *Params, string *B
     }
 }
 
+global u64 volatile GlobalSumSink;
+
+internal void
+ReadViaMapViewOfFile(repetition_tester *Tester, read_parameters *Params)
+{
+    while(RepetitionTestIsTesting(Tester))
+    {
+        HANDLE File = CreateFileA(Params->FilePath, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, 0,
+                                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+        
+        RepetitionTestBeginTime(Tester);
+        HANDLE Mapping = CreateFileMappingA(File, 0, PAGE_READONLY, 0, 0, 0);
+        u8 *Data = (u8 *)MapViewOfFile(Mapping, FILE_MAP_READ, 0, 0, 0);
+        if(Data)
+        {
+            u64 TotalSize = Params->Dest.Size;
+            u64 PageSize = 4096;
+
+            u64 TestSum = 0;
+            for(u64 ByteIndex = 0; ByteIndex < TotalSize; ByteIndex += PageSize)
+            {
+                TestSum += Data[ByteIndex];
+            }
+
+            // NOTE(kstandbridge): Trying to prevent the compiler optimizing out the above code
+            GlobalSumSink += TestSum;
+
+            RepetitionTestCountBytes(Tester, TotalSize);
+        }
+        else
+        {
+            RepetitionTestError(Tester, "Unable to read file");
+        }
+
+        RepetitionTestEndTime(Tester);
+
+        UnmapViewOfFile(Data);
+        CloseHandle(Mapping);
+        CloseHandle(File);
+
+    }
+    
+}
+
 internal void
 WriteToAllBytes(repetition_tester *Tester, read_parameters *Params)
 {
@@ -309,6 +353,7 @@ typedef struct test_fuction
 } test_function;
 test_function TestFunctions[] =
 {
+    { "ReadViaMapViewOfFile", ReadViaMapViewOfFile },
     { "WriteToAllBytes", WriteToAllBytes },
     { "fread", ReadViaFRead },
     { "ReadFile", ReadViaFRead },
