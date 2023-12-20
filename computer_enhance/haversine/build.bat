@@ -23,6 +23,10 @@ pushd %BuildDir%
 @REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\circular_buffer.c /link %CommonLinkerFlags%
 @REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\change_detection.c /link %CommonLinkerFlags%
 @REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\sparse_memory.c /link %CommonLinkerFlags%
+
+nasm -f win64 -o win32_nop_loop.obj %CurDir%\computer_enhance\haversine\win32_nop_loop.asm
+lib win32_nop_loop.obj
+
 cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\read_overhead_test.c /link %CommonLinkerFlags%
 
 popd

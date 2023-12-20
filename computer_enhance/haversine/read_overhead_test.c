@@ -237,6 +237,84 @@ WriteToAllBytes(repetition_tester *Tester, read_parameters *Params)
     }
 }
 
+extern void MOVAllBytesASM(u64 Count, u8 *Data);
+extern void NOPAllBytesASM(u64 Count);
+extern void CMPAllBytesASM(u64 Count);
+extern void DECAllBytesASM(u64 Count);
+#pragma comment (lib, "win32_nop_loop.lib")
+
+internal void
+MOVAllBytes(repetition_tester *Tester, read_parameters *Params)
+{
+    while(RepetitionTestIsTesting(Tester))
+    {
+        string DestBuffer = Params->Dest;
+        HandleAllocation(Tester, Params, &DestBuffer);
+
+        RepetitionTestBeginTime(Tester);
+        MOVAllBytesASM(DestBuffer.Size, DestBuffer.Data);
+        RepetitionTestEndTime(Tester);
+
+        RepetitionTestCountBytes(Tester, DestBuffer.Size);
+
+        HandleDeallocation(Tester, Params, &DestBuffer);
+    }
+}
+
+internal void
+NOPAllBytes(repetition_tester *Tester, read_parameters *Params)
+{
+    while(RepetitionTestIsTesting(Tester))
+    {
+        string DestBuffer = Params->Dest;
+        HandleAllocation(Tester, Params, &DestBuffer);
+
+        RepetitionTestBeginTime(Tester);
+        NOPAllBytesASM(DestBuffer.Size);
+        RepetitionTestEndTime(Tester);
+
+        RepetitionTestCountBytes(Tester, DestBuffer.Size);
+
+        HandleDeallocation(Tester, Params, &DestBuffer);
+    }
+}
+
+internal void
+CMPAllBytes(repetition_tester *Tester, read_parameters *Params)
+{
+    while(RepetitionTestIsTesting(Tester))
+    {
+        string DestBuffer = Params->Dest;
+        HandleAllocation(Tester, Params, &DestBuffer);
+
+        RepetitionTestBeginTime(Tester);
+        CMPAllBytesASM(DestBuffer.Size);
+        RepetitionTestEndTime(Tester);
+
+        RepetitionTestCountBytes(Tester, DestBuffer.Size);
+
+        HandleDeallocation(Tester, Params, &DestBuffer);
+    }
+}
+
+internal void
+DECAllBytes(repetition_tester *Tester, read_parameters *Params)
+{
+    while(RepetitionTestIsTesting(Tester))
+    {
+        string DestBuffer = Params->Dest;
+        HandleAllocation(Tester, Params, &DestBuffer);
+
+        RepetitionTestBeginTime(Tester);
+        DECAllBytesASM(DestBuffer.Size);
+        RepetitionTestEndTime(Tester);
+
+        RepetitionTestCountBytes(Tester, DestBuffer.Size);
+
+        HandleDeallocation(Tester, Params, &DestBuffer);
+    }
+}
+
 internal void
 ReadViaFRead(repetition_tester *Tester, read_parameters *Params)
 {
@@ -353,8 +431,12 @@ typedef struct test_fuction
 } test_function;
 test_function TestFunctions[] =
 {
-    { "ReadViaMapViewOfFile", ReadViaMapViewOfFile },
     { "WriteToAllBytes", WriteToAllBytes },
+    { "MOVAllBytes", MOVAllBytes },
+    { "NOPAllBytes", NOPAllBytes },
+    { "CMPAllBytes", CMPAllBytes },
+    { "DECAllBytes", DECAllBytes },
+    { "ReadViaMapViewOfFile", ReadViaMapViewOfFile },
     { "fread", ReadViaFRead },
     { "ReadFile", ReadViaFRead },
 };
@@ -434,7 +516,10 @@ MainLoop(app_memory *AppMemory)
             {
                 for(u32 FuncIndex = 0; FuncIndex < ArrayCount(TestFunctions); ++FuncIndex)
                 {
-                    for(u32 AllocType = 0; AllocType < AllocTyp_Count; ++AllocType)
+                    for(u32 AllocType = 0;
+                        // AllocType < AllocTyp_Count;
+                        AllocType < 1;
+                        ++AllocType)
                     {
                         Params.AllocType = (allocation_type)AllocType;
 
