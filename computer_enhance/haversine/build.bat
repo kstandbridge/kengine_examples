@@ -24,13 +24,15 @@ pushd %BuildDir%
 @REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\change_detection.c /link %CommonLinkerFlags%
 @REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\sparse_memory.c /link %CommonLinkerFlags%
 @REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\read_overhead_test.c /link %CommonLinkerFlags%
+@REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\asm_repetition_tester.c /link %CommonLinkerFlags%
 
 @REM nasm -f win64 -o win32_nop_loop.obj %CurDir%\computer_enhance\haversine\win32_nop_loop.asm
-@REM lib win32_nop_loop.obj
-nasm -f win64 -o win32_multinoop_loops.obj %CurDir%\computer_enhance\haversine\win32_multinoop_loops.asm
-lib win32_multinoop_loops.obj
+@REM lib -nologo win32_nop_loop.obj
+@REM nasm -f win64 -o win32_multinoop_loops.obj %CurDir%\computer_enhance\haversine\win32_multinoop_loops.asm
+@REM lib -nologo win32_multinoop_loops.obj
+nasm -f win64 -o win32_conditional_nop_loops.obj %CurDir%\computer_enhance\haversine\win32_conditional_nop_loops.asm
+lib -nologo win32_conditional_nop_loops.obj
 
-cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\asm_repetition_tester.c /link %CommonLinkerFlags%
-
+cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\conditional_nop_loops_tester.c /link %CommonLinkerFlags%
 
 popd
