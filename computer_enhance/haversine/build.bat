@@ -4,7 +4,7 @@ SET CurDir=%cd%
 SET BuildDir=%CurDir%\bin
 
 set IncludeDirectories=-I%CurDir%\kengine
-set CommonCompilerFlags=-Od -FC -Z7 -nologo %IncludeDirectories%
+set CommonCompilerFlags=-O2 -FC -Z7 -nologo %IncludeDirectories%
 set CommonLinkerFlags=-incremental:no -opt:ref
 set InternalCompilerFlags=-DKENGINE_WIN32 -DKENGINE_INTERNAL -DKENGINE_SLOW
 
@@ -26,13 +26,14 @@ pushd %BuildDir%
 @REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\read_overhead_test.c /link %CommonLinkerFlags%
 @REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\asm_repetition_tester.c /link %CommonLinkerFlags%
 
+@REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\conditional_nop_loops_tester.c /link %CommonLinkerFlags%
 @REM nasm -f win64 -o win32_nop_loop.obj %CurDir%\computer_enhance\haversine\win32_nop_loop.asm
 @REM lib -nologo win32_nop_loop.obj
 @REM nasm -f win64 -o win32_multinoop_loops.obj %CurDir%\computer_enhance\haversine\win32_multinoop_loops.asm
 @REM lib -nologo win32_multinoop_loops.obj
-nasm -f win64 -o win32_conditional_nop_loops.obj %CurDir%\computer_enhance\haversine\win32_conditional_nop_loops.asm
-lib -nologo win32_conditional_nop_loops.obj
+nasm -f win64 -o win32_jumping_alignment.obj %CurDir%\computer_enhance\haversine\win32_jumping_alignment.asm
+lib -nologo win32_jumping_alignment.obj
 
-cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\conditional_nop_loops_tester.c /link %CommonLinkerFlags%
+cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\jumping_alignment.c /link %CommonLinkerFlags%
 
 popd
