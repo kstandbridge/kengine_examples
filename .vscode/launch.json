@@ -102,6 +102,14 @@
             "args": [ "output.json" ]
         },
         {
+            "name": "asm_repetition_tester",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/asm_repetition_tester",
+            "cwd": "${workspaceFolder}/bin",
+            "args": [ "output.json" ]
+        },
+        {
             "name": "fault_counter",
             "type": "lldb",
             "request": "launch",
