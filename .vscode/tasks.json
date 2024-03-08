@@ -34,7 +34,6 @@
             "windows": { "command": "${workspaceFolder}/kengine_test/build.bat" },
             "linux": { "command": "${workspaceFolder}/kengine_test/build.sh" },
             "presentation": { "clear": true },
-            "group": { "kind": "build", "isDefault": true }
         },
         {
             "type": "shell",
@@ -56,6 +55,7 @@
             "windows": { "command": "${workspaceFolder}/computer_enhance/haversine/build.bat" },
             "linux": { "command": "${workspaceFolder}/computer_enhance/haversine/build.sh" },
             "presentation": { "clear": true },
+            "group": { "kind": "build", "isDefault": true }
         }
     ],
     "version": "2.0.0"
