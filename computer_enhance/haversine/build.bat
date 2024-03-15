@@ -34,9 +34,11 @@ pushd %BuildDir%
 @REM lib -nologo win32_multinoop_loops.obj
 @REM nasm -f win64 -o win32_jumping_alignment.obj %CurDir%\computer_enhance\haversine\win32_jumping_alignment.asm
 @REM lib -nologo win32_jumping_alignment.obj
-nasm -f win64 -o win32_rat.obj %CurDir%\computer_enhance\haversine\win32_rat.asm
-lib -nologo win32_rat.obj
+@REM nasm -f win64 -o win32_rat.obj %CurDir%\computer_enhance\haversine\win32_rat.asm
+@REM lib -nologo win32_rat.obj
+nasm -f win64 -o win32_read_unroll.obj %CurDir%\computer_enhance\haversine\win32_read_unroll.asm
+lib -nologo win32_read_unroll.obj
 
-cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\rat.c /link %CommonLinkerFlags%
+cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\read_unroll.c /link %CommonLinkerFlags%
 
 popd
