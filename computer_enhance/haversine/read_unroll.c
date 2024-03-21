@@ -17,7 +17,12 @@ extern void Read_x2(u64 Count, u8 *Data);
 extern void Read_x3(u64 Count, u8 *Data);
 extern void Read_x4(u64 Count, u8 *Data);
 extern void Read_1x2(u64 Count, u8 *Data);
+extern void Read_4x2(u64 Count, u8 *Data);
 extern void Read_8x2(u64 Count, u8 *Data);
+extern void Read_16x2(u64 Count, u8 *Data);
+extern void Read_32x2(u64 Count, u8 *Data);
+extern void Read_32x4(u64 Count, u8 *Data);
+extern void Read_32x6(u64 Count, u8 *Data);
 #pragma comment(lib, "win32_read_unroll.lib")
 
 typedef struct test_function
@@ -31,8 +36,15 @@ global test_function TestFunctions[] =
     // { "Read_x2", Read_x2 },
     // { "Read_x3", Read_x3 },
     // { "Read_x4", Read_x4 },
-    { "Read_1x2", Read_1x2 },
-    { "Read_8x2", Read_8x2 },
+
+    // { "Read_1x2", Read_1x2 },
+
+    // { "Read_4x2", Read_4x2 },
+    // { "Read_8x2", Read_8x2 },
+    // { "Read_16x2", Read_16x2 },
+    { "Read_32x2", Read_32x2 },
+    { "Read_32x4", Read_32x4 },
+    { "Read_32x6", Read_32x6 },
 };
 
 s32
@@ -61,7 +73,7 @@ MainLoop(app_memory *AppMemory)
             test_function TestFunc = TestFunctions[FuncIndex];
 
             PlatformConsoleOut("\n--- %s ---\n", TestFunc.Name);
-            RepetitionTestNewTestWave(Tester, Buffer.Size, CPUTimerFreq, 10);
+            RepetitionTestNewTestWave(Tester, Buffer.Size, CPUTimerFreq, 3);
             
             while(RepetitionTestIsTesting(Tester))
             {
