@@ -158,6 +158,13 @@
             "request": "launch",
             "program": "${workspaceFolder}/bin/sparse_memory",
             "cwd": "${workspaceFolder}/bin"
+        },
+        {
+            "name": "memory_bandwidth",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/memory_bandwidth",
+            "cwd": "${workspaceFolder}/bin"
         }
     ]
 }
