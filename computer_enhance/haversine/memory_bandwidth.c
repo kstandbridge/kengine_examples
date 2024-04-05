@@ -26,7 +26,10 @@ global test_function TestFunctions[] =
     { "1GB",   MOVAllBytesASM, 0b1111111111111111111111111111111111111111111111111111111111111111 },
     { "16MB",  MOVAllBytesASM, 0b111111111111111111111111 },
     { "4MB",   MOVAllBytesASM, 0b1111111111111111111111 },
-    { "4096k", MOVAllBytesASM, 0b111111111111 },
+    { "1MB",   MOVAllBytesASM, 0b11111111111111111111 },
+    { "8192K", MOVAllBytesASM, 0b1111111111111 },
+    { "4096K", MOVAllBytesASM, 0b111111111111 },
+
 };
 
 s32
@@ -42,7 +45,7 @@ MainLoop(app_memory *AppMemory)
     u64 BufferSize = Gigabytes(1);
     string Buffer =
     {
-        .Data = (u8 *)malloc(BufferSize),
+        .Data = PlatformAllocateMemory(BufferSize, 0)->Base,
         .Size = BufferSize,
     };
 
@@ -55,7 +58,7 @@ MainLoop(app_memory *AppMemory)
             test_function TestFunc = TestFunctions[FuncIndex];
 
             PlatformConsoleOut("\n--- %s ---\n", TestFunc.Name);
-            RepetitionTestNewTestWave(Tester, Buffer.Size, CPUTimerFreq, 10);
+            RepetitionTestNewTestWave(Tester, Buffer.Size, CPUTimerFreq, 3);
             
             while(RepetitionTestIsTesting(Tester))
             {
