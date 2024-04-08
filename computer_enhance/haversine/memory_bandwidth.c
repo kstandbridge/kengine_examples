@@ -12,25 +12,8 @@ typedef struct app_state
 
 typedef void asm_function();
 
-extern void MOVAllBytesASM(u64 Count, u8 *Data, u64 Mask);
+extern void Read_32x8(u64 Count, u8 *Data, u64 Mask);
 #pragma comment(lib, "win32_memory_bandwidth.lib")
-
-typedef struct test_function
-{
-    char *Name;
-    asm_function *Func;
-    u64 Mask;
-} test_function;
-global test_function TestFunctions[] =
-{
-    { "1GB",   MOVAllBytesASM, 0b1111111111111111111111111111111111111111111111111111111111111111 },
-    { "16MB",  MOVAllBytesASM, 0b111111111111111111111111 },
-    { "4MB",   MOVAllBytesASM, 0b1111111111111111111111 },
-    { "1MB",   MOVAllBytesASM, 0b11111111111111111111 },
-    { "8192K", MOVAllBytesASM, 0b1111111111111 },
-    { "4096K", MOVAllBytesASM, 0b111111111111 },
-
-};
 
 s32
 MainLoop(app_memory *AppMemory)
@@ -49,25 +32,44 @@ MainLoop(app_memory *AppMemory)
         .Size = BufferSize,
     };
 
-    repetition_tester Testers[ArrayCount(TestFunctions)] = {0};
-    for(;;)
+    // NOTE(kstandbridge): Ensure pages are mapped by writing garbage to them
+    for(u64 ByteIndex = 0; ByteIndex < Buffer.Size; ++ByteIndex)
     {
-        for(u32 FuncIndex = 0; FuncIndex < ArrayCount(TestFunctions); ++FuncIndex)
-        {
-            repetition_tester *Tester = &Testers[FuncIndex];
-            test_function TestFunc = TestFunctions[FuncIndex];
+        Buffer.Data[ByteIndex] = (u8)ByteIndex;
+    }
 
-            PlatformConsoleOut("\n--- %s ---\n", TestFunc.Name);
-            RepetitionTestNewTestWave(Tester, Buffer.Size, CPUTimerFreq, 3);
-            
-            while(RepetitionTestIsTesting(Tester))
-            {
-                RepetitionTestBeginTime(Tester);
-                TestFunc.Func(Buffer.Size, Buffer.Data, TestFunc.Mask);
-                RepetitionTestEndTime(Tester);
-                RepetitionTestCountBytes(Tester, Buffer.Size);
-            }
+    u32 MinSizeIndex = 10;
+    repetition_tester Testers[30] = {0};
+    for(u32 FuncIndex = MinSizeIndex; FuncIndex < ArrayCount(Testers); ++FuncIndex)
+    {
+        repetition_tester *Tester = Testers + FuncIndex;
+
+        u64 RegionSize = (1ull << FuncIndex);
+        u64 RegionMask = RegionSize - 1;
+
+        PlatformConsoleOut("\n--- Read32x8 of %lluk ---\n", RegionSize/1024);
+        RepetitionTestNewTestWave(Tester, Buffer.Size, CPUTimerFreq, 3);
+        
+        while(RepetitionTestIsTesting(Tester))
+        {
+            RepetitionTestBeginTime(Tester);
+            Read_32x8(Buffer.Size, Buffer.Data, RegionMask);
+            RepetitionTestEndTime(Tester);
+            RepetitionTestCountBytes(Tester, Buffer.Size);
         }
+    }
+
+    PlatformConsoleOut("Region Size,gb/s\n");
+    for(u32 FuncIndex = MinSizeIndex; FuncIndex < ArrayCount(Testers); ++FuncIndex)
+    {
+        repetition_tester *Tester = Testers + FuncIndex;
+
+        repetition_value Value = Tester->Results.Min;
+        f64 Seconds = SecondsFromCPUTime((f64)Value.E[RepValue_CPUTimer], Tester->CPUTimerFreq);
+        f64 Gigabyte = Gigabytes(1);
+        f64 Bandwidth = Value.E[RepValue_ByteCount] / (Gigabyte * Seconds);
+
+        PlatformConsoleOut("%llu,%f\n", (1ull << FuncIndex), Bandwidth);
     }
 
     return 0;
