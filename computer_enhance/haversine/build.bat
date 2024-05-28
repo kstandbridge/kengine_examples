@@ -28,6 +28,7 @@ pushd %BuildDir%
 @REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\jumping_alignment.c /link %CommonLinkerFlags%
 @REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\read_unroll.c /link %CommonLinkerFlags%
 @REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\memory_bandwidth.c /link %CommonLinkerFlags%
+@REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\npt_cache_test.c /link %CommonLinkerFlags%
 
 @REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\conditional_nop_loops_tester.c /link %CommonLinkerFlags%
 @REM nasm -f win64 -o win32_nop_loop.obj %CurDir%\computer_enhance\haversine\win32_nop_loop.asm
@@ -42,9 +43,11 @@ pushd %BuildDir%
 @REM lib -nologo win32_read_unroll.obj
 @REM nasm -f win64 -o win32_memory_bandwidth.obj %CurDir%\computer_enhance\haversine\win32_memory_bandwidth.asm
 @REM lib -nologo win32_memory_bandwidth.obj
-nasm -f win64 -o win32_npt_cache_test.obj %CurDir%\computer_enhance\haversine\win32_npt_cache_test.asm
-lib -nologo win32_npt_cache_test.obj
+@REM nasm -f win64 -o win32_npt_cache_test.obj %CurDir%\computer_enhance\haversine\win32_npt_cache_test.asm
+@REM lib -nologo win32_npt_cache_test.obj
+nasm -f win64 -o win32_cache_indexing.obj %CurDir%\computer_enhance\haversine\win32_cache_indexing.asm
+lib -nologo win32_cache_indexing.obj
 
-cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\npt_cache_test.c /link %CommonLinkerFlags%
+cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\cache_indexing.c /link %CommonLinkerFlags%
 
 popd
