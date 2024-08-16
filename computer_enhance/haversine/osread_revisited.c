@@ -22,15 +22,15 @@ typedef struct test_function
 
 #define MIN_MEMORY_PAGE_SIZE 4096
 internal void
-AllocateAndTouch(repetition_tester *Tester, char *FileName, u64 TotalFileSize, u64 BufferSize, string Buffer)
+AllocateAndTouch(repetition_tester *Tester, char *FileName, u64 TotalFileSize, u64 BufferSize, string Scratch)
 {
     void *Memory = VirtualAlloc(0, BufferSize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
 
-    string TempBuffer = String_(BufferSize, Memory);
-    u64 TouchCount = (TempBuffer.Size + MIN_MEMORY_PAGE_SIZE - 1)/MIN_MEMORY_PAGE_SIZE;
+    string Buffer = String_(BufferSize, Memory);
+    u64 TouchCount = (Buffer.Size + MIN_MEMORY_PAGE_SIZE - 1)/MIN_MEMORY_PAGE_SIZE;
     for(u64 TouchIndex = 0; TouchIndex < TouchCount; ++TouchIndex)
     {
-        TempBuffer.Data[MIN_MEMORY_PAGE_SIZE*TouchIndex] = 0;
+        Buffer.Data[MIN_MEMORY_PAGE_SIZE*TouchIndex] = 0;
     }
 
     RepetitionTestCountBytes(Tester, TotalFileSize);
@@ -39,13 +39,13 @@ AllocateAndTouch(repetition_tester *Tester, char *FileName, u64 TotalFileSize, u
 }
 
 internal void
-AllocateAndCopy(repetition_tester *Tester, char *FileName, u64 TotalFileSize, u64 BufferSize, string Buffer)
+AllocateAndCopy(repetition_tester *Tester, char *FileName, u64 TotalFileSize, u64 BufferSize, string Scratch)
 {
     void *Memory = VirtualAlloc(0, BufferSize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
     
-    string TempBuffer = String_(BufferSize, Memory);
+    string Buffer = String_(BufferSize, Memory);
 
-    u8 *Source = Buffer.Data;
+    u8 *Source = Scratch.Data;
     umm SizeRemaining = TotalFileSize;
     while(SizeRemaining)
     {
@@ -71,11 +71,11 @@ AllocateAndCopy(repetition_tester *Tester, char *FileName, u64 TotalFileSize, u6
 }
 
 internal void
-OpenAllocateAndRead(repetition_tester *Tester, char *FileName, u64 TotalFileSize, u64 BufferSize, string Buffer)
+OpenAllocateAndRead(repetition_tester *Tester, char *FileName, u64 TotalFileSize, u64 BufferSize, string Scratch)
 {
     HANDLE File = CreateFileA(FileName, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
     void *Memory = VirtualAlloc(0, BufferSize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
-    string TempBuffer = String_(BufferSize, Memory);
+    string Buffer = String_(BufferSize, Memory);
 
     if((File != INVALID_HANDLE_VALUE))
     {
@@ -109,11 +109,11 @@ OpenAllocateAndRead(repetition_tester *Tester, char *FileName, u64 TotalFileSize
 }
 
 internal void
-OpenAllocateAndFRead(repetition_tester *Tester, char *FileName, u64 TotalFileSize, u64 BufferSize, string Buffer)
+OpenAllocateAndFRead(repetition_tester *Tester, char *FileName, u64 TotalFileSize, u64 BufferSize, string Scratch)
 {
     FILE *File = fopen(FileName, "rb");
     void *Memory = VirtualAlloc(0, BufferSize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
-    string TempBuffer = String_(BufferSize, Memory);
+    string Buffer = String_(BufferSize, Memory);
 
     if(File)
     {
@@ -140,7 +140,7 @@ OpenAllocateAndFRead(repetition_tester *Tester, char *FileName, u64 TotalFileSiz
     }
 
     VirtualFree(Memory, 0, MEM_RELEASE);
-    CloseHandle(File);
+    fclose(File);
 }
 
 global test_function TestFunctions[] =
