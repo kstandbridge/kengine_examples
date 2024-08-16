@@ -76,7 +76,7 @@
             "request": "launch",
             "program": "${workspaceFolder}/bin/haversine_generator",
             "cwd": "${workspaceFolder}/bin",
-            "args": [ "uniform", "1234", "32" ]
+            "args": [ "uniform", "1234", "10000000" ]
         },
         {
             "name": "haversine_processor",
@@ -165,6 +165,14 @@
             "request": "launch",
             "program": "${workspaceFolder}/bin/memory_bandwidth",
             "cwd": "${workspaceFolder}/bin"
+        },
+        {
+            "name": "osread_revisited",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/osread_revisited",
+            "cwd": "${workspaceFolder}/bin",
+            "args": [ "output.json" ]
         }
     ]
 }
