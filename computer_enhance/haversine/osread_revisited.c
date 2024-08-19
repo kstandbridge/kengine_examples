@@ -5,6 +5,7 @@
 #include "kengine.h"
 
 #include <stdio.h>
+#include <string.h>
 
 typedef struct app_state
 {
@@ -12,6 +13,34 @@ typedef struct app_state
 } app_state;
 
 global memory_arena GlobalArena;
+
+u8 *
+AllocateMemory(u64 TotalSize)
+{
+    u8 *Result;
+
+#if KENGINE_WIN32
+    Result = (u8 *)VirtualAlloc(0, TotalSize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+#elif KENGINE_LINUX
+    Result = (u8 *)mmap(0, TotalSize, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+#else
+#error Unsupported platform
+#endif
+
+    return Result;
+}
+
+void
+FreeMemory(u8 *Memory, u64 TotalSize)
+{
+#if KENGINE_WIN32
+    VirtualFree(Memory, 0, MEM_RELEASE);
+#elif KENGINE_LINUX
+    munmap(Memory, TotalSize);
+#else
+#error Unsupported platform
+#endif
+}
 
 typedef void file_process_func(repetition_tester *Tester, char *FileName, u64 TotalFileSize, u64 BufferSize, string Buffer);
 typedef struct test_function
@@ -24,7 +53,7 @@ typedef struct test_function
 internal void
 AllocateAndTouch(repetition_tester *Tester, char *FileName, u64 TotalFileSize, u64 BufferSize, string Scratch)
 {
-    void *Memory = VirtualAlloc(0, BufferSize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+    void *Memory = AllocateMemory(BufferSize);
 
     string Buffer = String_(BufferSize, Memory);
     u64 TouchCount = (Buffer.Size + MIN_MEMORY_PAGE_SIZE - 1)/MIN_MEMORY_PAGE_SIZE;
@@ -35,13 +64,13 @@ AllocateAndTouch(repetition_tester *Tester, char *FileName, u64 TotalFileSize, u
 
     RepetitionTestCountBytes(Tester, TotalFileSize);
 
-    VirtualFree(Memory, 0, MEM_RELEASE);
+    FreeMemory(Memory, BufferSize);
 }
 
 internal void
 AllocateAndCopy(repetition_tester *Tester, char *FileName, u64 TotalFileSize, u64 BufferSize, string Scratch)
 {
-    void *Memory = VirtualAlloc(0, BufferSize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+    void *Memory = AllocateMemory(BufferSize);
     
     string Buffer = String_(BufferSize, Memory);
 
@@ -67,14 +96,15 @@ AllocateAndCopy(repetition_tester *Tester, char *FileName, u64 TotalFileSize, u6
         Source += ReadSize;
     }
 
-    VirtualFree(Memory, 0, MEM_RELEASE);
+    FreeMemory(Memory, BufferSize);
 }
 
+#if KENGINE_WIN32
 internal void
 OpenAllocateAndRead(repetition_tester *Tester, char *FileName, u64 TotalFileSize, u64 BufferSize, string Scratch)
 {
     HANDLE File = CreateFileA(FileName, GENERIC_READ, FILE_SHARE_READ|FILE_SHARE_WRITE, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
-    void *Memory = VirtualAlloc(0, BufferSize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+    void *Memory = AllocateMemory(BufferSize);
     string Buffer = String_(BufferSize, Memory);
 
     if((File != INVALID_HANDLE_VALUE))
@@ -104,15 +134,58 @@ OpenAllocateAndRead(repetition_tester *Tester, char *FileName, u64 TotalFileSize
         }
     }
 
-    VirtualFree(Memory, 0, MEM_RELEASE);
+    FreeMemory(Memory, BufferSize);
     CloseHandle(File);
 }
+
+#elif KENGINE_LINUX
+internal void
+OpenAllocateAndRead(repetition_tester *Tester, char *FileName, u64 TotalFileSize, u64 BufferSize, string Scratch)
+{
+    s32 File = open(FileName, O_RDONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    void *Memory = AllocateMemory(BufferSize);
+    string Buffer = String_(BufferSize, Memory);
+
+    if(File >= 0)
+    {
+        umm SizeRemaining = TotalFileSize;
+        s64 Offset = 0;
+        while(SizeRemaining)
+        {
+            u64 ReadSize = Buffer.Size;
+            if(ReadSize > SizeRemaining)
+            {
+                ReadSize = SizeRemaining;
+            }
+
+            ssize_t BytesRead = pread(File, Buffer.Data, ReadSize, Offset);
+
+            if(BytesRead == ReadSize)
+            {
+                RepetitionTestCountBytes(Tester, ReadSize);
+            }
+            else
+            {
+                RepetitionTestError(Tester, "ReadFile failed");
+            }
+
+            SizeRemaining -= ReadSize;
+            Offset += ReadSize;
+        }
+    }
+
+    FreeMemory(Memory, BufferSize);
+    close(File);
+}
+#else
+#error Unsupported platform
+#endif
 
 internal void
 OpenAllocateAndFRead(repetition_tester *Tester, char *FileName, u64 TotalFileSize, u64 BufferSize, string Scratch)
 {
     FILE *File = fopen(FileName, "rb");
-    void *Memory = VirtualAlloc(0, BufferSize, MEM_RESERVE|MEM_COMMIT, PAGE_READWRITE);
+    void *Memory = AllocateMemory(BufferSize);
     string Buffer = String_(BufferSize, Memory);
 
     if(File)
@@ -139,7 +212,7 @@ OpenAllocateAndFRead(repetition_tester *Tester, char *FileName, u64 TotalFileSiz
         }
     }
 
-    VirtualFree(Memory, 0, MEM_RELEASE);
+    FreeMemory(Memory, BufferSize);
     fclose(File);
 }
 
@@ -158,7 +231,6 @@ MainLoop(app_memory *AppMemory)
     app_state *AppState = AppMemory->AppState = PushStruct(&GlobalArena, app_state);
     memory_arena *Arena = AppState->Arena = &GlobalArena;
 
-    HANDLE ProcessHandle = GetCurrentProcess();
     u64 CPUTimerFreq = EstimateCPUTimerFrequency();
     
     string_list *Args = PlatformGetCommandLineArgs(Arena);

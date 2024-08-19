@@ -20,6 +20,8 @@ pushd $BuildDir > /dev/null
 # gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine/fault_counter.c" -o fault_counter $CommonLinkerFlags
 # gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine/fault_counter_test.c" -o fault_counter_test $CommonLinkerFlags
 # gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine/pointer_anatomy.c" -o pointer_anatomy $CommonLinkerFlags
-gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine/overfaulting_pages.c" -o overfaulting_pages $CommonLinkerFlags
+# gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine/overfaulting_pages.c" -o overfaulting_pages $CommonLinkerFlags
+# gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine/circular_buffer.c" -o circular_buffer $CommonLinkerFlags
+gcc $CommonCompilerFlags $InternalCompilerFlags "$CurDir/computer_enhance/haversine/osread_revisited.c" -o osread_revisited $CommonLinkerFlags
 
 popd > /dev/null
