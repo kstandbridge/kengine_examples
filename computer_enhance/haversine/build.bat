@@ -31,6 +31,7 @@ pushd %BuildDir%
 @REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\npt_cache_test.c /link %CommonLinkerFlags%
 @REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\conditional_nop_loops_tester.c /link %CommonLinkerFlags%
 @REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\cache_indexing.c /link %CommonLinkerFlags%
+@REM cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\osread_revisited.c /link %CommonLinkerFlags%
 
 @REM nasm -f win64 -o win32_nop_loop.obj %CurDir%\computer_enhance\haversine\win32_nop_loop.asm
 @REM lib -nologo win32_nop_loop.obj
@@ -49,6 +50,6 @@ pushd %BuildDir%
 @REM nasm -f win64 -o win32_cache_indexing.obj %CurDir%\computer_enhance\haversine\win32_cache_indexing.asm
 @REM lib -nologo win32_cache_indexing.obj
 
-cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\osread_revisited.c /link %CommonLinkerFlags%
+cl %CommonCompilerFlags% %InternalCompilerFlags% %CurDir%\computer_enhance\haversine\osread_sum.c /link %CommonLinkerFlags%
 
 popd
