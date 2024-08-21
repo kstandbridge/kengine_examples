@@ -43,7 +43,6 @@ FreeMemory(u8 *Memory, u64 TotalSize)
 #endif
 }
 
-
 #if KENGINE_WIN32
 
 typedef HANDLE thread_handle;
@@ -56,18 +55,37 @@ CreateAndStartThread(LPTHREAD_START_ROUTINE ThreadFunction, void *ThreadParam)
     return Result;
 }
 
+#elif KENGINE_LINUX
+
+#include <pthread.h>
+
+typedef pthread_t thread_handle;
+#define THREAD_ENTRY_POINT(Name, Parameter) internal void *Name(void *Parameter)
+
+internal thread_handle
+CreateAndStartThread(void *ThreadFunction, void *ThreadParam)
+{
+    pthread_attr_t Attr;
+    pthread_t ThreadId;
+    pthread_attr_init(&Attr);
+    pthread_attr_setdetachstate(&Attr, PTHREAD_CREATE_DETACHED);
+    pthread_create(&ThreadId, &Attr, ThreadFunction, ThreadParam);
+    pthread_attr_destroy(&Attr);
+
+    thread_handle Result = ThreadId;
+    return Result;
+}
+
+#else
+#error Unsupported platform
+#endif
+
 internal b32
 ThreadIsValid(thread_handle Handle)
 {
     b32 Result = (Handle != 0);
     return Result;
 }
-
-#elif KENGINE_LINUX
-#error TODO(kstandbridge): Linux threaded routines
-#else
-#error Unsupported platform
-#endif
 
 internal u64
 Sum64s(u64 DataSize, void *Data)

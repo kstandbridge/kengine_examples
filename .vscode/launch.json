@@ -173,6 +173,14 @@
             "program": "${workspaceFolder}/bin/osread_revisited",
             "cwd": "${workspaceFolder}/bin",
             "args": [ "output.json" ]
+        },
+        {
+            "name": "osread_sum",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/osread_sum",
+            "cwd": "${workspaceFolder}/bin",
+            "args": [ "output.json" ]
         }
     ]
 }
